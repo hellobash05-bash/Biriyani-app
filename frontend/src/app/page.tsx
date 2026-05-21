@@ -96,7 +96,7 @@ export default function Home() {
                <span className="inline-block px-4 py-2 bg-orange-100 dark:bg-gold-950/40 text-orange-700 dark:text-gold-500 rounded-full text-xs font-black uppercase tracking-[0.3em]">
                  ESTD 1984 • The Original
                </span>
-               <h1 className="text-5xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.9] text-stone-900 dark:text-gold-100">
+               <h1 className="text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.9] text-stone-900 dark:text-gold-100">
                 Taste the <br />
                 <span className="text-orange-600 italic relative inline-block">
                    Legacy
@@ -104,26 +104,26 @@ export default function Home() {
               </h1>
             </motion.div>
 
-            <motion.p variants={itemVariants} className="text-xl sm:text-2xl text-stone-600 dark:text-gold-200/60 max-w-2xl leading-relaxed font-medium">
+            <motion.p variants={itemVariants} className="text-lg sm:text-2xl text-stone-600 dark:text-gold-200/60 max-w-2xl leading-relaxed font-medium px-4">
               Every grain tells a story of spices sourced from the silk route and 
               traditions perfected over four decades.
             </motion.p>
 
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 mt-8">
-               <Link href="/signup">
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-4 sm:mt-8 w-full sm:w-auto px-6 sm:px-0">
+               <Link href="/signup" className="w-full sm:w-auto">
                  <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 px-12 py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm shadow-2xl hover:bg-orange-600 dark:hover:bg-gold-400 transition-all min-w-[240px]"
+                  className="bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 px-8 sm:px-12 py-5 sm:py-6 rounded-[2rem] sm:rounded-[2.5rem] font-black uppercase tracking-widest text-xs sm:text-sm shadow-2xl hover:bg-orange-600 dark:hover:bg-gold-400 transition-all w-full sm:min-w-[240px]"
                  >
                    Start Your Order
                  </motion.button>
                </Link>
-               <Link href="/login">
+               <Link href="/login" className="w-full sm:w-auto">
                  <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-stone-200 dark:border-white/10 text-stone-900 dark:text-gold-100 px-12 py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm hover:bg-white/80 dark:hover:bg-white/10 transition-all min-w-[240px]"
+                  className="bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-stone-200 dark:border-white/10 text-stone-900 dark:text-gold-100 px-8 sm:px-12 py-5 sm:py-6 rounded-[2rem] sm:rounded-[2.5rem] font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-white/80 dark:hover:bg-white/10 transition-all w-full sm:min-w-[240px]"
                  >
                    Login to Account
                  </motion.button>

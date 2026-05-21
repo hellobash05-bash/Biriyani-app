@@ -39,16 +39,16 @@ export default function Navbar() {
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       className="sticky top-0 sm:top-6 z-50 w-full px-0 sm:px-6 md:px-12"
     >
-      <div className="glass sm:rounded-[2rem] px-6 py-4 flex justify-between items-center shadow-[0_20px_50px_rgba(0,0,0,0.1)] w-full max-w-7xl mx-auto border-white/20">
+      <div className="glass sm:rounded-[2rem] px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center shadow-[0_20px_50px_rgba(0,0,0,0.1)] w-full max-w-7xl mx-auto border-white/20">
         <motion.div 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-4"
+          className="flex items-center gap-2 sm:gap-4"
         >
-          <div className="w-12 h-12 bg-[#f97316] rounded-2xl flex items-center justify-center text-white font-black shadow-[0_0_30px_rgba(249,115,22,0.4)] text-xl">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#f97316] rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-black shadow-[0_0_30px_rgba(249,115,22,0.4)] text-lg sm:text-xl">
             B
           </div>
-          <Link href="/" className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
+          <Link href="/" className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
             Biriyani <span className="text-[#f97316] italic">Royale</span>
           </Link>
         </motion.div>

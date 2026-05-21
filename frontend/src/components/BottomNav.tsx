@@ -11,8 +11,8 @@ export default function BottomNav() {
   useEffect(() => {
     if (pathname === '/') setActive('home');
     else if (pathname === '/menu') setActive('menu');
+    else if (pathname === '/orders') setActive('orders');
     else if (pathname === '/profile') setActive('profile');
-    else if (pathname === '/cart') setActive('cart');
   }, [pathname]);
 
   const navigate = (path: string, key: string) => {
@@ -31,12 +31,9 @@ export default function BottomNav() {
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
           <span className="text-[10px] font-bold uppercase tracking-wider">Menu</span>
         </button>
-        <button onClick={() => navigate('/cart', 'cart')} className={`flex flex-col items-center gap-1 ${active === 'cart' ? 'text-orange-600' : 'text-slate-500'}`}>
-          <div className="relative">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-            <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider">Cart</span>
+        <button onClick={() => navigate('/orders', 'orders')} className={`flex flex-col items-center gap-1 ${active === 'orders' ? 'text-orange-600' : 'text-slate-500'}`}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+          <span className="text-[10px] font-bold uppercase tracking-wider">Orders</span>
         </button>
         <button onClick={() => navigate('/profile', 'profile')} className={`flex flex-col items-center gap-1 ${active === 'profile' ? 'text-orange-600' : 'text-slate-500'}`}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>

@@ -54,8 +54,8 @@ export default function MenuPage() {
 
       <Navbar />
 
-      <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-7xl mx-auto">
-        <header className="mb-16 text-center md:text-left">
+      <main className="relative flex-1 w-full px-4 sm:px-12 pt-8 sm:pt-12 pb-20 max-w-7xl mx-auto">
+        <header className="mb-10 sm:mb-16 text-center md:text-left">
            <motion.span 
              initial={{ opacity: 0, x: -20 }}
              animate={{ opacity: 1, x: 0 }}
@@ -66,7 +66,7 @@ export default function MenuPage() {
            <motion.h1 
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
-             className="text-5xl md:text-7xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase leading-none"
+             className="text-4xl sm:text-5xl md:text-7xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase leading-none"
            >
              The Royale <br />
              <span className="text-orange-600 italic">Menu</span>
@@ -74,13 +74,13 @@ export default function MenuPage() {
         </header>
 
         {/* Category Filter */}
-        <section className="sticky top-24 z-40 mb-12 py-4 bg-white/50 dark:bg-stone-950/50 backdrop-blur-xl -mx-4 px-4 overflow-x-auto no-scrollbar border-y border-stone-200/50 dark:border-white/5">
-          <div className="flex gap-4 min-w-max">
+        <section className="sticky top-[4.5rem] sm:top-24 z-40 mb-8 sm:mb-12 py-4 bg-white/50 dark:bg-stone-950/50 backdrop-blur-xl -mx-4 px-4 overflow-x-auto no-scrollbar border-y border-stone-200/50 dark:border-white/5">
+          <div className="flex gap-3 sm:gap-4 min-w-max">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
+                className={`px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${
                   activeCategory === cat 
                     ? 'bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 shadow-xl' 
                     : 'bg-white dark:bg-white/5 text-stone-400 hover:text-orange-600'
@@ -94,15 +94,15 @@ export default function MenuPage() {
 
         {/* Menu Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-64 bg-stone-100 dark:bg-white/5 animate-pulse rounded-[2.5rem]" />
+              <div key={i} className="h-64 bg-stone-100 dark:bg-white/5 animate-pulse rounded-[2rem] sm:rounded-[2.5rem]" />
             ))}
           </div>
         ) : (
           <motion.div 
             layout
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-12"
           >
             <AnimatePresence mode='popLayout'>
               {filteredItems.map((item) => (
