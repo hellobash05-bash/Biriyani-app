@@ -93,7 +93,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="none"
-                placeholder="admin@biriyani.com"
+                placeholder="admin@biriyani"
                 className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 p-4 rounded-2xl text-white text-sm outline-none transition-all focus:bg-white/10"
               />
             </div>

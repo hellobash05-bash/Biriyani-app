@@ -276,8 +276,8 @@ app.post('/api/seed', async (req, res) => {
 
     const user = await User.create({
       name: 'Arun Kumar',
-      email: 'arun@example.com',
-      password: 'hashed_password',
+      email: 'admin@biriyani',
+      password: 'admin@biriyani01',
       role: 'admin',
       phone: '+91 9876543210',
       addresses: [
