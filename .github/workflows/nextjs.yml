@@ -1,5 +1,5 @@
     1 name: Deploy Next.js site to Pages
-    2
+    
     3 on:
     4   push:
     5     branches: ["main"]
