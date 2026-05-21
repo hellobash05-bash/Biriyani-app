@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -15,6 +15,12 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { refreshProfile } = useAuth();
+
+  useEffect(() => {
+    // Clear any existing demo flags or persisted roles on mount
+    localStorage.removeItem('admin_demo_mode');
+    localStorage.removeItem('user_role');
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,10 +87,12 @@ export default function AdminLoginPage() {
             <div>
               <label className="block text-[10px] font-black text-stone-500 uppercase tracking-widest mb-2 ml-2">Email Address</label>
               <input 
+                name="admin_email_field_unique"
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="none"
                 placeholder="admin@biriyani.com"
                 className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 p-4 rounded-2xl text-white text-sm outline-none transition-all focus:bg-white/10"
               />
@@ -92,10 +100,12 @@ export default function AdminLoginPage() {
             <div>
               <label className="block text-[10px] font-black text-stone-500 uppercase tracking-widest mb-2 ml-2">Password</label>
               <input 
+                name="admin_password_field_unique"
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="new-password"
                 placeholder="••••••••"
                 className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 p-4 rounded-2xl text-white text-sm outline-none transition-all focus:bg-white/10"
               />
@@ -115,6 +125,15 @@ export default function AdminLoginPage() {
               ) : 'Access Dashboard'}
             </motion.button>
           </form>
+
+          <div className="mt-4">
+            <button 
+              onClick={handleDemoLogin}
+              className="w-full bg-white/5 border border-white/10 text-stone-400 p-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all"
+            >
+              Demo: Instant Admin Access 🛡️
+            </button>
+          </div>
 
           <div className="mt-8 pt-8 border-t border-white/5 text-center">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-600">

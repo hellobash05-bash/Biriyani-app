@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   signInWithPopup,
@@ -20,6 +20,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Clear any existing demo flags or persisted roles on mount to avoid auto-redirection issues
+    localStorage.removeItem('admin_demo_mode');
+    localStorage.removeItem('user_role');
+  }, []);
 
   const syncUserToBackend = async (user: any) => {
     try {
@@ -159,8 +165,26 @@ export default function LoginPage() {
                </div>
 
                <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
-                  <input type="email" placeholder="EMAIL ADDRESS" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" />
-                  <input type="password" placeholder="PASSWORD" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" />
+                  <input 
+                    name="user_email_login_unique"
+                    type="email" 
+                    placeholder="EMAIL ADDRESS" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    required 
+                    autoComplete="none"
+                    className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" 
+                  />
+                  <input 
+                    name="user_password_login_unique"
+                    type="password" 
+                    placeholder="PASSWORD" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required 
+                    autoComplete="new-password"
+                    className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" 
+                  />
                   <motion.button whileHover={{ scale: 1.01, backgroundColor: '#ea580c' }} whileTap={{ scale: 0.99 }} disabled={loading} className="w-full bg-[#f59e0b] text-stone-950 p-6 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_20px_40px_-15px_rgba(245,158,11,0.3)] transition-all cursor-pointer mt-2">
                     {loading ? 'Logging in...' : 'Login with Email'}
                   </motion.button>

@@ -112,7 +112,7 @@ export async function fetchProfileByEmail(email: string) {
       name: 'Arun Kumar',
       email: email,
       phone: '+91 98765 43210',
-      role: 'admin', // Default to admin for easier previewing
+      role: 'customer', // Default to customer for safety
       addresses: [
         { label: 'Home', detail: '123 Heritage Residency, MG Road, Kochi', isDefault: true }
       ]
