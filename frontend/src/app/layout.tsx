@@ -42,7 +42,7 @@ export default function RootLayout({
                     return s.replace(/~and~/g, '&') 
                   }).join('?');
                   window.history.replaceState(null, null,
-                      l.pathname.slice(0, l.pathname.length - 1) + decoded + l.hash
+                      l.pathname.replace(/\\/$/, '') + decoded + l.hash
                   );
                 }
               }(window.location))
