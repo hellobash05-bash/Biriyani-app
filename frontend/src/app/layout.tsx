@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import LoadingScreen from "@/components/LoadingScreen";
+import CartSidebar from "@/components/CartSidebar";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from 'react-hot-toast';
@@ -53,6 +54,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             <LoadingScreen />
+            <CartSidebar />
             <Toaster 
               position="top-center" 
               toastOptions={{

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import CartSidebar from './CartSidebar';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -112,8 +111,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-      
-      <CartSidebar />
     </motion.nav>
   );
 }
