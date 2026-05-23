@@ -43,23 +43,31 @@ export default function CheckoutPage() {
       
       let house = '', street = '', city = '', pincode = '', landmark = '';
       
-      if (defaultAddr && defaultAddr.detail) {
-        // Try to parse the address if it was saved in the specific format, 
-        // otherwise just put the whole detail in 'house' as a fallback
-        const parts = defaultAddr.detail.split(',').map((p: string) => p.trim());
-        if (parts.length >= 3) {
-          house = parts[0];
-          street = parts[1];
-          // Handle "City - Pincode. Landmark: X" format
-          const lastPart = parts[parts.length - 1];
-          const pincodeMatch = lastPart.match(/(\d{6})/);
-          const landmarkMatch = lastPart.match(/Landmark:\s*(.*)/i);
-          
-          city = lastPart.split('-')[0].trim();
-          if (pincodeMatch) pincode = pincodeMatch[0];
-          if (landmarkMatch) landmark = landmarkMatch[1];
-        } else {
-          house = defaultAddr.detail;
+      if (defaultAddr) {
+        // Use granular fields if they exist
+        if (defaultAddr.house || defaultAddr.street || defaultAddr.city) {
+          house = defaultAddr.house || '';
+          street = defaultAddr.street || '';
+          city = defaultAddr.city || '';
+          pincode = defaultAddr.pincode || '';
+          landmark = defaultAddr.landmark || '';
+        } 
+        // Fallback to legacy parsing if granular fields are empty but detail exists
+        else if (defaultAddr.detail) {
+          const parts = defaultAddr.detail.split(',').map((p: string) => p.trim());
+          if (parts.length >= 3) {
+            house = parts[0];
+            street = parts[1];
+            const lastPart = parts[parts.length - 1];
+            const pincodeMatch = lastPart.match(/(\d{6})/);
+            const landmarkMatch = lastPart.match(/Landmark:\s*(.*)/i);
+            
+            city = lastPart.split('-')[0].trim();
+            if (pincodeMatch) pincode = pincodeMatch[0];
+            if (landmarkMatch) landmark = landmarkMatch[1];
+          } else {
+            house = defaultAddr.detail;
+          }
         }
       }
 

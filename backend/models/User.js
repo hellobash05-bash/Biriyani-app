@@ -2,7 +2,12 @@ import mongoose from 'mongoose';
 
 const addressSchema = new mongoose.Schema({
   label: { type: String, required: true }, // e.g., 'Home', 'Office'
-  detail: { type: String, required: true },
+  house: { type: String },
+  street: { type: String },
+  city: { type: String },
+  pincode: { type: String },
+  landmark: { type: String },
+  detail: { type: String, required: true }, // Full address string
   isDefault: { type: Boolean, default: false }
 });
 
