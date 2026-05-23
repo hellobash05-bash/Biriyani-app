@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { placeOrder } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
+import toast from 'react-hot-toast';
 
 export default function CheckoutPage() {
   const { cart, total, clearCart, setIsCartOpen } = useCart();
@@ -122,8 +123,9 @@ export default function CheckoutPage() {
       setTimeout(() => {
         router.push(`/order?id=${result._id}`);
       }, 3000);
-    } catch (err) {
-      alert('Failed to place order. Please try again.');
+    } catch (err: any) {
+      console.error('Order placement failed:', err);
+      toast.error(err.message || 'Failed to place order. Please check your connection.');
     } finally {
       setLoading(false);
     }
