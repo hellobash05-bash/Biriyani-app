@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   signInWithPopup,
   GoogleAuthProvider, 
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Navbar from '@/components/Navbar';
@@ -22,7 +21,6 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Clear any existing demo flags or persisted roles on mount to avoid auto-redirection issues
     localStorage.removeItem('admin_demo_mode');
     localStorage.removeItem('user_role');
   }, []);
@@ -87,41 +85,16 @@ export default function LoginPage() {
     }
   };
 
-  const loginAsAdmin = async () => {
-    setLoading(true);
-    setError('');
-    
-    // DEMO MODE: Bypassing real Firebase/DB check for instant preview
-    console.log("Entering Admin Demo Mode...");
-    
-    // We'll set a local storage flag to tell the app we are in demo mode
-    localStorage.setItem('admin_demo_mode', 'true');
-    localStorage.setItem('user_role', 'admin');
-    
-    // Small delay for realism
-    setTimeout(() => {
-      setLoading(false);
-      router.push('/admin');
-    }, 1000);
-  };
-
   return (
     <div className="flex flex-col w-full min-h-screen selection:bg-orange-200 relative overflow-hidden bg-[#0c0a09]">
-      {/* Ambient Animated Blobs - Refined for depth */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <motion.div 
-          animate={{ 
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.5, 0.3]
-          }}
+          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
           className="absolute -bottom-40 -left-40 w-[60rem] h-[60rem] bg-orange-950/20 blur-[120px] rounded-full" 
         />
         <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.2, 0.4, 0.2]
-          }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 2 }}
           className="absolute -top-40 -right-40 w-[50rem] h-[50rem] bg-gold-950/10 blur-[150px] rounded-full" 
         />
@@ -130,11 +103,7 @@ export default function LoginPage() {
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center px-6 py-20 relative z-10">
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
-        >
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
           <div className="bg-[#14110f]/95 rounded-[3.5rem] p-12 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] border border-white/5 relative overflow-hidden backdrop-blur-3xl">
             <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-[#f97316] to-[#f59e0b]"></div>
             
@@ -165,42 +134,23 @@ export default function LoginPage() {
                </div>
 
                <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
-                  <input 
-                    name="user_email_login_unique"
-                    type="email" 
-                    placeholder="EMAIL ADDRESS" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    required 
-                    autoComplete="none"
-                    className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" 
-                  />
-                  <input 
-                    name="user_password_login_unique"
-                    type="password" 
-                    placeholder="PASSWORD" 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    required 
-                    autoComplete="new-password"
-                    className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" 
-                  />
+                  <input name="user_email_login_unique" type="email" placeholder="EMAIL ADDRESS" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="none" className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" />
+                  <input name="user_password_login_unique" type="password" placeholder="PASSWORD" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" className="w-full bg-white/5 border border-white/5 focus:border-orange-500/30 p-6 rounded-2xl text-sm font-bold outline-none placeholder:text-stone-600 transition-all focus:bg-white/[0.07]" />
                   <motion.button whileHover={{ scale: 1.01, backgroundColor: '#ea580c' }} whileTap={{ scale: 0.99 }} disabled={loading} className="w-full bg-[#f59e0b] text-stone-950 p-6 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_20px_40px_-15px_rgba(245,158,11,0.3)] transition-all cursor-pointer mt-2">
                     {loading ? 'Logging in...' : 'Login with Email'}
                   </motion.button>
                </form>
 
-               <div className="text-center mt-8 flex flex-col gap-6">
-                 <button 
-                   onClick={loginAsAdmin}
-                   className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 bg-orange-500/10 px-6 py-3 rounded-xl hover:bg-orange-500/20 transition-all border border-orange-500/20"
-                 >
-                   Demo: Login as Restaurant Admin 🛡️
-                 </button>
-                 <div className="flex flex-col gap-3">
-                   <Link href="/signup" className="text-xs font-black uppercase tracking-widest text-stone-400 hover:text-orange-600 transition-colors">Don't have an account? Sign Up</Link>
-                   <Link href="/admin/login" className="text-[10px] font-black uppercase tracking-widest text-stone-600 hover:text-orange-500 transition-colors">Staff / Administrator Portal 🔐</Link>
-                 </div>
+               <div className="text-center mt-12 flex flex-col gap-4 relative z-50">
+                   <Link href="/signup" className="text-xs font-black uppercase tracking-widest text-stone-400 hover:text-orange-600 transition-colors cursor-pointer">
+                     Don't have an account? Sign Up
+                   </Link>
+                   <button 
+                     onClick={() => router.push('/admin/login')}
+                     className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500 hover:text-orange-500 transition-all cursor-pointer bg-transparent border-none py-2 outline-none"
+                   >
+                     Staff / Administrator Portal 🔐
+                   </button>
                </div>
             </div>
           </div>

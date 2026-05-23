@@ -1,36 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { fetchProfileByEmail } from '@/lib/api';
 import CartSidebar from './CartSidebar';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const { user, profile, isAdmin } = useAuth();
   const { itemCount, isCartOpen, setIsCartOpen } = useCart();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser?.email) {
-        try {
-          const profile = await fetchProfileByEmail(currentUser.email);
-          setRole(profile.role);
-        } catch (err) {
-          console.error('Failed to fetch role', err);
-        }
-      } else {
-        setRole(null);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
 
   return (
     <motion.nav 
@@ -56,8 +36,8 @@ export default function Navbar() {
         {/* Desktop Links */}
         <div className="hidden md:flex gap-10 items-center font-bold text-sm uppercase tracking-widest text-slate-600 dark:text-gold-300/80">
           <Link href="/menu" className="hover:text-orange-600 transition-all hover:scale-105 active:scale-95">The Menu</Link>
-          <Link href="/orders" className="hover:text-orange-600 transition-all hover:scale-105 active:scale-95">Your Orders</Link>
-          {role === 'admin' && (
+          <Link href="/profile" className="hover:text-orange-600 transition-all hover:scale-105 active:scale-95">Your Orders</Link>
+          {isAdmin && (
             <Link href="/admin" className="text-orange-600 hover:text-orange-700 transition-all hover:scale-105 active:scale-95 flex items-center gap-1">
               <span>🛡️</span> Admin
             </Link>
@@ -152,14 +132,14 @@ export default function Navbar() {
               >
                 The Menu
               </Link>
-              <Link 
-                href="/orders" 
+              <Link
+                href="/profile"
                 className="text-lg font-bold p-4 rounded-2xl hover:bg-orange-50 dark:hover:bg-gold-900/20 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 Your Orders
               </Link>
-              {role === 'admin' && (
+              {isAdmin && (
                 <Link 
                   href="/admin" 
                   className="text-lg font-bold p-4 rounded-2xl bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 transition-colors flex items-center gap-3"

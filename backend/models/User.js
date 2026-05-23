@@ -7,9 +7,10 @@ const addressSchema = new mongoose.Schema({
 });
 
 const userSchema = new mongoose.Schema({
+  uid: { type: String, unique: true, sparse: true }, // Firebase UID
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String }, // Optional for social login
   role: { type: String, enum: ['customer', 'hotel', 'home_chef', 'admin'], default: 'customer' },
   phone: { type: String },
   addresses: [addressSchema],

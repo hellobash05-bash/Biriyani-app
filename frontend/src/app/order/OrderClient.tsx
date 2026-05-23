@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
@@ -11,21 +11,26 @@ import BottomNav from '@/components/BottomNav';
 import { fetchOrderById } from '@/lib/api';
 
 const STATUS_STEPS = [
-  'Order Placed',
-  'Preparing Food',
-  'Picked Up',
+  'Pending',
+  'Preparing',
+  'Packed',
   'Out for Delivery',
   'Delivered'
 ];
 
 export default function OrderTrackingPage() {
-  const params = useParams();
-  const orderId = params.id as string;
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('id');
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+
     // 1. Fetch initial order data
     const fetchOrder = async () => {
       try {
@@ -55,9 +60,15 @@ export default function OrderTrackingPage() {
       let message = `Status Update: ${updatedOrder.status}`;
       let icon = '🔔';
       
-      if (updatedOrder.status === 'Preparing Food') { message = 'Chefs are preparing your feast!'; icon = '👨‍🍳'; }
+      if (updatedOrder.status === 'Preparing') { message = 'Chefs are preparing your feast!'; icon = '👨‍🍳'; }
+      if (updatedOrder.status === 'Packed') { message = 'Your order is packed and ready!'; icon = '📦'; }
       if (updatedOrder.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
       if (updatedOrder.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
+      if (updatedOrder.status === 'Cancelled') { 
+        toast.error('Order Cancelled. Please contact support.', { icon: '✕' });
+        setOrder(updatedOrder);
+        return;
+      }
       
       toast.success(message, { icon });
       setOrder(updatedOrder);
@@ -92,64 +103,79 @@ export default function OrderTrackingPage() {
             Live Tracking
           </motion.div>
           <h1 className="text-3xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter mb-1">Order #{order._id.slice(-6)}</h1>
-          <p className="text-stone-500 text-sm font-bold">Estimated Arrival: {order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Calculating...'}</p>
+          {order.status === 'Cancelled' ? (
+            <p className="text-red-500 text-sm font-bold uppercase tracking-widest">Order Cancelled</p>
+          ) : (
+            <p className="text-stone-500 text-sm font-bold">Estimated Arrival: {order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Calculating...'}</p>
+          )}
         </div>
 
-        {/* Progress Tracker Card */}
-        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-6 md:p-8">
-           <h2 className="text-sm font-black uppercase tracking-widest text-stone-400 mb-8 text-center">Delivery Status</h2>
-           
-           <div className="relative pt-2 pb-8">
-             {/* Background Line */}
-             <div className="absolute top-6 left-[10%] right-[10%] h-1 bg-stone-200 dark:bg-white/10 rounded-full" />
-             
-             {/* Animated Progress Line */}
-             <motion.div 
-               initial={{ width: 0 }}
-               animate={{ width: `${progressPercentage * 0.8 + 10}%` }}
-               transition={{ duration: 1, ease: "easeInOut" }}
-               className="absolute top-6 left-0 h-1 bg-orange-500 rounded-full z-0"
-             />
+        {order.status === 'Cancelled' && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-8 bg-red-500/5 border-red-500/20 text-center">
+            <div className="w-16 h-16 bg-red-500/10 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-black">✕</div>
+            <h2 className="text-xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter mb-2">Order Cancelled</h2>
+            <p className="text-stone-500 text-sm font-medium italic mb-6">We're sorry, your order has been cancelled by the restaurant. Please reach out to our support team for any queries.</p>
+            <button className="px-6 py-3 bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 rounded-xl font-black uppercase tracking-widest text-[10px]">Contact Support</button>
+          </motion.div>
+        )}
 
-             {/* Steps */}
-             <div className="relative z-10 flex justify-between">
-               {STATUS_STEPS.map((step, idx) => {
-                 const isCompleted = idx <= currentStepIndex;
-                 const isCurrent = idx === currentStepIndex;
-                 return (
-                   <div key={step} className="flex flex-col items-center gap-3 w-1/5 relative">
-                     <motion.div 
-                       initial={false}
-                       animate={{ 
-                         scale: isCurrent ? 1.2 : 1,
-                         backgroundColor: isCompleted ? '#f97316' : '#292524',
-                         borderColor: isCurrent ? '#fbbf24' : 'transparent'
-                       }}
-                       className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-lg transition-colors border-2 ${isCompleted ? 'text-white' : 'text-stone-600'}`}
-                     >
-                       {isCompleted && <span className="text-[10px] md:text-xs">✓</span>}
-                     </motion.div>
-                     <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center transition-colors ${isCurrent ? 'text-orange-500' : isCompleted ? 'text-stone-900 dark:text-gold-100' : 'text-stone-400'}`}>
-                       {step.split(' ').join('\n')}
-                     </span>
-                     
-                     {/* Pulse effect for current step */}
-                     {isCurrent && (
-                       <motion.div
-                         animate={{ scale: [1, 2], opacity: [0.5, 0] }}
-                         transition={{ duration: 2, repeat: Infinity }}
-                         className="absolute top-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-500 -z-10"
-                       />
-                     )}
-                   </div>
-                 );
-               })}
+        {/* Progress Tracker Card */}
+        {order.status !== 'Cancelled' && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-6 md:p-8">
+             <h2 className="text-sm font-black uppercase tracking-widest text-stone-400 mb-8 text-center">Delivery Status</h2>
+             
+             <div className="relative pt-2 pb-8">
+               {/* Background Line */}
+               <div className="absolute top-6 left-[10%] right-[10%] h-1 bg-stone-200 dark:bg-white/10 rounded-full" />
+               
+               {/* Animated Progress Line */}
+               <motion.div 
+                 initial={{ width: 0 }}
+                 animate={{ width: `${progressPercentage * 0.8 + 10}%` }}
+                 transition={{ duration: 1, ease: "easeInOut" }}
+                 className="absolute top-6 left-0 h-1 bg-orange-500 rounded-full z-0"
+               />
+
+               {/* Steps */}
+               <div className="relative z-10 flex justify-between">
+                 {STATUS_STEPS.map((step, idx) => {
+                   const isCompleted = idx <= currentStepIndex;
+                   const isCurrent = idx === currentStepIndex;
+                   return (
+                     <div key={step} className="flex flex-col items-center gap-3 w-1/5 relative">
+                       <motion.div 
+                         initial={false}
+                         animate={{ 
+                           scale: isCurrent ? 1.2 : 1,
+                           backgroundColor: isCompleted ? '#f97316' : '#292524',
+                           borderColor: isCurrent ? '#fbbf24' : 'transparent'
+                         }}
+                         className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-lg transition-colors border-2 ${isCompleted ? 'text-white' : 'text-stone-600'}`}
+                       >
+                         {isCompleted && <span className="text-[10px] md:text-xs">✓</span>}
+                       </motion.div>
+                       <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center transition-colors ${isCurrent ? 'text-orange-500' : isCompleted ? 'text-stone-900 dark:text-gold-100' : 'text-stone-400'}`}>
+                         {step.split(' ').join('\n')}
+                       </span>
+                       
+                       {/* Pulse effect for current step */}
+                       {isCurrent && (
+                         <motion.div
+                           animate={{ scale: [1, 2], opacity: [0.5, 0] }}
+                           transition={{ duration: 2, repeat: Infinity }}
+                           className="absolute top-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-500 -z-10"
+                         />
+                       )}
+                     </div>
+                   );
+                 })}
+               </div>
              </div>
-           </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Delivery Partner Details */}
-        {order.deliveryPartner && order.deliveryPartner.name && (
+        {order.status !== 'Cancelled' && order.deliveryPartner && order.deliveryPartner.name && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="premium-card p-6 bg-gradient-to-r from-orange-500/10 to-amber-500/5 border border-orange-500/20">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">Your Delivery Partner</h3>
             <div className="flex items-center justify-between">

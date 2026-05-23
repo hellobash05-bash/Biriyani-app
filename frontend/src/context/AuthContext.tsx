@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { fetchProfileByEmail } from '@/lib/api';
+import { fetchProfileByEmail, syncUser } from '@/lib/api';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -20,29 +20,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const fetchUserProfile = async (email: string) => {
+  const fetchUserProfile = async (firebaseUser: FirebaseUser) => {
+    if (!firebaseUser.email) return;
     try {
-      const profileData = await fetchProfileByEmail(email);
+      const profileData = await fetchProfileByEmail(firebaseUser.email);
       setProfile(profileData);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setProfile(null);
+    } catch (error: any) {
+      if (error.message.includes('not found')) {
+        try {
+          // Auto-sync new users if they exist in Firebase but not in our DB
+          const syncedProfile = await syncUser({
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+            phone: firebaseUser.phoneNumber || undefined
+          });
+          setProfile(syncedProfile);
+        } catch (syncError) {
+          console.error('Error syncing user:', syncError);
+          setProfile(null);
+        }
+      } else {
+        console.error('Error fetching profile:', error);
+        setProfile(null);
+      }
     }
   };
 
   useEffect(() => {
-    const isDemo = typeof window !== 'undefined' && localStorage.getItem('admin_demo_mode') === 'true';
-    setIsAdmin(profile?.role === 'admin' || isDemo);
-  }, [profile]);
-
-  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      if (firebaseUser?.email) {
-        await fetchUserProfile(firebaseUser.email);
+      if (firebaseUser) {
+        await fetchUserProfile(firebaseUser);
       } else {
         setProfile(null);
       }
@@ -52,18 +63,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const checkAdmin = () => {
+      setIsAdmin(profile?.role === 'admin');
+    };
+    checkAdmin();
+  }, [profile, user]);
+
   const logout = async () => {
-    await signOut(auth);
-    setUser(null);
-    setProfile(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('admin_demo_mode');
     }
+    await signOut(auth);
+    setUser(null);
+    setProfile(null);
+    setIsAdmin(false);
   };
 
   const refreshProfile = async () => {
-    if (user?.email) {
-      await fetchUserProfile(user.email);
+    if (user) {
+      await fetchUserProfile(user);
     }
   };
 

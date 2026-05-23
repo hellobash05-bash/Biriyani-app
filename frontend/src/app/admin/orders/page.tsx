@@ -6,7 +6,7 @@ import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { fetchAdminOrders, updateOrderStatus } from '@/lib/api';
 
-const STATUS_OPTIONS = ['Order Placed', 'Preparing Food', 'Picked Up', 'Out for Delivery', 'Delivered'];
+const STATUS_OPTIONS = ['Pending', 'Preparing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -70,7 +70,7 @@ export default function AdminOrders() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          status: 'Picked Up', // Auto-update status when assigning
+          status: 'Out for Delivery', // Auto-update status when assigning
           deliveryPartner: partnerDetails 
         }),
       });
@@ -189,7 +189,8 @@ export default function AdminOrders() {
                        </div>
                        <div className={`inline-block px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] shadow-sm ${
                          order.status === 'Delivered' ? 'bg-green-500/20 text-green-600 border border-green-500/10' :
-                         order.status === 'Order Placed' ? 'bg-orange-500/20 text-orange-600 border border-orange-500/10' : 
+                         order.status === 'Pending' ? 'bg-amber-500/20 text-amber-600 border border-amber-500/10' : 
+                         order.status === 'Cancelled' ? 'bg-red-500/20 text-red-600 border border-red-500/10' : 
                          'bg-blue-500/20 text-blue-600 border border-blue-500/10'
                        }`}>
                          {order.status}
@@ -197,25 +198,47 @@ export default function AdminOrders() {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-1">Update To</span>
-                       <div className="flex flex-wrap gap-2">
-                         {STATUS_OPTIONS.map(status => (
-                           <button
-                             key={status}
-                             onClick={() => handleStatusChange(order._id, status)}
-                             disabled={order.status === status}
-                             className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                               order.status === status 
-                               ? 'bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 opacity-50' 
-                               : 'bg-white dark:bg-white/10 border border-stone-200 dark:border-white/5 hover:border-orange-500 hover:scale-[1.02]'
-                             }`}
-                           >
-                             {status}
-                           </button>
-                         ))}
-                       </div>
+                       {order.status === 'Pending' ? (
+                         <div className="flex flex-col gap-2">
+                           <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-1">Actions Required</span>
+                           <div className="flex gap-2">
+                             <button 
+                               onClick={() => handleStatusChange(order._id, 'Preparing')}
+                               className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-green-600/20 hover:scale-[1.02] transition-all"
+                             >
+                               ✓ Approve Order
+                             </button>
+                             <button 
+                               onClick={() => handleStatusChange(order._id, 'Cancelled')}
+                               className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-red-600/20 hover:scale-[1.02] transition-all"
+                             >
+                               ✕ Cancel
+                             </button>
+                           </div>
+                         </div>
+                       ) : (
+                         <>
+                           <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-1">Update To</span>
+                           <div className="flex flex-wrap gap-2">
+                             {STATUS_OPTIONS.map(status => (
+                               <button
+                                 key={status}
+                                 onClick={() => handleStatusChange(order._id, status)}
+                                 disabled={order.status === status}
+                                 className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                   order.status === status 
+                                   ? 'bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 opacity-50' 
+                                   : 'bg-white dark:bg-white/10 border border-stone-200 dark:border-white/5 hover:border-orange-500 hover:scale-[1.02]'
+                                 }`}
+                               >
+                                 {status}
+                               </button>
+                             ))}
+                           </div>
+                         </>
+                       )}
                        
-                       {!order.deliveryPartner?.name && order.status !== 'Delivered' && (
+                       {!order.deliveryPartner?.name && !['Delivered', 'Cancelled', 'Pending'].includes(order.status) && (
                          <button 
                            onClick={() => setAssigningOrder(order)}
                            className="mt-2 w-full p-3 bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-orange-600 transition-colors"

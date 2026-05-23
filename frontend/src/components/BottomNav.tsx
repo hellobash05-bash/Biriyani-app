@@ -9,10 +9,11 @@ export default function BottomNav() {
   const [active, setActive] = useState('home');
 
   useEffect(() => {
-    if (pathname === '/') setActive('home');
-    else if (pathname === '/menu') setActive('menu');
-    else if (pathname === '/orders') setActive('orders');
-    else if (pathname === '/profile') setActive('profile');
+    const p = pathname || '';
+    if (p === '/' || p === '') setActive('home');
+    else if (p.startsWith('/menu')) setActive('menu');
+    else if (p.startsWith('/profile')) setActive('profile');
+    // Note: /orders is redirected to /profile now
   }, [pathname]);
 
   const navigate = (path: string, key: string) => {
@@ -31,7 +32,7 @@ export default function BottomNav() {
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
           <span className="text-[10px] font-bold uppercase tracking-wider">Menu</span>
         </button>
-        <button onClick={() => navigate('/orders', 'orders')} className={`flex flex-col items-center gap-1 ${active === 'orders' ? 'text-orange-600' : 'text-slate-500'}`}>
+        <button onClick={() => navigate('/profile', 'orders')} className={`flex flex-col items-center gap-1 ${active === 'orders' ? 'text-orange-600' : 'text-slate-500'}`}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
           <span className="text-[10px] font-bold uppercase tracking-wider">Orders</span>
         </button>

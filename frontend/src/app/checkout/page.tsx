@@ -88,7 +88,7 @@ export default function CheckoutPage() {
       
       // Give them a moment to read the success message, then route to tracking
       setTimeout(() => {
-        router.push(`/order/${result._id}`);
+        router.push(`/order?id=${result._id}`);
       }, 3000);
     } catch (err) {
       alert('Failed to place order. Please try again.');

@@ -15,19 +15,19 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  const isLoginPage = pathname === '/admin/login' || pathname === '/admin/login/';
+
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !isLoginPage) {
       if (!isAdmin) {
         // Redirect non-admins to the main store or login
-        if (pathname !== '/admin/login') {
-          router.push('/');
-        }
+        router.push('/');
       }
     }
-  }, [isAdmin, loading, router, pathname]);
+  }, [isAdmin, loading, router, isLoginPage]);
 
   // If we are on the login page, just show children
-  if (pathname === '/admin/login') {
+  if (isLoginPage) {
     return <>{children}</>;
   }
 

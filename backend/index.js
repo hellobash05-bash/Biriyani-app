@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MenuItem } from './models/MenuItem.js';
 import { Order } from './models/Order.js';
 import { User } from './models/User.js';
@@ -45,11 +46,79 @@ io.on('connection', (socket) => {
   });
 });
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/biriyani-db';
+// Use a self-invoking function to handle async setup if needed
+let mongoServer;
+const connectDB = async () => {
+  let uri = process.env.MONGODB_URI;
+  
+  // Force local memory server if cloud fails or for easier dev
+  if (!uri || uri.includes('mongodb+srv')) {
+    console.log('Using local Memory Server for database...');
+    try {
+      mongoServer = await MongoMemoryServer.create();
+      uri = mongoServer.getUri();
+    } catch (err) {
+      console.error('Failed to create MongoMemoryServer:', err);
+      // Fallback to local default if memory server fails to start
+      uri = 'mongodb://localhost:27017/biriyani-db';
+    }
+  }
 
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to Biriyani DB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  try {
+    await mongoose.connect(uri);
+    console.log('Connected to Database');
+    
+    // Seed data if it's a new memory server
+    if (mongoServer) {
+      console.log('Seeding initial data to Memory Server...');
+      await seedInitialData();
+    }
+  } catch (err) {
+    console.error('Database connection error:', err);
+  }
+};
+
+async function seedInitialData() {
+  try {
+    const count = await MenuItem.countDocuments();
+    if (count === 0) {
+      const items = [
+        {
+          name: 'Hyderabadi Chicken Biriyani',
+          description: 'Fragrant basmati rice cooked with succulent chicken and spices.',
+          price: 250,
+          offerPrice: 199,
+          discountPercentage: 20,
+          category: 'Chicken',
+        },
+        {
+          name: 'Mutton Dum Biriyani',
+          description: 'Traditional slow-cooked mutton with long-grain rice.',
+          price: 350,
+          category: 'Mutton',
+        },
+        {
+          name: 'Special Veg Biriyani',
+          description: 'Assorted seasonal vegetables layered with aromatic rice.',
+          price: 180,
+          category: 'Veg',
+        },
+        {
+          name: 'Chicken 65',
+          description: 'Spicy, deep-fried chicken appetizer.',
+          price: 150,
+          category: 'Starters',
+        }
+      ];
+      await MenuItem.insertMany(items);
+      console.log('Seeded items');
+    }
+  } catch (error) {
+    console.error('Seeding error:', error);
+  }
+}
+
+connectDB();
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Biriyani Backend is running' });
@@ -111,12 +180,24 @@ app.get('/api/orders/:id', async (req, res) => {
 app.get('/api/profile', async (req, res) => {
   try {
     const { email, uid } = req.query;
+    
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ 
+        message: 'Database Connection Error. Please ensure the database is running.' 
+      });
+    }
+
     let query = {};
     if (email) query.email = email;
     if (uid) query.uid = uid;
     
-    // Fallback to first user if no query (for demo purposes)
     const user = await User.findOne(Object.keys(query).length > 0 ? query : {}).populate('favorites');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User profile not found. If you just signed up, please wait a moment or try syncing your account.' });
+    }
+
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -126,9 +207,19 @@ app.get('/api/profile', async (req, res) => {
 app.post('/api/users/sync', async (req, res) => {
   try {
     const { uid, name, email, phone } = req.body;
+    
+    // Automatically promote this specific email to admin during sync/signup
+    const isAdminEmail = email === 'hellobash05@gmail.com';
+    
     const user = await User.findOneAndUpdate(
       { $or: [{ uid }, { email }] },
-      { uid, name, email, phone },
+      { 
+        uid, 
+        name, 
+        email, 
+        phone,
+        ...(isAdminEmail && { role: 'admin' }) // Only set role if it's the admin email
+      },
       { upsert: true, new: true }
     );
     res.json(user);
@@ -276,8 +367,8 @@ app.post('/api/seed', async (req, res) => {
 
     const user = await User.create({
       name: 'Arun Kumar',
-      email: 'admin@biriyani',
-      password: 'admin@biriyani01',
+      email: 'hellobash05@gmail.com',
+      password: 'Lets@start05',
       role: 'admin',
       phone: '+91 9876543210',
       addresses: [
