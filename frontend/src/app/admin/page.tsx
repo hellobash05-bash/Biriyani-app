@@ -165,12 +165,6 @@ export default function AdminDashboard() {
              >
                <span className="text-lg">👥</span> Our Community
              </button>
-             <button 
-               onClick={() => router.push('/admin/settings')}
-               className="flex items-center gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all text-white/60 mt-auto"
-             >
-               <span className="text-lg">⚙️</span> Settings
-             </button>
            </div>
         </div>
       </div>
