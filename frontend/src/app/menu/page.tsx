@@ -118,7 +118,7 @@ export default function MenuPage() {
                   {/* Image Section */}
                   <div className="h-56 w-full relative overflow-hidden bg-stone-100 dark:bg-white/5">
                     <img 
-                      src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=2000&auto=format&fit=crop'} 
+                      src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop'} 
                       alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />

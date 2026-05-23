@@ -7,7 +7,7 @@ export default function LoadingScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000);
+    const timer = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
@@ -19,7 +19,7 @@ export default function LoadingScreen() {
           exit={{ 
             opacity: 0,
             pointerEvents: 'none',
-            transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+            transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
           }}
           className="fixed inset-0 z-[100] bg-stone-950 flex flex-col items-center justify-center"
         >
