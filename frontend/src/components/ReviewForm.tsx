@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { submitReview, fetchMenu } from '@/lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { submitReview } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 
@@ -30,30 +30,17 @@ export default function ReviewForm({ orderId, foodItem, onSuccess }: ReviewFormP
     }
     if (!user || !profile) return;
 
+    if (!foodItem.foodId) {
+      toast.error('Cannot review older orders. Please try on a new order!');
+      return;
+    }
+
     setLoading(true);
     try {
-      let finalFoodId = foodItem.foodId;
-
-      // Fallback: If foodId is missing (older orders), try to find it by name from the menu
-      if (!finalFoodId) {
-        console.log('Resolving foodId by name for:', foodItem.name);
-        const menu = await fetchMenu();
-        const match = menu.find((m: any) => m.name === foodItem.name);
-        if (match) {
-          finalFoodId = match._id;
-        }
-      }
-
-      if (!finalFoodId) {
-        toast.error('Cannot find this dish in the current menu. Please try on a new order!');
-        setLoading(false);
-        return;
-      }
-
       await submitReview({
         userId: profile._id,
         userName: profile.name || user.displayName || 'Royale Member',
-        foodId: finalFoodId, 
+        foodId: foodItem.foodId, 
         orderId,
         rating,
         comment
