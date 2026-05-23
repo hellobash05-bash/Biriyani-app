@@ -331,6 +331,18 @@ app.get('/api/admin/customers', async (req, res) => {
   }
 });
 
+// --- ADMIN REVIEW MANAGEMENT ---
+app.get('/api/admin/reviews', async (req, res) => {
+  try {
+    const reviews = await Review.find()
+      .populate('foodId', 'name')
+      .sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // --- REVIEW ROUTES ---
 app.post('/api/reviews', async (req, res) => {
   try {
@@ -352,6 +364,10 @@ app.post('/api/reviews', async (req, res) => {
     });
     
     await review.save();
+    
+    // Emit real-time event for admin
+    req.io.emit('newReview', { ...review._doc, foodId: { name: (await MenuItem.findById(foodId))?.name } });
+    
     res.status(201).json(review);
   } catch (error) {
     res.status(400).json({ message: error.message });

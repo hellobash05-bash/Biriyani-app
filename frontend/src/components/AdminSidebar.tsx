@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: 'Orders', path: '/admin/orders', icon: '🛍️' },
   { label: 'Menu', path: '/admin/menu', icon: '🍽️' },
   { label: 'Customers', path: '/admin/customers', icon: '👥' },
+  { label: 'Reviews', path: '/admin/reviews', icon: '⭐' },
 ];
 
 export default function AdminSidebar() {

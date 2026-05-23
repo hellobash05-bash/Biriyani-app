@@ -154,6 +154,12 @@ export async function fetchCustomers() {
   return await response.json();
 }
 
+export async function fetchAdminReviews() {
+  const response = await fetch(`${API_BASE_URL}/admin/reviews`);
+  if (!response.ok) throw new Error('Failed to fetch admin reviews');
+  return response.json();
+}
+
 export async function fetchAnalytics() {
   const response = await fetch(`${API_BASE_URL}/admin/analytics`);
   if (!response.ok) {
