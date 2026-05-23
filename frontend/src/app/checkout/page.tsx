@@ -6,14 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { fetchProfileByEmail, placeOrder } from '@/lib/api';
-import Navbar from '@/components/Navbar';
-import BottomNav from '@/components/BottomNav';
+import { useAuth } from '@/context/AuthContext';
+import { placeOrder } from '@/lib/api';
 
 export default function CheckoutPage() {
   const { cart, total, clearCart, setIsCartOpen } = useCart();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const { user, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -30,27 +28,51 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    setIsCartOpen(false); // Close sidebar if it was open
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        router.push('/login');
-      } else {
-        setUser(currentUser);
-        try {
-          const profileData = await fetchProfileByEmail(currentUser.email!);
-          setProfile(profileData);
-          setAddressForm(prev => ({
-            ...prev,
-            name: profileData.name || currentUser.displayName || '',
-            phone: profileData.phone || ''
-          }));
-        } catch (e) {
-          console.error('Failed to load profile');
+    setIsCartOpen(false);
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router, setIsCartOpen]);
+
+  useEffect(() => {
+    if (profile) {
+      // Find default address or use the first one available
+      const defaultAddr = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+      
+      let house = '', street = '', city = '', pincode = '', landmark = '';
+      
+      if (defaultAddr && defaultAddr.detail) {
+        // Try to parse the address if it was saved in the specific format, 
+        // otherwise just put the whole detail in 'house' as a fallback
+        const parts = defaultAddr.detail.split(',').map((p: string) => p.trim());
+        if (parts.length >= 3) {
+          house = parts[0];
+          street = parts[1];
+          // Handle "City - Pincode. Landmark: X" format
+          const lastPart = parts[parts.length - 1];
+          const pincodeMatch = lastPart.match(/(\d{6})/);
+          const landmarkMatch = lastPart.match(/Landmark:\s*(.*)/i);
+          
+          city = lastPart.split('-')[0].trim();
+          if (pincodeMatch) pincode = pincodeMatch[0];
+          if (landmarkMatch) landmark = landmarkMatch[1];
+        } else {
+          house = defaultAddr.detail;
         }
       }
-    });
-    return () => unsubscribe();
-  }, [router, setIsCartOpen]);
+
+      setAddressForm(prev => ({
+        ...prev,
+        name: profile.name || user?.displayName || prev.name,
+        phone: profile.phone || prev.phone,
+        house: house || prev.house,
+        street: street || prev.street,
+        city: city || prev.city,
+        pincode: pincode || prev.pincode,
+        landmark: landmark || prev.landmark
+      }));
+    }
+  }, [profile, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddressForm({ ...addressForm, [e.target.name]: e.target.value });
