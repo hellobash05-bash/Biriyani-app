@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
+import ReviewForm from '@/components/ReviewForm';
 
 import { fetchOrderById, SOCKET_URL } from '@/lib/api';
 
@@ -112,6 +113,21 @@ export default function OrderTrackingPage() {
           )}
         </div>
 
+        {/* Review Prompt for Delivered Orders */}
+        {order.status === 'Delivered' && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="flex flex-col gap-8 mb-4">
+             <div className="text-center">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight">How was your Feast?</h2>
+                <p className="text-stone-500 text-sm italic">Share your experience to help our chefs.</p>
+             </div>
+             <div className="flex flex-col gap-6">
+                {order.items.map((item: any, idx: number) => (
+                  <ReviewForm key={idx} orderId={order._id} foodItem={item} onSuccess={() => {}} />
+                ))}
+             </div>
+          </motion.div>
+        )}
+
         {order.status === 'Cancelled' && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-8 bg-red-500/5 border-red-500/20 text-center">
             <div className="w-16 h-16 bg-red-500/10 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-black">✕</div>
@@ -214,7 +230,7 @@ export default function OrderTrackingPage() {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 border-b border-stone-100 dark:border-white/5 pb-2">Receipt</h3>
             <div className="flex flex-col gap-2">
               {order.items.map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between text-sm font-medium">
+                <div key={idx} className="flex justify-between items-center text-sm font-medium">
                   <span className="text-stone-600 dark:text-gold-200/60">{item.quantity}x {item.name}</span>
                 </div>
               ))}

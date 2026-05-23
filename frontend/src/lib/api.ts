@@ -185,3 +185,29 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return response.json();
 }
 
+export async function submitReview(reviewData: {
+  userId: string;
+  userName: string;
+  foodId: string;
+  orderId: string;
+  rating: number;
+  comment: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(reviewData),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to submit review');
+  }
+  return response.json();
+}
+
+export async function fetchReviews(foodId: string) {
+  const response = await fetch(`${API_BASE_URL}/reviews/${foodId}`);
+  if (!response.ok) throw new Error('Failed to fetch reviews');
+  return response.json();
+}
+

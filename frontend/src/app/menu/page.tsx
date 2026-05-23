@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
-import { fetchMenu, seedData } from '@/lib/api';
+import { fetchMenu, seedData, fetchReviews } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 
 const CATEGORIES = ['All', 'Chicken', 'Mutton', 'Veg'];
@@ -13,6 +13,7 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [ratings, setRatings] = useState<Record<string, { average: number; total: number }>>({});
   const { addToCart, itemCount, total, setIsCartOpen, isCartOpen } = useCart();
 
   useEffect(() => {
@@ -24,6 +25,19 @@ export default function MenuPage() {
           data = await fetchMenu();
         }
         setMenuItems(data);
+        
+        // Fetch ratings for each item
+        data.forEach(async (item: any) => {
+          try {
+            const reviewData = await fetchReviews(item._id);
+            setRatings(prev => ({
+              ...prev,
+              [item._id]: { average: reviewData.averageRating, total: reviewData.totalReviews }
+            }));
+          } catch (e) {
+            console.error('Failed to fetch rating for', item.name);
+          }
+        });
       } catch (err) {
         console.error('Menu load failed');
       } finally {
@@ -117,6 +131,15 @@ export default function MenuPage() {
                     {item.offerPrice && (
                       <div className="absolute top-6 right-6 bg-orange-600 text-white text-[10px] font-black uppercase px-4 py-2 rounded-xl shadow-2xl shadow-orange-600/30 rotate-6 z-10 border border-white/10">
                         {item.discountPercentage}% OFF
+                      </div>
+                    )}
+
+                    {/* Quick Rating Badge */}
+                    {ratings[item._id]?.total > 0 && (
+                      <div className="absolute bottom-12 left-6 bg-stone-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-xl">
+                        <span className="text-orange-500">★</span>
+                        <span className="text-[10px] font-black">{ratings[item._id].average}</span>
+                        <span className="text-[8px] text-stone-500 font-bold">({ratings[item._id].total})</span>
                       </div>
                     )}
                   </div>

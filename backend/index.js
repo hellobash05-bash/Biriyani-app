@@ -9,6 +9,7 @@ import { MenuItem } from './models/MenuItem.js';
 import { Order } from './models/Order.js';
 import { User } from './models/User.js';
 import { Restaurant } from './models/Restaurant.js';
+import { Review } from './models/Review.js';
 
 dotenv.config();
 
@@ -330,8 +331,48 @@ app.get('/api/admin/customers', async (req, res) => {
   }
 });
 
-// --- ADMIN ANALYTICS ---
-app.get('/api/admin/analytics', async (req, res) => {
+// --- REVIEW ROUTES ---
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { userId, userName, foodId, orderId, rating, comment } = req.body;
+    
+    // Check if review already exists for this order/food combo
+    const existingReview = await Review.findOne({ orderId, foodId });
+    if (existingReview) {
+      return res.status(400).json({ message: 'You have already reviewed this item for this order.' });
+    }
+
+    const review = new Review({
+      userId,
+      userName,
+      foodId,
+      orderId,
+      rating,
+      comment
+    });
+    
+    await review.save();
+    res.status(201).json(review);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.get('/api/reviews/:foodId', async (req, res) => {
+  try {
+    const reviews = await Review.find({ foodId: req.params.foodId }).sort({ createdAt: -1 });
+    
+    // Calculate stats
+    const total = reviews.length;
+    const avg = total > 0 
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1)
+      : 0;
+
+    res.json({ reviews, averageRating: parseFloat(avg), totalReviews: total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
   try {
     const totalOrders = await Order.countDocuments();
     const orders = await Order.find();
