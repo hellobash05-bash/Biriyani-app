@@ -478,6 +478,15 @@ app.post('/api/seed', async (req, res) => {
   }
 });
 
+// --- GLOBAL ERROR HANDLER ---
+app.use((err, req, res, next) => {
+  console.error('SERVER ERROR:', err);
+  res.status(500).json({ 
+    message: 'Internal Royale Server Error', 
+    error: err.message 
+  });
+});
+
 httpServer.listen(PORT, () => {
   console.log(`Biriyani Server & Socket.IO running on port ${PORT}`);
 });

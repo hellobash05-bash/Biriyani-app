@@ -110,10 +110,11 @@ export default function CheckoutPage() {
           }
         },
         items: cart.map(i => ({ 
+          foodId: i._id, // Pass the foodId
           name: i.name, 
           price: i.price, 
           quantity: i.quantity, 
-          image: i.image // Correctly pass the image URL
+          image: i.image 
         })),
         totalAmount: total,
         paymentMethod: 'Cash on Delivery'

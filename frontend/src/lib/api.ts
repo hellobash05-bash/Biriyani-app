@@ -198,11 +198,21 @@ export async function submitReview(reviewData: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reviewData),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to submit review');
+
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to submit review');
+    }
+    return data;
+  } else {
+    // If not JSON, it's likely a server error page (HTML)
+    if (!response.ok) {
+      throw new Error(`Server Error (${response.status}). The Royale Backend might be waking up or having trouble. Please try again in 30 seconds.`);
+    }
+    throw new Error('Unexpected response from server');
   }
-  return response.json();
 }
 
 export async function fetchReviews(foodId: string) {

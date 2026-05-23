@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 interface ReviewFormProps {
   orderId: string;
   foodItem: {
-    _id?: string;
+    foodId: string;
     name: string;
   };
   onSuccess: () => void;
@@ -30,12 +30,17 @@ export default function ReviewForm({ orderId, foodItem, onSuccess }: ReviewFormP
     }
     if (!user || !profile) return;
 
+    if (!foodItem.foodId) {
+      toast.error('Cannot review older orders. Please try on a new order!');
+      return;
+    }
+
     setLoading(true);
     try {
       await submitReview({
         userId: profile._id,
         userName: profile.name || user.displayName || 'Royale Member',
-        foodId: foodItem._id || 'manual_id', // Handle cases where _id might be missing from order items
+        foodId: foodItem.foodId, 
         orderId,
         rating,
         comment
