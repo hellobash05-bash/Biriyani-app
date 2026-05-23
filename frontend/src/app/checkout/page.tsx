@@ -142,21 +142,21 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-200 relative overflow-hidden bg-[#fffcf5]">
+    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-200 relative overflow-hidden bg-background">
       <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern opacity-10" />
       <Navbar />
 
       <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-5xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-12">
           <header className="text-center md:text-left">
-            <h1 className="text-4xl md:text-6xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter mb-2">Checkout</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-foreground uppercase tracking-tighter mb-2">Checkout</h1>
             <p className="text-stone-500 dark:text-gold-300/60 font-medium italic">Provide delivery details for your Royale Selection.</p>
           </header>
 
           <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-5 gap-12">
             {/* Delivery Details Form */}
             <section className="lg:col-span-3 flex flex-col gap-8">
-               <h2 className="text-xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-widest flex items-center gap-4">
+               <h2 className="text-xl font-black text-foreground uppercase tracking-widest flex items-center gap-4">
                  <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
                  DELIVERY ADDRESS
                </h2>
@@ -164,37 +164,37 @@ export default function CheckoutPage() {
                <div className="flex flex-col gap-8">
                  <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">FULL NAME</label>
-                   <input type="text" name="name" value={addressForm.name} onChange={handleInputChange} required placeholder="Arun Suresh" className="w-full bg-white dark:bg-white/5 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-transparent focus:border-orange-500 transition-all" />
+                   <input type="text" name="name" value={addressForm.name} onChange={handleInputChange} required placeholder="Arun Suresh" className="w-full bg-white dark:bg-white/5 text-foreground p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-white/10 focus:border-orange-500 transition-all" />
                  </div>
 
                  <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">PHONE NUMBER</label>
-                   <input type="tel" name="phone" value={addressForm.phone} onChange={handleInputChange} required placeholder="+91 98765 43210" className="w-full bg-white dark:bg-white/5 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-transparent focus:border-orange-500 transition-all" />
+                   <input type="tel" name="phone" value={addressForm.phone} onChange={handleInputChange} required placeholder="+91 98765 43210" className="w-full bg-white dark:bg-white/5 text-foreground p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-white/10 focus:border-orange-500 transition-all" />
                  </div>
 
                  <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">HOUSE / FLAT NAME</label>
-                   <input type="text" name="house" value={addressForm.house} onChange={handleInputChange} required placeholder="e.g. Kmk, paravoor" className="w-full bg-white dark:bg-white/5 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-transparent focus:border-orange-500 transition-all" />
+                   <input type="text" name="house" value={addressForm.house} onChange={handleInputChange} required placeholder="e.g. Kmk, paravoor" className="w-full bg-white dark:bg-white/5 text-foreground p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-white/10 focus:border-orange-500 transition-all" />
                  </div>
 
                  <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">STREET / AREA</label>
-                   <input type="text" name="street" value={addressForm.street} onChange={handleInputChange} required placeholder="e.g. Alamkode" className="w-full bg-white dark:bg-white/5 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-transparent focus:border-orange-500 transition-all" />
+                   <input type="text" name="street" value={addressForm.street} onChange={handleInputChange} required placeholder="e.g. Alamkode" className="w-full bg-white dark:bg-white/5 text-foreground p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-white/10 focus:border-orange-500 transition-all" />
                  </div>
 
                  <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">CITY</label>
-                   <input type="text" name="city" value={addressForm.city} onChange={handleInputChange} required placeholder="e.g. Changaramkulam" className="w-full bg-white dark:bg-white/5 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-transparent focus:border-orange-500 transition-all" />
+                   <input type="text" name="city" value={addressForm.city} onChange={handleInputChange} required placeholder="e.g. Changaramkulam" className="w-full bg-white dark:bg-white/5 text-foreground p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-white/10 focus:border-orange-500 transition-all" />
                  </div>
 
                  <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">PINCODE</label>
-                   <input type="text" name="pincode" value={addressForm.pincode} onChange={handleInputChange} required placeholder="679585" className="w-full bg-white dark:bg-white/5 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-transparent focus:border-orange-500 transition-all" />
+                   <input type="text" name="pincode" value={addressForm.pincode} onChange={handleInputChange} required placeholder="679585" className="w-full bg-white dark:bg-white/5 text-foreground p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-white/10 focus:border-orange-500 transition-all" />
                  </div>
 
                  <div className="flex flex-col gap-2">
                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">LANDMARK (OPTIONAL)</label>
-                   <input type="text" name="landmark" value={addressForm.landmark} onChange={handleInputChange} placeholder="e.g. Near Shope" className="w-full bg-white dark:bg-white/5 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-transparent focus:border-orange-500 transition-all" />
+                   <input type="text" name="landmark" value={addressForm.landmark} onChange={handleInputChange} placeholder="e.g. Near Shope" className="w-full bg-white dark:bg-white/5 text-foreground p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-stone-100 dark:border-white/10 focus:border-orange-500 transition-all" />
                  </div>
                </div>
             </section>

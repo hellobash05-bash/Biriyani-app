@@ -81,12 +81,12 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="relative w-full max-w-lg bg-[#fffcf5] dark:bg-stone-950 rounded-[3rem] p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar border border-orange-100 dark:border-white/5"
+            className="relative w-full max-w-lg bg-background rounded-[3rem] p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar border border-orange-100 dark:border-white/5"
           >
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 to-gold-500"></div>
             
             <header className="mb-10">
-              <h2 className="text-3xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter">New Address</h2>
+              <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter">New Address</h2>
               <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mt-1">Royale Delivery Details</p>
             </header>
 
@@ -101,7 +101,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                       type="button"
                       onClick={() => setLabel(l)}
                       className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        label === l ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'bg-white dark:bg-white/5 text-stone-400 border border-stone-100 dark:border-transparent'
+                        label === l ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'bg-white dark:bg-white/5 text-stone-400 border border-stone-100 dark:border-white/10'
                       }`}
                      >
                        {l}
@@ -115,7 +115,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Full Name</label>
                 <input 
                   type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Arun Suresh"
-                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-white/5 text-foreground border border-stone-100 dark:border-white/10 focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
                 />
               </div>
 
@@ -124,7 +124,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Phone Number</label>
                 <input 
                   type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required placeholder="+91 98765 43210"
-                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-white/5 text-foreground border border-stone-100 dark:border-white/10 focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
                 />
               </div>
 
@@ -133,7 +133,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">House / Flat Name</label>
                 <input 
                   type="text" name="house" value={formData.house} onChange={handleInputChange} required placeholder="e.g. Purpose Palace"
-                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-white/5 text-foreground border border-stone-100 dark:border-white/10 focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
                 />
               </div>
 
@@ -142,7 +142,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Street / Area</label>
                 <input 
                   type="text" name="street" value={formData.street} onChange={handleInputChange} required placeholder="e.g. Alamkode"
-                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-white/5 text-foreground border border-stone-100 dark:border-white/10 focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
                 />
               </div>
 
@@ -151,7 +151,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">City</label>
                 <input 
                   type="text" name="city" value={formData.city} onChange={handleInputChange} required placeholder="e.g. Changaramkulam"
-                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-white/5 text-foreground border border-stone-100 dark:border-white/10 focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
                 />
               </div>
 
@@ -160,7 +160,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Pincode</label>
                 <input 
                   type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} required placeholder="679585"
-                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-white/5 text-foreground border border-stone-100 dark:border-white/10 focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
                 />
               </div>
 
@@ -169,7 +169,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Landmark (Optional)</label>
                 <input 
                   type="text" name="landmark" value={formData.landmark} onChange={handleInputChange} placeholder="e.g. Near Shope"
-                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-white/5 text-foreground border border-stone-100 dark:border-white/10 focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
                 />
               </div>
 
@@ -183,7 +183,7 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                  <span className="text-[10px] font-black text-stone-500 group-hover:text-orange-600 transition-colors uppercase tracking-[0.2em]">Set as default address</span>
               </label>
 
-              <div className="flex gap-4 mt-4 sticky bottom-0 bg-[#fffcf5] dark:bg-stone-950 py-4 border-t border-stone-100 dark:border-white/5">
+              <div className="flex gap-4 mt-4 sticky bottom-0 bg-background py-4 border-t border-stone-100 dark:border-white/5">
                  <button 
                   type="button" 
                   onClick={onClose}
