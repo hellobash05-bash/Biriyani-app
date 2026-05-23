@@ -1,4 +1,8 @@
-const isProd = typeof window !== 'undefined' && (window.location.hostname.includes('github.io') || window.location.hostname.includes('onrender.com'));
+const isProd = typeof window !== 'undefined' && (
+  window.location.hostname.includes('github.io') || 
+  window.location.hostname.includes('onrender.com') ||
+  window.location.hostname.includes('vercel.app')
+);
 export const API_BASE_URL = isProd 
   ? 'https://biriyani-backend.onrender.com/api' 
   : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
