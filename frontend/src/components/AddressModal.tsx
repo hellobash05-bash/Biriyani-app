@@ -8,6 +8,8 @@ interface AddressModalProps {
   onClose: () => void;
   onSubmit: (address: { 
     label: string; 
+    name: string;
+    phone: string;
     house: string;
     street: string;
     city: string;
@@ -21,6 +23,8 @@ interface AddressModalProps {
 export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModalProps) {
   const [label, setLabel] = useState('Home');
   const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
     house: '',
     street: '',
     city: '',
@@ -46,6 +50,8 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
         isDefault 
       });
       setFormData({
+        name: '',
+        phone: '',
         house: '',
         street: '',
         city: '',
@@ -81,9 +87,9 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
             
             <h2 className="text-2xl md:text-3xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter mb-8">Add New Address</h2>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-stone-400">Address Label</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">Address Label</label>
                 <div className="grid grid-cols-3 gap-3">
                    {['Home', 'Work', 'Other'].map((l) => (
                      <button
@@ -100,46 +106,42 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">House/Flat No.</label>
-                  <input 
-                    type="text" name="house" value={formData.house} onChange={handleInputChange} required placeholder="e.g. 4B, Sky Tower"
-                    className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/50 p-4 rounded-2xl text-sm font-medium outline-none"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Full Name</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">Street/Area</label>
-                  <input 
-                    type="text" name="street" value={formData.street} onChange={handleInputChange} required placeholder="e.g. MG Road"
-                    className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/50 p-4 rounded-2xl text-sm font-medium outline-none"
-                  />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Phone Number</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">City</label>
-                  <input 
-                    type="text" name="city" value={formData.city} onChange={handleInputChange} required placeholder="e.g. Kochi"
-                    className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/50 p-4 rounded-2xl text-sm font-medium outline-none"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">House / Flat Name</label>
+                  <input type="text" name="house" value={formData.house} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">Pincode</label>
-                  <input 
-                    type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} required placeholder="682016"
-                    className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/50 p-4 rounded-2xl text-sm font-medium outline-none"
-                  />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Street / Area</label>
+                  <input type="text" name="street" value={formData.street} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">Landmark (Optional)</label>
-                <input 
-                  type="text" name="landmark" value={formData.landmark} onChange={handleInputChange} placeholder="e.g. Near Heritage Hotel"
-                  className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/50 p-4 rounded-2xl text-sm font-medium outline-none"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">City</label>
+                  <input type="text" name="city" value={formData.city} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Pincode</label>
+                  <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Landmark (Optional)</label>
+                <input type="text" name="landmark" value={formData.landmark} onChange={handleInputChange} className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
               </div>
 
               <label className="flex items-center gap-3 cursor-pointer group mt-2">

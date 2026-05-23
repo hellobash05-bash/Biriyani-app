@@ -230,15 +230,15 @@ app.post('/api/users/sync', async (req, res) => {
 
 app.post('/api/users/address', async (req, res) => {
   try {
-    const { email, label, house, street, city, pincode, landmark, detail, isDefault } = req.body;
+    const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User found' });
 
     if (isDefault) {
       user.addresses.forEach(a => a.isDefault = false);
     }
 
-    user.addresses.push({ label, house, street, city, pincode, landmark, detail, isDefault });
+    user.addresses.push({ label, name, phone, house, street, city, pincode, landmark, detail, isDefault });
     await user.save();
     res.json(user);
   } catch (error) {
