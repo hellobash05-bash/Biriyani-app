@@ -58,103 +58,113 @@ export default function ProfilePage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-stone-950 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-200 relative overflow-hidden">
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-gold-500/5 blur-[150px] rounded-full" />
-      </div>
-
-      <div className="absolute inset-0 biriyani-pattern pointer-events-none opacity-10"></div>
+    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-600 relative overflow-hidden bg-background">
+      <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern" />
+      
       <Navbar />
 
       <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-7xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-12">
-          <section className="flex flex-col md:flex-row items-center gap-8 bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden">
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-gold-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-xl shadow-orange-500/20">
+          {/* User Header */}
+          <section className="flex flex-col md:flex-row items-center gap-8 bg-stone-900/40 backdrop-blur-xl p-10 rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden">
+            <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20">
               {profile?.name?.charAt(0) || user?.displayName?.charAt(0) || 'A'}
             </div>
             <div className="flex flex-col items-center md:items-start gap-2 text-center md:text-left">
-              <h1 className="text-3xl md:text-4xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tight">
+              <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight leading-none">
                 {user?.displayName || profile?.name || 'Royale Member'}
               </h1>
-              <p className="text-stone-500 dark:text-gold-300/60 font-medium">
+              <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">
                 {user?.phoneNumber || profile?.phone || '+91 00000 00000'} • {user?.email || profile?.email}
               </p>
-              <button className="mt-2 text-xs font-black uppercase tracking-[0.2em] text-orange-600 hover:text-orange-500 transition-colors">
-                Edit Profile
+              <button className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 hover:text-orange-400 transition-colors bg-orange-500/5 px-6 py-2 rounded-full border border-orange-500/10">
+                Edit Profile Settings
               </button>
             </div>
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Orders Section */}
             <section className="flex flex-col gap-8">
-              <h2 className="text-2xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-widest flex items-center gap-4">
+              <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em] flex items-center gap-4">
                 <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
                 My Orders
               </h2>
               <div className="flex flex-col gap-6">
                 {loadingOrders ? (
                   <div className="p-12 text-center">
-                    <div className="inline-block w-8 h-8 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : orders.length > 0 ? orders.map((order) => (
-                  <motion.div key={order._id} whileHover={{ scale: 1.02 }} className="premium-card p-6 flex flex-col gap-4">
+                  <motion.div key={order._id} whileHover={{ scale: 1.02 }} className="bg-stone-900/40 p-8 rounded-[2.5rem] border border-white/5 flex flex-col gap-6 hover:border-orange-500/20 transition-all">
                     <div className="flex justify-between items-start">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black text-stone-400 uppercase tracking-widest mb-1">Order #{order._id.slice(-6)}</span>
-                        <span className="text-sm font-bold text-stone-500">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Order ID: #{order._id.slice(-6)}</span>
+                        <span className="text-xs font-bold text-stone-400">{new Date(order.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                       </div>
-                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        order.status === 'Delivered' ? 'bg-green-100/20 text-green-600 border border-green-500/20' : 'bg-orange-100/20 text-orange-600 border border-orange-500/20'
+                      <span className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        order.status === 'Delivered' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
                       }`}>
                         {order.status}
                       </span>
                     </div>
-                    <div className="border-t border-white/5 pt-4">
-                      <p className="text-stone-900 dark:text-gold-100 font-bold mb-2">
+                    
+                    <div className="border-t border-white/5 pt-6">
+                      <p className="text-white font-bold mb-4 line-clamp-1">
                         {order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
                       </p>
                       <div className="flex justify-between items-center">
-                        <span className="text-xl font-black text-orange-600">₹{order.totalAmount}</span>
-                        <button onClick={() => router.push(`/order?id=${order._id}`)} className="bg-stone-900 dark:bg-gold-600 text-white dark:text-gold-950 px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg active:scale-95 transition-all hover:bg-orange-600 dark:hover:bg-orange-500">
-                          {order.status === 'Delivered' ? 'View Receipt' : 'Track Order'}
+                        <span className="text-2xl font-black text-orange-500">₹{order.totalAmount}</span>
+                        <button onClick={() => router.push(`/order?id=${order._id}`)} className="bg-white text-stone-900 px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[9px] shadow-xl active:scale-95 transition-all hover:bg-orange-600 hover:text-white">
+                          {order.status === 'Delivered' ? 'VIEW RECEIPT' : 'TRACK ORDER'}
                         </button>
                       </div>
                     </div>
                   </motion.div>
                 )) : (
-                  <div className="premium-card p-12 text-center border-dashed">
-                    <p className="text-stone-400 font-medium italic">No previous orders found.</p>
+                  <div className="bg-stone-900/20 p-20 rounded-[3rem] border border-dashed border-white/5 text-center">
+                    <p className="text-stone-500 font-bold uppercase tracking-widest text-xs italic">No culinary journeys yet.</p>
                   </div>
                 )}
               </div>
             </section>
 
+            {/* Addresses Section */}
             <section className="flex flex-col gap-8">
-              <h2 className="text-2xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-widest flex items-center gap-4">
+              <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em] flex items-center gap-4">
                 <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
                 Saved Addresses
               </h2>
               <div className="flex flex-col gap-6">
                 {profile?.addresses?.map((addr: any, idx: number) => (
-                  <div key={idx} className="premium-card p-6 flex flex-col gap-2 relative overflow-hidden">
-                    {addr.isDefault && <div className="absolute top-0 right-0 bg-gold-600 text-[8px] font-black text-white px-3 py-1 uppercase tracking-[0.2em] rounded-bl-xl">Default</div>}
-                    <h3 className="text-lg font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter">{addr.label}</h3>
-                    <p className="text-stone-500 dark:text-gold-300/60 font-medium leading-relaxed italic text-sm">"{addr.detail}"</p>
+                  <div key={idx} className="bg-stone-900/40 p-8 rounded-[2.5rem] border border-white/5 flex flex-col gap-3 relative overflow-hidden group hover:border-orange-500/20 transition-all">
+                    {addr.isDefault && (
+                      <div className="absolute top-0 right-0 bg-orange-600 text-[8px] font-black text-white px-4 py-2 uppercase tracking-[0.3em] rounded-bl-2xl shadow-xl">
+                        Default
+                      </div>
+                    )}
+                    <h3 className="text-lg font-black text-white uppercase tracking-tighter">{addr.label}</h3>
+                    <p className="text-stone-500 font-medium leading-relaxed italic text-sm group-hover:text-stone-400 transition-colors">"{addr.detail}"</p>
                   </div>
                 ))}
-                <button onClick={() => setIsAddressModalOpen(true)} className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-6 rounded-[2rem] text-stone-400 font-bold flex items-center justify-center gap-3 hover:border-orange-600 hover:text-orange-600 transition-all active:scale-95 group">
-                  <span className="text-2xl group-hover:scale-125 transition-transform">+</span> Add New Address
+                <button onClick={() => setIsAddressModalOpen(true)} className="w-full border-2 border-dashed border-white/5 p-10 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-white/2">
+                  <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
+                  Add New Destination
                 </button>
               </div>
-              <div className="mt-12 pt-12 border-t border-stone-200 dark:border-white/5 flex flex-col gap-4">
-                 <button className="flex justify-between items-center p-6 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors font-bold text-stone-600 dark:text-gold-200/60"><span>Notification Settings</span><span>→</span></button>
-                 <button onClick={handleLogout} className="flex justify-between items-center p-6 rounded-2xl bg-red-500/10 hover:bg-red-500/20 transition-colors font-bold text-red-600"><span>Logout from Account</span><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
+
+              {/* Account Actions */}
+              <div className="mt-12 flex flex-col gap-4">
+                 <button onClick={handleLogout} className="flex justify-between items-center p-8 rounded-[2.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group">
+                    <span className="font-black uppercase tracking-widest text-xs text-red-500/80 group-hover:text-red-500">Secure Logout</span>
+                    <svg className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                 </button>
               </div>
             </section>
           </div>

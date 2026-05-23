@@ -31,7 +31,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground antialiased">
         <AuthProvider>
           <CartProvider>
             <LoadingScreen />
@@ -40,14 +40,15 @@ export default function RootLayout({
               toastOptions={{
                 duration: 4000,
                 style: {
-                  background: '#1c1917',
+                  background: '#1a1917',
                   color: '#fff',
-                  borderRadius: '1rem',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '1.5rem',
+                  border: '1px solid rgba(255,255,255,0.05)',
                   fontWeight: 900,
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
-                  fontSize: '12px'
+                  fontSize: '11px',
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.4)'
                 },
                 success: {
                   iconTheme: {
@@ -57,7 +58,7 @@ export default function RootLayout({
                 },
               }} 
             />
-            <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-orange-100 via-white to-red-100 dark:from-orange-950 dark:via-slate-950 dark:to-red-950" />
+            <div className="fixed inset-0 -z-10 biriyani-pattern" />
             <main className="relative flex-1">
               {children}
             </main>
