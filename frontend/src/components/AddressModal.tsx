@@ -81,23 +81,27 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="relative w-full max-w-lg bg-white dark:bg-stone-900 rounded-[3rem] p-8 md:p-10 shadow-2xl overflow-hidden border border-white/10"
+            className="relative w-full max-w-lg bg-[#fffcf5] dark:bg-stone-950 rounded-[3rem] p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar border border-orange-100 dark:border-white/5"
           >
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 to-gold-500"></div>
             
-            <h2 className="text-2xl md:text-3xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter mb-8">Add New Address</h2>
+            <header className="mb-10">
+              <h2 className="text-3xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter">New Address</h2>
+              <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mt-1">Royale Delivery Details</p>
+            </header>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">Address Label</label>
-                <div className="grid grid-cols-3 gap-3">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+              {/* Label Selection */}
+              <div className="flex flex-col gap-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Address Label</label>
+                <div className="flex gap-2">
                    {['Home', 'Work', 'Other'].map((l) => (
                      <button
                       key={l}
                       type="button"
                       onClick={() => setLabel(l)}
-                      className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        label === l ? 'bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 shadow-lg' : 'bg-stone-100 dark:bg-white/5 text-stone-400'
+                      className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        label === l ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'bg-white dark:bg-white/5 text-stone-400 border border-stone-100 dark:border-transparent'
                       }`}
                      >
                        {l}
@@ -106,68 +110,93 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Full Name</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Phone Number</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
-                </div>
+              {/* Full Name */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Full Name</label>
+                <input 
+                  type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Arun Suresh"
+                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">House / Flat Name</label>
-                  <input type="text" name="house" value={formData.house} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Street / Area</label>
-                  <input type="text" name="street" value={formData.street} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
-                </div>
+              {/* Phone Number */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Phone Number</label>
+                <input 
+                  type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required placeholder="+91 98765 43210"
+                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">City</label>
-                  <input type="text" name="city" value={formData.city} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Pincode</label>
-                  <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} required className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
-                </div>
+              {/* House / Flat */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">House / Flat Name</label>
+                <input 
+                  type="text" name="house" value={formData.house} onChange={handleInputChange} required placeholder="e.g. Purpose Palace"
+                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Landmark (Optional)</label>
-                <input type="text" name="landmark" value={formData.landmark} onChange={handleInputChange} className="w-full bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-sm font-bold outline-none border border-stone-200 dark:border-transparent focus:border-orange-500 transition-colors" />
+              {/* Street / Area */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Street / Area</label>
+                <input 
+                  type="text" name="street" value={formData.street} onChange={handleInputChange} required placeholder="e.g. Alamkode"
+                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                />
               </div>
 
-              <label className="flex items-center gap-3 cursor-pointer group mt-2">
+              {/* City */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">City</label>
+                <input 
+                  type="text" name="city" value={formData.city} onChange={handleInputChange} required placeholder="e.g. Changaramkulam"
+                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                />
+              </div>
+
+              {/* Pincode */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Pincode</label>
+                <input 
+                  type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} required placeholder="679585"
+                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                />
+              </div>
+
+              {/* Landmark */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Landmark (Optional)</label>
+                <input 
+                  type="text" name="landmark" value={formData.landmark} onChange={handleInputChange} placeholder="e.g. Near Shope"
+                  className="w-full bg-white dark:bg-white/5 border border-stone-100 dark:border-transparent focus:border-orange-500/50 p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none transition-all"
+                />
+              </div>
+
+              <label className="flex items-center gap-4 cursor-pointer group px-4">
                  <input 
                   type="checkbox" 
                   checked={isDefault} 
                   onChange={(e) => setIsDefault(e.target.checked)}
-                  className="w-5 h-5 accent-orange-600 rounded-lg"
+                  className="w-6 h-6 accent-orange-600 rounded-xl"
                  />
-                 <span className="text-xs font-bold text-stone-500 group-hover:text-orange-600 transition-colors uppercase tracking-widest">Set as default delivery address</span>
+                 <span className="text-[10px] font-black text-stone-500 group-hover:text-orange-600 transition-colors uppercase tracking-[0.2em]">Set as default address</span>
               </label>
 
-              <div className="flex gap-4 mt-6">
+              <div className="flex gap-4 mt-4 sticky bottom-0 bg-[#fffcf5] dark:bg-stone-950 py-4 border-t border-stone-100 dark:border-white/5">
                  <button 
                   type="button" 
                   onClick={onClose}
-                  className="flex-1 py-4 md:py-5 rounded-[2rem] font-black uppercase tracking-widest text-[10px] text-stone-400 hover:text-stone-600 transition-colors"
+                  className="flex-1 py-5 rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] text-stone-400 hover:text-stone-600 transition-colors"
                  >
                    Cancel
                  </button>
                  <button 
                   type="submit"
                   disabled={loading}
-                  className="flex-[2] bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 py-4 md:py-5 px-10 rounded-[2rem] font-black uppercase tracking-widest text-[10px] shadow-2xl hover:bg-orange-600 transition-all disabled:opacity-50"
+                  className="flex-[2] bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 py-5 px-10 rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-stone-900/20 hover:bg-orange-600 transition-all disabled:opacity-50"
                  >
-                   {loading ? 'Saving...' : 'Save Address'}
+                   {loading ? 'Processing...' : 'Save Address'}
                  </button>
               </div>
             </form>
