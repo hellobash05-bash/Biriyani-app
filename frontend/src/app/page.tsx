@@ -50,7 +50,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen pb-20 md:pb-0 selection:bg-orange-200 overflow-hidden relative">
+    <div className="flex flex-col w-full min-h-screen pb-20 md:pb-0 selection:bg-orange-600 overflow-hidden relative bg-[#0e0d0c]">
       {/* Ambient Animated Blobs */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <motion.div 
@@ -60,20 +60,20 @@ export default function Home() {
             scale: [1, 1.2, 1] 
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-20 -left-20 w-[40rem] h-[40rem] bg-orange-200/20 dark:bg-orange-950/20 blur-[120px] rounded-full"
+          className="absolute -top-20 -left-20 w-[40rem] h-[40rem] bg-orange-600/5 blur-[120px] rounded-full"
         />
         <motion.div 
           animate={{ 
             x: [0, -80, 0], 
-            y: [0, 120, 0],
+            y: [0, 120, 0], 
             scale: [1, 1.3, 1] 
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute top-1/2 -right-20 w-[35rem] h-[35rem] bg-gold-200/20 dark:bg-gold-950/10 blur-[100px] rounded-full"
+          className="absolute top-1/2 -right-20 w-[35rem] h-[35rem] bg-orange-500/5 blur-[100px] rounded-full"
         />
       </div>
 
-      <div className="absolute inset-0 biriyani-pattern pointer-events-none opacity-10"></div>
+      <div className="absolute inset-0 biriyani-pattern pointer-events-none opacity-[0.03]"></div>
       
       <Navbar />
       
@@ -87,10 +87,10 @@ export default function Home() {
             className="flex flex-col gap-8 items-center relative"
           >
             <motion.div variants={itemVariants} className="flex flex-col gap-4">
-               <span className="inline-block px-4 py-2 bg-orange-100 dark:bg-gold-950/40 text-orange-700 dark:text-gold-500 rounded-full text-xs font-black uppercase tracking-[0.3em]">
+               <span className="inline-block px-4 py-2 bg-orange-600/10 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-2 border border-orange-500/10">
                  ESTD 1984 • The Original
                </span>
-               <h1 className="text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.9] text-stone-900 dark:text-gold-100">
+               <h1 className="text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.8] text-white uppercase">
                 Taste the <br />
                 <span className="text-orange-600 italic relative inline-block">
                    Legacy
@@ -98,9 +98,9 @@ export default function Home() {
               </h1>
             </motion.div>
 
-            <motion.p variants={itemVariants} className="text-lg sm:text-2xl text-stone-600 dark:text-gold-200/60 max-w-2xl leading-relaxed font-medium px-4">
-              Every grain tells a story of spices sourced from the silk route and 
-              traditions perfected over four decades.
+            <motion.p variants={itemVariants} className="text-lg sm:text-xl text-stone-500 max-w-2xl leading-relaxed font-medium px-4 italic">
+              "Every grain tells a story of spices sourced from the silk route and 
+              traditions perfected over four decades."
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-4 sm:mt-8 w-full sm:w-auto px-6 sm:px-0">
@@ -108,7 +108,7 @@ export default function Home() {
                  <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 px-8 sm:px-12 py-5 sm:py-6 rounded-[2rem] sm:rounded-[2.5rem] font-black uppercase tracking-widest text-xs sm:text-sm shadow-2xl hover:bg-orange-600 dark:hover:bg-gold-400 transition-all w-full sm:min-w-[240px]"
+                  className="bg-white text-[#0e0d0c] px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm shadow-2xl hover:bg-orange-600 hover:text-white transition-all w-full sm:min-w-[240px]"
                  >
                    Start Your Order
                  </motion.button>
@@ -117,7 +117,7 @@ export default function Home() {
                  <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-stone-200 dark:border-white/10 text-stone-900 dark:text-gold-100 px-8 sm:px-12 py-5 sm:py-6 rounded-[2rem] sm:rounded-[2.5rem] font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-white/80 dark:hover:bg-white/10 transition-all w-full sm:min-w-[240px]"
+                  className="bg-white/5 backdrop-blur-xl border border-white/5 text-white/80 px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-white/10 transition-all w-full sm:min-w-[240px]"
                  >
                    Login to Account
                  </motion.button>

@@ -38,10 +38,10 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex flex-col gap-8 animate-pulse">
-        <div className="h-12 w-64 bg-stone-200 dark:bg-white/5 rounded-2xl" />
+        <div className="h-12 w-64 bg-white/5 rounded-2xl" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-32 bg-stone-200 dark:bg-white/5 rounded-3xl" />
+            <div key={i} className="h-32 bg-white/5 rounded-3xl" />
           ))}
         </div>
       </div>
@@ -59,16 +59,16 @@ export default function AdminDashboard() {
     <div className="flex flex-col gap-8 md:gap-12">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase mb-2 leading-none">
+          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase mb-2 leading-none">
             Dashboard
           </h1>
-          <p className="text-stone-500 dark:text-gold-300/60 font-medium italic text-sm md:text-base">
-            Real-time insights for <span className="text-orange-600 dark:text-orange-500 font-bold">Biriyani Royale</span>
+          <p className="text-stone-500 font-medium italic text-sm md:text-base uppercase tracking-widest text-[9px]">
+            Real-time insights for <span className="text-orange-500 font-black">Biriyani Royale</span>
           </p>
         </div>
-        <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-stone-400">
+        <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-stone-600">
            <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-           System Live
+           Admin Live
         </div>
       </header>
 
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="premium-card group hover:border-orange-500/30 transition-all cursor-default relative overflow-hidden"
+            className="bg-stone-900/40 p-8 rounded-[2.5rem] border border-white/5 group hover:border-orange-500/20 transition-all cursor-default relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                <span className="text-6xl">{card.icon}</span>
@@ -91,8 +91,8 @@ export default function AdminDashboard() {
                <span className="text-[10px] font-black px-2 py-1 bg-white/5 rounded-lg text-stone-500">{card.trend}</span>
             </div>
             <div className="relative z-10">
-              <h3 className="text-stone-400 font-black uppercase tracking-[0.2em] text-[10px] mb-1">{card.title}</h3>
-              <p className="text-2xl md:text-3xl font-black text-stone-900 dark:text-gold-100">{card.value}</p>
+              <h3 className="text-stone-500 font-black uppercase tracking-[0.2em] text-[10px] mb-1">{card.title}</h3>
+              <p className="text-2xl md:text-3xl font-black text-white">{card.value}</p>
             </div>
           </motion.div>
         ))}
@@ -100,9 +100,9 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
         {/* Popular Items - Large Span */}
-        <div className="lg:col-span-2 premium-card">
+        <div className="lg:col-span-2 bg-stone-900/40 p-8 rounded-[3rem] border border-white/5">
            <div className="flex items-center justify-between mb-8">
-             <h2 className="text-xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase flex items-center gap-3">
+             <h2 className="text-xl font-black text-white tracking-tighter uppercase flex items-center gap-3">
                 <span className="text-orange-500">🔥</span> Popular Items
              </h2>
              <button className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:underline">View All</button>
@@ -115,24 +115,24 @@ export default function AdminDashboard() {
                  initial={{ opacity: 0, x: -10 }}
                  animate={{ opacity: 1, x: 0 }}
                  transition={{ delay: i * 0.1 + 0.5 }}
-                 className="flex items-center justify-between p-4 bg-stone-50 dark:bg-white/[0.03] border border-transparent hover:border-orange-500/10 rounded-2xl transition-all group"
+                 className="flex items-center justify-between p-5 bg-white/2 border border-transparent hover:border-orange-500/10 rounded-2xl transition-all group"
                >
                  <div className="flex items-center gap-4">
-                   <span className="w-10 h-10 flex items-center justify-center bg-stone-200 dark:bg-white/5 rounded-xl text-xs font-black group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                   <span className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl text-[10px] font-black group-hover:bg-orange-600 group-hover:text-white transition-colors">
                      #{i + 1}
                    </span>
                    <div>
-                     <p className="font-bold text-sm md:text-base">{item.name}</p>
-                     <p className="text-[10px] text-stone-500 font-black uppercase tracking-widest">Main Course</p>
+                     <p className="font-bold text-sm md:text-base text-white">{item.name}</p>
+                     <p className="text-[10px] text-stone-500 font-black uppercase tracking-widest">Main Collection</p>
                    </div>
                  </div>
                  <div className="text-right">
-                   <span className="text-orange-600 font-black text-sm md:text-base">{item.count} Sold</span>
-                   <div className="w-24 h-1.5 bg-stone-200 dark:bg-white/5 rounded-full mt-2 overflow-hidden">
+                   <span className="text-orange-500 font-black text-sm md:text-base">{item.count} Sold</span>
+                   <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${(item.count / stats.popularItems[0].count) * 100}%` }}
-                        className="h-full bg-orange-600"
+                        className="h-full bg-orange-600 shadow-[0_0_10px_rgba(249,115,22,0.4)]"
                       />
                    </div>
                  </div>
@@ -142,32 +142,32 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="premium-card flex flex-col">
-           <h2 className="text-xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase mb-8 flex items-center gap-3">
+        <div className="bg-stone-900/40 p-8 rounded-[3rem] border border-white/5 flex flex-col">
+           <h2 className="text-xl font-black text-white tracking-tighter uppercase mb-8 flex items-center gap-3">
               <span className="text-blue-500">⚡</span> Quick Actions
            </h2>
            <div className="grid grid-cols-1 gap-3 flex-1">
              <button 
                onClick={() => router.push('/admin/menu')}
-               className="flex items-center gap-4 p-5 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-orange-600/20"
+               className="flex items-center gap-4 p-5 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-orange-600/20"
              >
                <span className="text-lg">➕</span> Add Food Item
              </button>
              <button 
                onClick={() => router.push('/admin/orders')}
-               className="flex items-center gap-4 p-5 bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-stone-900/20"
+               className="flex items-center gap-4 p-5 bg-white text-stone-950 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all"
              >
                <span className="text-lg">🛒</span> Manage Orders
              </button>
              <button 
                onClick={() => router.push('/admin/customers')}
-               className="flex items-center gap-4 p-5 bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-stone-50 dark:hover:bg-white/10 transition-all"
+               className="flex items-center gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all text-white/60"
              >
                <span className="text-lg">👥</span> Our Community
              </button>
              <button 
                onClick={() => router.push('/admin/settings')}
-               className="flex items-center gap-4 p-5 bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-stone-50 dark:hover:bg-white/10 transition-all mt-auto"
+               className="flex items-center gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all text-white/60 mt-auto"
              >
                <span className="text-lg">⚙️</span> Settings
              </button>
