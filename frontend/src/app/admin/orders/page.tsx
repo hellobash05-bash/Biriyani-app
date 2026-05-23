@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import { fetchAdminOrders, updateOrderStatus } from '@/lib/api';
+import { fetchAdminOrders, updateOrderStatus, SOCKET_URL } from '@/lib/api';
 
 const STATUS_OPTIONS = ['Pending', 'Preparing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
@@ -31,7 +31,9 @@ export default function AdminOrders() {
   useEffect(() => {
     loadOrders();
 
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000');
+    const socketInstance = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+    });
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {

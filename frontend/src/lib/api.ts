@@ -1,7 +1,11 @@
 const isProd = typeof window !== 'undefined' && (window.location.hostname.includes('github.io') || window.location.hostname.includes('onrender.com'));
-const API_BASE_URL = isProd 
+export const API_BASE_URL = isProd 
   ? 'https://biriyani-backend.onrender.com/api' 
   : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
+
+export const SOCKET_URL = isProd
+  ? 'https://biriyani-backend.onrender.com'
+  : (process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000');
 
 export async function fetchRestaurants() {
   const response = await fetch(`${API_BASE_URL}/restaurants`);

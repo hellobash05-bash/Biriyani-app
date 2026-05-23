@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 
-import { fetchOrderById } from '@/lib/api';
+import { fetchOrderById, SOCKET_URL } from '@/lib/api';
 
 const STATUS_STEPS = [
   'Pending',
@@ -45,7 +45,9 @@ export default function OrderTrackingPage() {
     fetchOrder();
 
     // 2. Setup Socket.IO connection
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000');
+    const socketInstance = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+    });
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
