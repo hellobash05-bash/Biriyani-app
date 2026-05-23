@@ -109,7 +109,12 @@ export default function CheckoutPage() {
             fullAddress: fullAddressString
           }
         },
-        items: cart.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image: i.category })),
+        items: cart.map(i => ({ 
+          name: i.name, 
+          price: i.price, 
+          quantity: i.quantity, 
+          image: i.image // Correctly pass the image URL
+        })),
         totalAmount: total,
         paymentMethod: 'Cash on Delivery'
       };
