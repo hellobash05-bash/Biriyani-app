@@ -5,7 +5,6 @@ const isProd = process.env.NODE_ENV === 'production';
 const nextConfig: NextConfig = {
   output: "export",
   basePath: isProd ? "/Biriyani-app" : "",
-  assetPrefix: isProd ? "/Biriyani-app/" : "",
   trailingSlash: true,
   images: {
     unoptimized: true, // Required for static export
