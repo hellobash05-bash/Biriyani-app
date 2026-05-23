@@ -8,6 +8,8 @@ import { auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuth } from '@/context/AuthContext';
 import { placeOrder } from '@/lib/api';
+import Navbar from '@/components/Navbar';
+import BottomNav from '@/components/BottomNav';
 
 export default function CheckoutPage() {
   const { cart, total, clearCart, setIsCartOpen } = useCart();
