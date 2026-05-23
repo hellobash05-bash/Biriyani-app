@@ -43,6 +43,17 @@ export default function AdminOrders() {
       toast(`Order #${updatedOrder._id.slice(-6)} updated to ${updatedOrder.status}`, { icon: '🔄' });
     });
 
+    socketInstance.on('newOrder', (newOrder) => {
+      setOrders(prev => [newOrder, ...prev]);
+      toast.success(`NEW ORDER: #${newOrder._id.slice(-6)}`, {
+        duration: 6000,
+        icon: '🥡',
+      });
+      // Play sound notification if possible
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.play().catch(() => {});
+    });
+
     return () => {
       socketInstance.disconnect();
     };
@@ -85,20 +96,27 @@ export default function AdminOrders() {
     }
   };
 
-  if (loading) return <div>Loading Orders...</div>;
+  if (loading) return (
+    <div className="flex flex-col gap-8 animate-pulse">
+      <div className="h-12 w-64 bg-white/5 rounded-2xl" />
+      {[1, 2, 3].map(i => (
+        <div key={i} className="h-64 bg-white/5 rounded-[3rem]" />
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 relative">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase mb-2 leading-none">Live Orders</h1>
-          <p className="text-stone-500 dark:text-gold-300/60 font-medium italic text-sm">Real-time management via Socket.IO</p>
+          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase mb-2 leading-none">Live Orders</h1>
+          <p className="text-stone-500 font-medium italic text-xs uppercase tracking-widest">Real-time management • Socket.IO enabled</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-500 bg-green-500/10 px-3 py-1.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-500 bg-green-500/5 border border-green-500/10 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.1)]">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Live
           </div>
-          <button onClick={loadOrders} className="p-3 bg-white dark:bg-white/5 rounded-xl border border-stone-200 dark:border-white/10 hover:bg-stone-50 transition-all font-bold text-xs uppercase tracking-widest">
+          <button onClick={loadOrders} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all font-black text-xs">
              🔄
           </button>
         </div>
@@ -109,17 +127,27 @@ export default function AdminOrders() {
         {assigningOrder && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-6"
+            className="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6"
           >
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-white dark:bg-stone-900 rounded-[2rem] p-8 shadow-2xl">
-              <h2 className="text-xl font-black uppercase tracking-tighter mb-6">Assign Partner to #{assigningOrder._id.slice(-6)}</h2>
-              <form onSubmit={handleAssignPartner} className="flex flex-col gap-4">
-                <input type="text" placeholder="PARTNER NAME" value={partnerDetails.name} onChange={e => setPartnerDetails({...partnerDetails, name: e.target.value})} required className="w-full bg-stone-100 dark:bg-white/5 p-4 rounded-xl text-sm font-bold outline-none focus:border-orange-500 border border-transparent" />
-                <input type="tel" placeholder="PHONE NUMBER" value={partnerDetails.phone} onChange={e => setPartnerDetails({...partnerDetails, phone: e.target.value})} required className="w-full bg-stone-100 dark:bg-white/5 p-4 rounded-xl text-sm font-bold outline-none focus:border-orange-500 border border-transparent" />
-                <input type="text" placeholder="VEHICLE NUMBER (e.g. KL 07 AB 1234)" value={partnerDetails.vehicleNumber} onChange={e => setPartnerDetails({...partnerDetails, vehicleNumber: e.target.value})} required className="w-full bg-stone-100 dark:bg-white/5 p-4 rounded-xl text-sm font-bold outline-none focus:border-orange-500 border border-transparent" />
-                <div className="flex gap-3 mt-4">
-                  <button type="submit" className="flex-1 bg-orange-600 text-white p-4 rounded-xl font-black uppercase tracking-widest text-xs">Assign & Update</button>
-                  <button type="button" onClick={() => setAssigningOrder(null)} className="px-6 p-4 bg-stone-200 dark:bg-white/10 rounded-xl font-black uppercase tracking-widest text-xs">Cancel</button>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-[#0e0d0c] border border-white/5 rounded-[3rem] p-10 shadow-2xl">
+              <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
+              <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Partner Name</label>
+                  <input type="text" placeholder="e.g. Rahul Kumar" value={partnerDetails.name} onChange={e => setPartnerDetails({...partnerDetails, name: e.target.value})} required className="w-full bg-white/5 text-white p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-transparent focus:border-orange-500 transition-all" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Phone Number</label>
+                  <input type="tel" placeholder="+91 98765 00000" value={partnerDetails.phone} onChange={e => setPartnerDetails({...partnerDetails, phone: e.target.value})} required className="w-full bg-white/5 text-white p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-transparent focus:border-orange-500 transition-all" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Vehicle Number</label>
+                  <input type="text" placeholder="KL 07 AB 1234" value={partnerDetails.vehicleNumber} onChange={e => setPartnerDetails({...partnerDetails, vehicleNumber: e.target.value})} required className="w-full bg-white/5 text-white p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-transparent focus:border-orange-500 transition-all" />
+                </div>
+                
+                <div className="flex gap-4 mt-4">
+                  <button type="button" onClick={() => setAssigningOrder(null)} className="flex-1 py-5 rounded-[2rem] font-black uppercase tracking-widest text-[10px] text-stone-500 hover:text-stone-400 transition-colors">Cancel</button>
+                  <button type="submit" className="flex-[2] bg-orange-600 text-white py-5 rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20">Assign & Update</button>
                 </div>
               </form>
             </motion.div>
@@ -127,108 +155,108 @@ export default function AdminOrders() {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-8">
         <AnimatePresence mode='popLayout'>
           {orders.map((order) => (
             <motion.div
               key={order._id}
               layout
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="premium-card !p-0 overflow-hidden"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-stone-900/40 rounded-[3rem] border border-white/5 overflow-hidden group hover:border-orange-500/20 transition-all duration-500"
             >
               <div className="flex flex-col lg:flex-row">
                  {/* Order Info */}
-                 <div className="flex-1 p-6 md:p-8 border-b lg:border-b-0 lg:border-r border-stone-200 dark:border-white/5">
-                    <div className="flex justify-between items-start mb-6">
+                 <div className="flex-1 p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-white/5">
+                    <div className="flex justify-between items-start mb-8">
                        <div>
-                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-1">Order ID</span>
-                         <span className="font-mono text-sm font-bold text-orange-600">#{order._id.slice(-6)}</span>
+                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">CULINARY ORDER</span>
+                         <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order._id.slice(-6)}</span>
                        </div>
                        <div className="text-right">
-                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-1">Total Amount</span>
-                         <span className="text-xl font-black text-stone-900 dark:text-gold-100">₹{order.totalAmount}</span>
+                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">ROYALE TOTAL</span>
+                         <span className="text-3xl font-black text-white tracking-tighter">₹{order.totalAmount}</span>
                        </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 mb-6">
+                    <div className="flex flex-col gap-4 mb-10">
                        {order.items.map((item: any, idx: number) => (
-                         <div key={idx} className="flex justify-between text-sm font-medium">
-                           <span className="text-stone-600 dark:text-gold-200/60 leading-tight pr-4">
-                             <span className="font-black text-orange-600 mr-2">{item.quantity}x</span>
+                         <div key={idx} className="flex justify-between items-center text-sm">
+                           <span className="text-white font-bold leading-tight pr-4">
+                             <span className="font-black text-orange-600 mr-3 italic">{item.quantity}x</span>
                              {item.name}
                            </span>
-                           <span className="font-bold shrink-0">₹{item.price * item.quantity}</span>
+                           <span className="font-black text-stone-500 shrink-0">₹{item.price * item.quantity}</span>
                          </div>
                        ))}
                     </div>
 
-                    <div className="pt-6 border-t border-stone-100 dark:border-white/5">
-                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-2">Customer Details</span>
-                       <p className="font-black text-stone-900 dark:text-gold-100 uppercase tracking-tight">{order.customer.name}</p>
-                       <div className="flex flex-col gap-1 mt-1">
-                         <span className="text-sm font-bold text-orange-600">{order.customer.phone}</span>
-                         <p className="text-xs text-stone-500 italic leading-relaxed">
-                           {order.customer.address?.fullAddress || order.customer.address}
+                    <div className="pt-10 border-t border-white/5">
+                       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-4">GUEST INFORMATION</span>
+                       <p className="font-black text-2xl text-white uppercase tracking-tighter mb-2">{order.customer.name}</p>
+                       <div className="flex flex-col gap-2">
+                         <span className="text-sm font-bold text-orange-600 tracking-wide">{order.customer.phone}</span>
+                         <p className="text-xs text-stone-500 italic leading-relaxed max-w-md">
+                           "{order.customer.address?.fullAddress || order.customer.address}"
                          </p>
                        </div>
                     </div>
                  </div>
 
                  {/* Status Control */}
-                 <div className="w-full lg:w-80 p-6 md:p-8 bg-stone-50/50 dark:bg-white/5 flex flex-col justify-between gap-6">
+                 <div className="w-full lg:w-96 p-8 md:p-10 bg-[#0e0d0c]/40 flex flex-col justify-between gap-10">
                     <div>
-                       <div className="flex justify-between items-center mb-4">
-                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Current Status</span>
+                       <div className="flex justify-between items-center mb-6">
+                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600">MISSION STATUS</span>
                          {order.deliveryPartner?.name && (
-                           <span className="text-[9px] font-bold bg-orange-500/10 text-orange-600 px-2 py-1 rounded-md">
+                           <span className="text-[10px] font-black bg-orange-600/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20">
                              🛵 {order.deliveryPartner.name}
                            </span>
                          )}
                        </div>
-                       <div className={`inline-block px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] shadow-sm ${
-                         order.status === 'Delivered' ? 'bg-green-500/20 text-green-600 border border-green-500/10' :
-                         order.status === 'Pending' ? 'bg-amber-500/20 text-amber-600 border border-amber-500/10' : 
-                         order.status === 'Cancelled' ? 'bg-red-500/20 text-red-600 border border-red-500/10' : 
-                         'bg-blue-500/20 text-blue-600 border border-blue-500/10'
+                       <div className={`inline-block px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl ${
+                         order.status === 'Delivered' ? 'bg-green-600 text-white' :
+                         order.status === 'Pending' ? 'bg-amber-600 text-white' : 
+                         order.status === 'Cancelled' ? 'bg-red-600 text-white' : 
+                         'bg-white text-stone-900'
                        }`}>
                          {order.status}
                        </div>
                     </div>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-4">
                        {order.status === 'Pending' ? (
-                         <div className="flex flex-col gap-2">
-                           <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-1">Actions Required</span>
-                           <div className="flex gap-2">
+                         <div className="flex flex-col gap-4">
+                           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">AUTHORIZATION</span>
+                           <div className="flex gap-4">
                              <button 
                                onClick={() => handleStatusChange(order._id, 'Preparing')}
-                               className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-green-600/20 hover:scale-[1.02] transition-all"
+                               className="flex-1 bg-green-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-green-600/20 hover:scale-[1.05] transition-all"
                              >
-                               ✓ Approve Order
+                               APPROVE
                              </button>
                              <button 
                                onClick={() => handleStatusChange(order._id, 'Cancelled')}
-                               className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-red-600/20 hover:scale-[1.02] transition-all"
+                               className="flex-1 bg-red-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-red-600/20 hover:scale-[1.05] transition-all"
                              >
-                               ✕ Cancel
+                               CANCEL
                              </button>
                            </div>
                          </div>
                        ) : (
                          <>
-                           <span className="text-[10px] font-black uppercase tracking-widest text-stone-400 block mb-1">Update To</span>
+                           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">TRANSITION TO</span>
                            <div className="flex flex-wrap gap-2">
                              {STATUS_OPTIONS.map(status => (
                                <button
                                  key={status}
                                  onClick={() => handleStatusChange(order._id, status)}
                                  disabled={order.status === status}
-                                 className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                 className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
                                    order.status === status 
-                                   ? 'bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 opacity-50' 
-                                   : 'bg-white dark:bg-white/10 border border-stone-200 dark:border-white/5 hover:border-orange-500 hover:scale-[1.02]'
+                                   ? 'bg-white/5 text-stone-700 pointer-events-none' 
+                                   : 'bg-stone-900 text-white/60 border border-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-500'
                                  }`}
                                >
                                  {status}
@@ -241,9 +269,9 @@ export default function AdminOrders() {
                        {!order.deliveryPartner?.name && !['Delivered', 'Cancelled', 'Pending'].includes(order.status) && (
                          <button 
                            onClick={() => setAssigningOrder(order)}
-                           className="mt-2 w-full p-3 bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-orange-600 transition-colors"
+                           className="mt-4 w-full py-5 bg-white text-[#0e0d0c] rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-2xl"
                          >
-                           + Assign Partner
+                           + ASSIGN DELIVERY PARTNER
                          </button>
                        )}
                     </div>
