@@ -199,8 +199,7 @@ export async function deleteDeliveryPartner(id: string) {
   return response.json();
 }
 
-export async function fetchReviews(foodId: string) {
-
+export async function fetchAnalytics() {
   const response = await fetch(`${API_BASE_URL}/admin/analytics`);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
