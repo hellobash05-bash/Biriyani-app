@@ -115,9 +115,20 @@ export default function ProfilePage() {
               <p className="text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest text-[10px] truncate w-full">
                 {user?.phoneNumber || profile?.phone || '+91 00000 00000'} • {user?.email || profile?.email}
               </p>
-              <button className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 hover:text-orange-400 transition-colors bg-orange-500/5 px-6 py-2 rounded-full border border-orange-500/10">
-                Edit Profile Settings
-              </button>
+              <div className="flex gap-4 mt-4">
+                <button className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 hover:text-orange-400 transition-colors bg-orange-500/5 px-6 py-2 rounded-full border border-orange-500/10">
+                  Edit Profile Settings
+                </button>
+                <button 
+                  onClick={() => {
+                    const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_5072705b4b.mp3');
+                    audio.play().catch(e => alert('Audio blocked by browser. Click anywhere first!'));
+                  }}
+                  className="text-[10px] font-black uppercase tracking-[0.3em] text-green-600 hover:text-green-500 transition-colors bg-green-500/5 px-6 py-2 rounded-full border border-green-500/10"
+                >
+                  🔊 Test Sound
+                </button>
+              </div>
             </div>
           </section>
 

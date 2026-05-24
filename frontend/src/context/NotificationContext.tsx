@@ -25,7 +25,7 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+const NOTIFICATION_SOUND = 'https://cdn.pixabay.com/audio/2022/03/15/audio_5072705b4b.mp3';
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { profile, user } = useAuth();
