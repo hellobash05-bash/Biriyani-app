@@ -64,10 +64,10 @@ export default function ReviewForm({ orderId, foodItem, onSuccess }: ReviewFormP
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6 bg-stone-900/40 rounded-[2.5rem] border border-white/5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6 premium-card">
       <div className="flex flex-col gap-2">
         <span className="text-[10px] font-black uppercase tracking-widest text-stone-500">Rate your experience</span>
-        <h4 className="text-white font-bold uppercase tracking-tight">{foodItem.name}</h4>
+        <h4 className="text-foreground font-bold uppercase tracking-tight">{foodItem.name}</h4>
       </div>
 
       <div className="flex gap-3">
@@ -87,7 +87,7 @@ export default function ReviewForm({ orderId, foodItem, onSuccess }: ReviewFormP
         placeholder="How was the flavor? (Optional)"
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white font-medium outline-none focus:border-orange-500 transition-all resize-none h-24"
+        className="w-full bg-input-bg border border-input-border rounded-2xl p-4 text-sm text-input-text font-medium outline-none focus:border-orange-500 transition-all resize-none h-24"
       />
 
       <motion.button

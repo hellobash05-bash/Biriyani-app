@@ -39,11 +39,11 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-gold-500 border-t-transparent rounded-full"
+          className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full"
         />
       </div>
     );
@@ -90,7 +90,7 @@ export default function Home() {
                <span className="inline-block px-4 py-2 bg-orange-600/10 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-2 border border-orange-500/10">
                  ESTD 1984 • The Original
                </span>
-               <h1 className="text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.8] text-white uppercase">
+               <h1 className="text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.8] text-foreground uppercase">
                 Taste the <br />
                 <span className="text-orange-600 italic relative inline-block">
                    Legacy

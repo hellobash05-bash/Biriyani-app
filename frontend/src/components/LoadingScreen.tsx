@@ -21,7 +21,7 @@ export default function LoadingScreen() {
             pointerEvents: 'none',
             transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
           }}
-          className="fixed inset-0 z-[100] bg-stone-950 flex flex-col items-center justify-center"
+          className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center"
         >
           <div className="relative">
             <motion.div

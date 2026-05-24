@@ -70,7 +70,7 @@ export default function MenuPage() {
            <motion.h1 
              initial={{ opacity: 0, scale: 0.95 }}
              animate={{ opacity: 1, scale: 1 }}
-             className="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.8] mb-2"
+             className="text-5xl sm:text-7xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-[0.8] mb-2"
            >
              The Royale <br />
              <span className="text-orange-600 italic">Menu</span>
@@ -78,7 +78,7 @@ export default function MenuPage() {
         </header>
 
         {/* Category Filter */}
-        <section className="sticky top-24 z-40 mb-12 py-4 bg-background/50 backdrop-blur-xl -mx-6 px-6 overflow-x-auto no-scrollbar border-y border-white/5">
+        <section className="sticky top-24 z-40 mb-12 py-4 bg-background/50 backdrop-blur-xl -mx-6 px-6 overflow-x-auto no-scrollbar border-y border-glass-border">
           <div className="flex gap-3 min-w-max justify-center">
             {CATEGORIES.map((cat) => (
               <button
@@ -87,7 +87,7 @@ export default function MenuPage() {
                 className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                   activeCategory === cat 
                     ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20 scale-105' 
-                    : 'bg-white/5 text-stone-500 hover:text-orange-500 border border-white/5'
+                    : 'bg-foreground/5 text-stone-500 hover:text-orange-500 border border-glass-border'
                 }`}
               >
                 {cat}
@@ -100,7 +100,7 @@ export default function MenuPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-[30rem] bg-white/5 animate-pulse rounded-[3rem]" />
+              <div key={i} className="h-[30rem] bg-foreground/5 animate-pulse rounded-[3rem]" />
             ))}
           </div>
         ) : (
@@ -117,16 +117,16 @@ export default function MenuPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="group flex flex-col relative overflow-hidden bg-stone-900/40 rounded-[3rem] border border-white/5 hover:border-orange-500/20 transition-all duration-500"
+                  className="group flex flex-col relative overflow-hidden premium-card !p-0 hover:border-orange-500/20 transition-all duration-500"
                 >
                   {/* Image Section */}
-                  <div className="h-72 w-full relative overflow-hidden bg-stone-950">
+                  <div className="h-72 w-full relative overflow-hidden bg-background">
                     <img 
                       src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop'} 
                       alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-80"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-80 group-hover:opacity-100"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0e0d0c] via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                     
                     {item.offerPrice && (
                       <div className="absolute top-6 right-6 bg-orange-600 text-white text-[10px] font-black uppercase px-4 py-2 rounded-xl shadow-2xl shadow-orange-600/30 rotate-6 z-10 border border-white/10">
@@ -136,7 +136,7 @@ export default function MenuPage() {
 
                     {/* Quick Rating Badge */}
                     {ratings[item._id]?.total > 0 && (
-                      <div className="absolute bottom-12 left-6 bg-stone-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-xl">
+                      <div className="absolute bottom-12 left-6 bg-background/90 backdrop-blur-md text-foreground px-3 py-1.5 rounded-full border border-glass-border flex items-center gap-1.5 shadow-xl">
                         <span className="text-orange-500">★</span>
                         <span className="text-[10px] font-black">{ratings[item._id].average}</span>
                         <span className="text-[8px] text-stone-500 font-bold">({ratings[item._id].total})</span>
@@ -155,23 +155,23 @@ export default function MenuPage() {
                              <span className="text-3xl font-black text-orange-600">
                                ₹{item.offerPrice}
                              </span>
-                             <span className="text-xs font-bold text-stone-600 line-through mt-1">
+                             <span className="text-xs font-bold text-stone-500 line-through mt-1">
                                ₹{item.price}
                              </span>
                            </>
                          ) : (
-                           <span className="text-3xl font-black text-white">
+                           <span className="text-3xl font-black text-foreground">
                              ₹{item.price}
                            </span>
                          )}
                        </div>
                     </div>
                     
-                    <h3 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase leading-tight group-hover:text-orange-500 transition-colors">
+                    <h3 className="text-3xl font-black text-foreground mb-4 tracking-tighter uppercase leading-tight group-hover:text-orange-500 transition-colors">
                       {item.name}
                     </h3>
                     
-                    <p className="text-stone-500 text-sm font-medium leading-relaxed italic mb-10 line-clamp-3">
+                    <p className="text-stone-500 dark:text-stone-400 text-sm font-medium leading-relaxed italic mb-10 line-clamp-3">
                       "{item.description}"
                     </p>
 
@@ -179,7 +179,7 @@ export default function MenuPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => addToCart(item)}
-                      className="w-full bg-white text-[#0e0d0c] py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 shadow-xl group-hover:bg-orange-600 group-hover:text-white"
+                      className="w-full bg-foreground text-background py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 shadow-xl group-hover:bg-orange-600 group-hover:text-white"
                     >
                       ADD TO FEAST
                       <span className="text-lg font-light opacity-40 group-hover:opacity-100">+</span>

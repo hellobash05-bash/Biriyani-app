@@ -17,13 +17,13 @@ export default function RestaurantCard({ name, description, type, rating, cuisin
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      className="premium-card group cursor-pointer flex flex-col h-full bg-white/40 dark:bg-stone-900/40 border border-gold-200/20 dark:border-gold-800/20"
+      className="premium-card group cursor-pointer flex flex-col h-full bg-card/40 border-glass-border"
     >
       {/* Visual Header */}
-      <div className="relative w-full h-48 mb-6 overflow-hidden rounded-[1.8rem] bg-gradient-to-br from-gold-100 to-gold-200 dark:from-stone-800 dark:to-stone-700">
+      <div className="relative w-full h-48 mb-6 overflow-hidden rounded-[1.8rem] bg-gradient-to-br from-orange-100 to-amber-100 dark:from-stone-800 dark:to-stone-700">
         <div className="absolute inset-0 biriyani-pattern opacity-20"></div>
         <div className="absolute top-4 left-4 z-10">
-          <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-white/90 dark:bg-stone-900/90 text-orange-700 dark:text-gold-400 shadow-xl backdrop-blur-md">
+          <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-background/90 text-orange-700 dark:text-gold-400 shadow-xl backdrop-blur-md">
             {type}
           </span>
         </div>
@@ -53,10 +53,10 @@ export default function RestaurantCard({ name, description, type, rating, cuisin
       </div>
       
       <div className="flex-1 px-2">
-        <h3 className="text-2xl font-black mb-3 text-stone-900 dark:text-gold-100 group-hover:text-orange-600 transition-colors tracking-tight">
+        <h3 className="text-2xl font-black mb-3 text-foreground group-hover:text-orange-600 transition-colors tracking-tight">
           {name}
         </h3>
-        <p className="text-stone-600 dark:text-gold-200/60 text-base mb-6 line-clamp-2 leading-relaxed italic font-medium">
+        <p className="text-stone-500 dark:text-stone-400 text-base mb-6 line-clamp-2 leading-relaxed italic font-medium">
           "{description}"
         </p>
       </div>
@@ -72,10 +72,11 @@ export default function RestaurantCard({ name, description, type, rating, cuisin
       <motion.button 
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="mt-8 w-full py-4 rounded-2xl bg-stone-900 dark:bg-gold-600 text-white dark:text-gold-950 font-black uppercase tracking-widest text-xs transition-all hover:bg-orange-600 dark:hover:bg-gold-500 hover:shadow-[0_10px_30px_rgba(234,88,12,0.3)]"
+        className="mt-8 w-full py-4 rounded-2xl bg-foreground text-background font-black uppercase tracking-widest text-xs transition-all hover:bg-orange-600 hover:text-white hover:shadow-[0_10px_30px_rgba(234,88,12,0.3)]"
       >
         Order Now
       </motion.button>
+    </motion.div>
     </motion.div>
   );
 }

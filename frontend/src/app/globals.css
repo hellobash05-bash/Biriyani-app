@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdfcfb; /* Soft Cream Light */
-  --foreground: #0e0d0c; /* Deep Dark */
+  --background: #fafaf9; /* Stone 50 - Premium Cream */
+  --foreground: #1c1917; /* Stone 900 - Deep Charcoal */
   
   --primary: #f97316;
   --primary-foreground: #ffffff;
 
+  /* Cards in Light Mode: White with subtle border and deep shadow */
   --card: #ffffff;
-  --card-foreground: #0e0d0c;
-  --card-border: rgba(0, 0, 0, 0.05);
+  --card-foreground: #1c1917;
+  --card-border: rgba(28, 25, 23, 0.08);
 
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
+  --muted: #f5f5f4;
+  --muted-foreground: #78716c;
 
   --accent: #f97316;
   --accent-foreground: #ffffff;
@@ -20,21 +21,23 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: #e5e7eb;
-  --input-bg: #f3f4f6;
-  --input-border: #e5e7eb;
-  --input-text: #0e0d0c;
+  --border: #e7e5e4;
+  
+  /* HIGH CONTRAST LIGHT MODE: Inputs are dark even in light mode for a premium look */
+  --input-bg: #1c1917; 
+  --input-border: #1c1917;
+  --input-text: #ffffff;
 
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(28, 25, 23, 0.1);
 
-  --color-gold-200: #b45309; 
+  --color-gold-200: #854d0e; /* Deep Gold */
   --color-gold-500: #d97706;
-  --color-gold-950: #ffffff;
+  --color-gold-950: #1c1917;
 }
 
 .dark {
-  --background: #0e0d0c; /* Deep Dark */
+  --background: #0e0d0c; /* Deep Royale Dark */
   --foreground: #ffffff; /* Clean White */
   
   --primary: #f97316;
@@ -45,7 +48,7 @@
   --card-border: rgba(255, 255, 255, 0.03);
 
   --muted: #1a1917;
-  --muted-foreground: #9ca3af;
+  --muted-foreground: #a8a29e;
 
   --accent: #f97316;
   --accent-foreground: #ffffff;
@@ -110,25 +113,28 @@
 }
 
 @utility glass {
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
   background-color: var(--glass-bg);
   border: 1px solid var(--glass-border);
 }
 
 @utility premium-card {
   background-color: var(--card);
+  color: var(--foreground);
   border-radius: 2.5rem;
   padding: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 30px 60px -12px rgba(28, 25, 23, 0.12);
   border: 1px solid var(--card-border);
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   .dark & {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
 
   &:hover {
-    border-color: rgba(249, 115, 22, 0.2);
+    transform: translateY(-4px);
+    border-color: rgba(249, 115, 22, 0.3);
+    box-shadow: 0 40px 80px -15px rgba(28, 25, 23, 0.15);
   }
 }
 
@@ -143,7 +149,7 @@
 @utility biriyani-pattern {
   background-image: radial-gradient(#f97316 0.5px, transparent 0.5px);
   background-size: 32px 32px;
-  opacity: 0.03;
+  opacity: 0.05;
 }
 
 @utility text-glow {
@@ -158,6 +164,7 @@ body {
   overflow-x: hidden;
   width: 100%;
   cursor: default;
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 button, a, label, [role="button"] {

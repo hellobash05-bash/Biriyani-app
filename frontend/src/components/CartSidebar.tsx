@@ -26,17 +26,17 @@ export default function CartSidebar() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-[#0e0d0c] shadow-2xl z-[100] flex flex-col border-l border-white/5"
+            className="fixed top-0 right-0 h-full w-full max-w-md bg-background shadow-2xl z-[100] flex flex-col border-l border-glass-border"
           >
             {/* Header */}
-            <div className="p-8 border-b border-white/5 flex justify-between items-center">
+            <div className="p-8 border-b border-glass-border flex justify-between items-center">
               <div>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Your Feast</h2>
+                <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter">Your Feast</h2>
                 <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">{itemCount} Items Selected</p>
               </div>
               <button 
                 onClick={() => setIsCartOpen(false)}
-                className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white hover:bg-red-500/10 hover:text-red-500 transition-all"
+                className="w-12 h-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-foreground hover:bg-red-500/10 hover:text-red-500 transition-all"
               >
                 ✕
               </button>
@@ -50,21 +50,21 @@ export default function CartSidebar() {
                     <div key={item._id} className="flex justify-between items-center group">
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-black uppercase tracking-widest text-orange-600/60">{item.category}</span>
-                        <h4 className="text-lg font-black text-white tracking-tight leading-none mb-1 group-hover:text-orange-500 transition-colors">{item.name}</h4>
+                        <h4 className="text-lg font-black text-foreground tracking-tight leading-none mb-1 group-hover:text-orange-500 transition-colors">{item.name}</h4>
                         <p className="text-sm font-bold text-stone-500">₹{item.price} EACH</p>
                       </div>
                       
-                      <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/5">
+                      <div className="flex items-center gap-4 bg-foreground/5 p-2 rounded-2xl border border-glass-border">
                         <button 
                           onClick={() => updateQuantity(item._id, -1)}
-                          className="w-8 h-8 flex items-center justify-center font-black text-white hover:text-orange-600 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center font-black text-foreground hover:text-orange-600 transition-colors"
                         >
                           -
                         </button>
-                        <span className="text-sm font-black w-4 text-center text-white">{item.quantity}</span>
+                        <span className="text-sm font-black w-4 text-center text-foreground">{item.quantity}</span>
                         <button 
                           onClick={() => updateQuantity(item._id, 1)}
-                          className="w-8 h-8 flex items-center justify-center font-black text-white hover:text-orange-600 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center font-black text-foreground hover:text-orange-600 transition-colors"
                         >
                           +
                         </button>
@@ -82,10 +82,10 @@ export default function CartSidebar() {
 
             {/* Footer */}
             {cart.length > 0 && (
-              <div className="p-8 pb-32 md:pb-8 border-t border-white/5 bg-white/2 backdrop-blur-xl">
+              <div className="p-8 pb-32 md:pb-8 border-t border-glass-border bg-background/2 backdrop-blur-xl">
                 <div className="flex justify-between items-center mb-8">
                   <span className="text-stone-500 font-black uppercase tracking-widest text-[10px]">Total Amount</span>
-                  <span className="text-4xl font-black text-white tracking-tighter">₹{total}</span>
+                  <span className="text-4xl font-black text-foreground tracking-tighter">₹{total}</span>
                 </div>
                 <div className="flex flex-col gap-4">
                    <Link href="/checkout" className="w-full">

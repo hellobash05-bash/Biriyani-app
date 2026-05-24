@@ -83,18 +83,18 @@ export default function OrderTrackingPage() {
   }, [orderId]);
 
   if (loading) {
-    return <div className="min-h-screen bg-stone-950 flex items-center justify-center text-white">Loading Tracker...</div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Loading Tracker...</div>;
   }
 
   if (!order) {
-    return <div className="min-h-screen bg-stone-950 flex items-center justify-center text-white">Order not found.</div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Order not found.</div>;
   }
 
   const currentStepIndex = STATUS_STEPS.indexOf(order.status);
   const progressPercentage = Math.max(0, (currentStepIndex / (STATUS_STEPS.length - 1)) * 100);
 
   return (
-    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 bg-stone-50 dark:bg-stone-950 relative overflow-hidden">
+    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 bg-background text-foreground relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern opacity-[0.03] dark:opacity-10" />
       <Navbar />
 
@@ -105,7 +105,7 @@ export default function OrderTrackingPage() {
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="inline-block bg-orange-500/10 text-orange-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
             Live Tracking
           </motion.div>
-          <h1 className="text-3xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter mb-1">Order #{order._id.slice(-6)}</h1>
+          <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-1">Order #{order._id.slice(-6)}</h1>
           {order.status === 'Cancelled' ? (
             <p className="text-red-500 text-sm font-bold uppercase tracking-widest">Order Cancelled</p>
           ) : (
@@ -117,9 +117,10 @@ export default function OrderTrackingPage() {
         {order.status === 'Delivered' && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="flex flex-col gap-8 mb-4">
              <div className="text-center">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tight">How was your Feast?</h2>
+                <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">How was your Feast?</h2>
                 <p className="text-stone-500 text-sm italic">Share your experience to help our chefs.</p>
              </div>
+
              <div className="flex flex-col gap-6">
                 {order.items.map((item: any, idx: number) => (
                   <ReviewForm key={idx} orderId={order._id} foodItem={item} onSuccess={() => {}} />
@@ -131,9 +132,9 @@ export default function OrderTrackingPage() {
         {order.status === 'Cancelled' && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-8 bg-red-500/5 border-red-500/20 text-center">
             <div className="w-16 h-16 bg-red-500/10 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-black">✕</div>
-            <h2 className="text-xl font-black text-stone-900 dark:text-gold-100 uppercase tracking-tighter mb-2">Order Cancelled</h2>
+            <h2 className="text-xl font-black text-foreground uppercase tracking-tighter mb-2">Order Cancelled</h2>
             <p className="text-stone-500 text-sm font-medium italic mb-6">We're sorry, your order has been cancelled by the restaurant. Please reach out to our support team for any queries.</p>
-            <button className="px-6 py-3 bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 rounded-xl font-black uppercase tracking-widest text-[10px]">Contact Support</button>
+            <button className="px-6 py-3 bg-foreground text-background rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-colors">Contact Support</button>
           </motion.div>
         )}
 
@@ -144,7 +145,7 @@ export default function OrderTrackingPage() {
              
              <div className="relative pt-2 pb-8">
                {/* Background Line */}
-               <div className="absolute top-6 left-[10%] right-[10%] h-1 bg-stone-200 dark:bg-white/10 rounded-full" />
+               <div className="absolute top-6 left-[10%] right-[10%] h-1 bg-foreground/10 rounded-full" />
                
                {/* Animated Progress Line */}
                <motion.div 
@@ -165,14 +166,14 @@ export default function OrderTrackingPage() {
                          initial={false}
                          animate={{ 
                            scale: isCurrent ? 1.2 : 1,
-                           backgroundColor: isCompleted ? '#f97316' : '#292524',
+                           backgroundColor: isCompleted ? '#f97316' : 'var(--input-bg)',
                            borderColor: isCurrent ? '#fbbf24' : 'transparent'
                          }}
                          className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-lg transition-colors border-2 ${isCompleted ? 'text-white' : 'text-stone-600'}`}
                        >
                          {isCompleted && <span className="text-[10px] md:text-xs">✓</span>}
                        </motion.div>
-                       <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center transition-colors ${isCurrent ? 'text-orange-500' : isCompleted ? 'text-stone-900 dark:text-gold-100' : 'text-stone-400'}`}>
+                       <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center transition-colors ${isCurrent ? 'text-orange-500' : isCompleted ? 'text-foreground' : 'text-stone-400'}`}>
                          {step.split(' ').join('\n')}
                        </span>
                        
@@ -198,11 +199,11 @@ export default function OrderTrackingPage() {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">Your Delivery Partner</h3>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-stone-900 dark:bg-gold-500 rounded-2xl flex items-center justify-center text-white dark:text-gold-950 font-black text-xl shadow-lg">
+                <div className="w-12 h-12 bg-foreground text-background rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">
                   🛵
                 </div>
                 <div>
-                  <p className="font-black text-stone-900 dark:text-gold-100 text-lg uppercase tracking-tight">{order.deliveryPartner.name}</p>
+                  <p className="font-black text-foreground text-lg uppercase tracking-tight">{order.deliveryPartner.name}</p>
                   <p className="text-xs font-bold text-stone-500">{order.deliveryPartner.vehicleNumber}</p>
                 </div>
               </div>
@@ -216,27 +217,27 @@ export default function OrderTrackingPage() {
         {/* Order Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="premium-card p-6 flex flex-col gap-4">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 border-b border-stone-100 dark:border-white/5 pb-2">Delivery Address</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 border-b border-glass-border pb-2">Delivery Address</h3>
             <div>
-              <p className="font-bold text-stone-900 dark:text-gold-100">{order.customer.name}</p>
+              <p className="font-bold text-foreground">{order.customer.name}</p>
               <p className="text-xs text-stone-500 mt-1">{order.customer.phone}</p>
-              <p className="text-sm font-medium text-stone-600 dark:text-gold-200/60 mt-3 leading-relaxed">
+              <p className="text-sm font-medium text-stone-500 dark:text-stone-400 mt-3 leading-relaxed">
                 {order.customer.address.fullAddress || order.customer.address}
               </p>
             </div>
           </motion.div>
 
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="premium-card p-6 flex flex-col gap-4">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 border-b border-stone-100 dark:border-white/5 pb-2">Receipt</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 border-b border-glass-border pb-2">Receipt</h3>
             <div className="flex flex-col gap-2">
               {order.items.map((item: any, idx: number) => (
                 <div key={idx} className="flex justify-between items-center text-sm font-medium">
-                  <span className="text-stone-600 dark:text-gold-200/60">{item.quantity}x {item.name}</span>
+                  <span className="text-stone-500 dark:text-stone-400">{item.quantity}x {item.name}</span>
                 </div>
               ))}
             </div>
-            <div className="border-t border-stone-100 dark:border-white/5 pt-4 mt-auto flex justify-between items-center">
-              <span className="font-black text-stone-900 dark:text-gold-100 uppercase text-xs tracking-widest">Total Paid</span>
+            <div className="border-t border-glass-border pt-4 mt-auto flex justify-between items-center">
+              <span className="font-black text-foreground uppercase text-xs tracking-widest">Total Paid</span>
               <span className="text-xl font-black text-orange-600">₹{order.totalAmount}</span>
             </div>
           </motion.div>
