@@ -19,20 +19,21 @@ const httpServer = createServer(app);
 
 app.get('/api/version', (req, res) => {
   res.json({ 
-    version: '1.2.3', 
+    version: '1.2.4', 
     status: 'Royale Backend Online',
+    sync_id: 'ROYALE-SYNC-999',
     timestamp: new Date().toISOString()
   });
 });
 
 app.get('/ping', (req, res) => {
-  res.send('pong');
+  res.send('pong-1.2.4');
 });
 
-console.log('--- ROYALE BACKEND BOOTING V1.2.3 ---');
+console.log('--- ROYALE BACKEND BOOTING V1.2.4 ---');
 
 app.get('/', (req, res) => {
-  res.send('<h1>Biriyani Backend is Running</h1><p>Please visit the frontend at <a href="http://localhost:3000">localhost:3000</a></p>');
+  res.send('<h1>Biriyani Backend V1.2.4 (SYNC-999)</h1><p>If you see this, the sync is working!</p>');
 });
 const io = new Server(httpServer, {
   cors: {
