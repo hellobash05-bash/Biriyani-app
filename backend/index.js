@@ -438,26 +438,33 @@ app.get('/api/admin/reviews', async (req, res) => {
 
 // --- REVIEW ROUTES ---
 app.post('/api/reviews', async (req, res) => {
+  console.log('--- NEW REVIEW REQUEST RECEIVED ---');
+  console.log('Body:', req.body);
   try {
     let { userId, userName, foodId, orderId, rating, comment, foodName } = req.body;
 
     // Fallback: If foodId is missing, try to find it by name
     if (!foodId && foodName) {
+      console.log('Missing foodId, looking up by name:', foodName);
       const item = await MenuItem.findOne({ name: new RegExp(`^${foodName}$`, 'i') });
       if (item) {
         foodId = item._id;
+        console.log('Found foodId:', foodId);
       } else {
+        console.error('MenuItem not found for name:', foodName);
         return res.status(400).json({ message: 'MenuItem not found for this review.' });
       }
     }
 
     if (!foodId) {
+      console.error('Final validation failed: Missing foodId');
       return res.status(400).json({ message: 'Missing foodId for review.' });
     }
 
     // Check if review already exists for this order/food combo
     const existingReview = await Review.findOne({ orderId, foodId });
     if (existingReview) {
+      console.log('Duplicate review blocked for order:', orderId);
       return res.status(400).json({ message: 'You have already reviewed this item for this order.' });
     }
 
@@ -471,13 +478,16 @@ app.post('/api/reviews', async (req, res) => {
     });
 
     await review.save();
+    console.log('Review saved successfully to MongoDB');
 
     // Emit real-time event for admin
     const menuItem = await MenuItem.findById(foodId);
     req.io.emit('newReview', { ...review._doc, foodId: { name: menuItem?.name } });
+    console.log('Socket event "newReview" emitted to admin');
 
     res.status(201).json(review);
   } catch (error) {
+    console.error('REVIEW SUBMISSION ERROR:', error);
     res.status(400).json({ message: error.message });
   }
 });
