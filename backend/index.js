@@ -495,13 +495,17 @@ app.patch('/api/admin/menu/:id', async (req, res) => {
 
         await Promise.all(notificationPromises);
 
+        console.log(`--- SENDING SMART NOTIFICATION: ${title} ---`);
+        console.log(`Users affected: ${interestedUsers.length}`);
+
         // Emit real-time notification to all interested users connected via socket
         req.io.emit('smartNotification', {
           title,
           message,
-          foodId: updatedItem._id,
-          userIds: interestedUsers.map(u => u._id.toString()) // Stringify for frontend comparison
+          foodId: updatedItem._id.toString(),
+          userIds: interestedUsers.map(u => u._id.toString()) // Robust stringification
         });
+        console.log('Smart notification emitted successfully');
       }
     }
 

@@ -33,11 +33,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [socket, setSocket] = useState<Socket | null>(null);
 
   const playNotificationSound = () => {
-    console.log('Playing offer notification sound...');
+    console.log('🔔 ATTEMPTING TO PLAY OFFER SOUND...');
     const audio = new Audio(NOTIFICATION_SOUND);
-    audio.play().catch(err => {
-      console.warn('Audio play blocked or failed. User may need to interact with the page first.', err);
-    });
+    audio.volume = 0.8;
+    audio.play()
+      .then(() => console.log('✅ OFFER SOUND PLAYED SUCCESSFULY'))
+      .catch(err => {
+        console.warn('❌ OFFER SOUND BLOCKED:', err);
+        // Sometimes a second attempt works if the first is blocked but user just clicked
+        setTimeout(() => {
+          audio.play().catch(() => {});
+        }, 500);
+      });
   };
 
   const refreshNotifications = async () => {
@@ -56,32 +63,42 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [profile?._id]);
 
   useEffect(() => {
+    if (!profile?._id) return;
+
     const socketInstance = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
     });
     setSocket(socketInstance);
 
+    socketInstance.on('connect', () => {
+      console.log('✅ Notification Socket Connected');
+    });
+
     socketInstance.on('smartNotification', (data: any) => {
-      console.log('Smart notification received:', data.title);
-      // Check if this notification is for the current user
-      // Ensure IDs are compared as strings
+      console.log('📢 Received smartNotification event:', data.title);
+      
       const currentUserId = profile?._id?.toString();
-      const targetUserIds = data.userIds.map((id: any) => id.toString());
+      const targetUserIds = data.userIds || [];
+
+      console.log('User Matching Check:', { 
+        currentUserId, 
+        isTargeted: targetUserIds.includes(currentUserId) 
+      });
 
       if (currentUserId && targetUserIds.includes(currentUserId)) {
-        console.log('Notification belongs to current user, playing sound...');
+        console.log('🎯 Match found! Playing notification...');
         playNotificationSound();
         
         toast.success(
           (t) => (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 min-w-[280px]">
               <div className="flex flex-col">
-                <span className="font-black uppercase tracking-tight">{data.title}</span>
-                <span className="text-[10px] opacity-80">{data.message}</span>
+                <span className="font-black uppercase tracking-tight text-sm">{data.title}</span>
+                <span className="text-[10px] font-bold opacity-70 leading-tight">{data.message}</span>
               </div>
               <button 
                 onClick={() => toast.dismiss(t.id)}
-                className="bg-orange-500/10 text-orange-600 w-6 h-6 rounded-full flex items-center justify-center font-black text-xs hover:bg-orange-500 hover:text-white transition-all"
+                className="bg-orange-500/10 text-orange-600 w-8 h-8 rounded-full flex items-center justify-center font-black text-xs hover:bg-orange-500 hover:text-white transition-all shrink-0"
               >
                 ✕
               </button>
@@ -89,7 +106,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           ),
           {
             icon: '🔥',
-            duration: 30000 // 30 seconds for special offers
+            duration: 30000,
+            position: 'top-right'
           }
         );
         refreshNotifications();
@@ -97,6 +115,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     });
 
     return () => {
+      socketInstance.off('smartNotification');
       socketInstance.disconnect();
     };
   }, [profile?._id]);
