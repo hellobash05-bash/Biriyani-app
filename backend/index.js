@@ -20,9 +20,9 @@ const httpServer = createServer(app);
 
 app.get('/api/version', (req, res) => {
   res.json({ 
-    version: '1.2.4', 
+    version: '1.2.5', 
     status: 'Royale Backend Online',
-    sync_id: 'ROYALE-SYNC-999',
+    sync_id: 'ROYALE-SYNC-1000',
     timestamp: new Date().toISOString()
   });
 });
@@ -431,11 +431,15 @@ app.get('/api/admin/delivery-partners', async (req, res) => {
 });
 
 app.post('/api/admin/delivery-partners', async (req, res) => {
+  console.log('--- NEW DELIVERY PARTNER REQUEST ---');
+  console.log('Body:', req.body);
   try {
     const newPartner = new DeliveryPartner(req.body);
     await newPartner.save();
+    console.log('Partner saved successfully');
     res.status(201).json(newPartner);
   } catch (error) {
+    console.error('PARTNER SAVE ERROR:', error);
     res.status(400).json({ message: error.message });
   }
 });
