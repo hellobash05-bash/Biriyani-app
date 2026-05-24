@@ -177,7 +177,10 @@ export async function addDeliveryPartner(partnerData: any) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(partnerData),
   });
-  if (!response.ok) throw new Error('Failed to add delivery partner');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to add delivery partner');
+  }
   return response.json();
 }
 
@@ -187,7 +190,10 @@ export async function updateDeliveryPartner(id: string, partnerData: any) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(partnerData),
   });
-  if (!response.ok) throw new Error('Failed to update delivery partner');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to update delivery partner');
+  }
   return response.json();
 }
 

@@ -46,8 +46,8 @@ export default function AdminDeliveryPartners() {
       setIsAdding(false);
       setEditingItem(null);
       loadPartners();
-    } catch (err) {
-      toast.error('Failed to save partner');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save partner');
     }
   };
 
