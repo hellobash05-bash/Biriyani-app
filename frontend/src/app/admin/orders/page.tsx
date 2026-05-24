@@ -12,6 +12,7 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [activeTab, setActiveTab] = useState<'live' | 'history'>('live');
   
   // State for partner assignment modal
   const [assigningOrder, setAssigningOrder] = useState<any>(null);
@@ -27,6 +28,10 @@ export default function AdminOrders() {
       setLoading(false);
     }
   }
+
+  const liveOrders = orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status));
+  const historyOrders = orders.filter(o => ['Delivered', 'Cancelled'].includes(o.status));
+  const displayOrders = activeTab === 'live' ? liveOrders : historyOrders;
 
   useEffect(() => {
     loadOrders();
@@ -111,18 +116,40 @@ export default function AdminOrders() {
     <div className="flex flex-col gap-6 md:gap-8 relative">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-2 leading-none">Live Orders</h1>
-          <p className="text-stone-500 font-medium italic text-xs uppercase tracking-widest">Real-time management • Socket.IO enabled</p>
+          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-2 leading-none">
+            {activeTab === 'live' ? 'Live Orders' : 'Order History'}
+          </h1>
+          <p className="text-stone-500 font-medium italic text-xs uppercase tracking-widest">
+            {activeTab === 'live' ? 'Real-time management • Socket.IO enabled' : 'Record of completed & cancelled feasts'}
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-500 bg-green-500/5 border border-green-500/10 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.1)]">
-            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Live
-          </div>
+          {activeTab === 'live' && (
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-500 bg-green-500/5 border border-green-500/10 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.1)]">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Live
+            </div>
+          )}
           <button onClick={loadOrders} className="p-4 bg-foreground/5 rounded-2xl border border-glass-border hover:bg-foreground/10 transition-all font-black text-xs">
              🔄
           </button>
         </div>
       </header>
+
+      {/* Tabs */}
+      <div className="flex gap-2 p-1.5 bg-foreground/5 rounded-[2rem] border border-glass-border self-start">
+        <button 
+          onClick={() => setActiveTab('live')}
+          className={`px-8 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'live' ? 'bg-orange-600 text-white shadow-lg' : 'text-stone-500 hover:text-foreground'}`}
+        >
+          Live ({liveOrders.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('history')}
+          className={`px-8 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-stone-500 hover:text-foreground'}`}
+        >
+          History ({historyOrders.length})
+        </button>
+      </div>
 
       {/* Partner Assignment Modal */}
       <AnimatePresence>
@@ -159,7 +186,7 @@ export default function AdminOrders() {
 
       <div className="flex flex-col gap-8">
         <AnimatePresence mode='popLayout'>
-          {orders.map((order) => (
+          {displayOrders.map((order) => (
             <motion.div
               key={order._id}
               layout
@@ -174,7 +201,10 @@ export default function AdminOrders() {
                     <div className="flex justify-between items-start mb-8">
                        <div>
                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">CULINARY ORDER</span>
-                         <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order._id.slice(-6)}</span>
+                         <div className="flex flex-col gap-1">
+                           <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order._id.slice(-6)}</span>
+                           <span className="font-mono text-[9px] text-stone-400 select-all" title="Click to copy full ID">ID: {order._id}</span>
+                         </div>
                        </div>
                        <div className="text-right">
                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">ROYALE TOTAL</span>
