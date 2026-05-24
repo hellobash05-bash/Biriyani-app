@@ -3,39 +3,67 @@
 :root {
   --background: #fdfcfb; /* Soft Cream Light */
   --foreground: #0e0d0c; /* Deep Dark */
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(0, 0, 0, 0.1);
   
-  --color-royale-card: #ffffff;
-  --color-royale-card-border: rgba(0, 0, 0, 0.05);
-  
+  --primary: #f97316;
+  --primary-foreground: #ffffff;
+
+  --card: #ffffff;
+  --card-foreground: #0e0d0c;
+  --card-border: rgba(0, 0, 0, 0.05);
+
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+
+  --accent: #f97316;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #e5e7eb;
   --input-bg: #f3f4f6;
   --input-border: #e5e7eb;
   --input-text: #0e0d0c;
 
-  --color-gold-200: #b45309; /* Darker Gold for light mode */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.1);
+
+  --color-gold-200: #b45309; 
   --color-gold-500: #d97706;
   --color-gold-950: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0e0d0c; /* Deep Dark */
-    --foreground: #ffffff; /* Clean White */
-    --glass-bg: rgba(26, 25, 23, 0.8);
-    --glass-border: rgba(255, 255, 255, 0.05);
+.dark {
+  --background: #0e0d0c; /* Deep Dark */
+  --foreground: #ffffff; /* Clean White */
+  
+  --primary: #f97316;
+  --primary-foreground: #ffffff;
 
-    --color-royale-card: #1a1917;
-    --color-royale-card-border: rgba(255, 255, 255, 0.03);
+  --card: #1a1917;
+  --card-foreground: #ffffff;
+  --card-border: rgba(255, 255, 255, 0.03);
 
-    --input-bg: rgba(255, 255, 255, 0.05);
-    --input-border: rgba(255, 255, 255, 0.1);
-    --input-text: #ffffff;
+  --muted: #1a1917;
+  --muted-foreground: #9ca3af;
 
-    --color-gold-200: #ffecb3;
-    --color-gold-500: #f59e0b;
-    --color-gold-950: #451a03;
-  }
+  --accent: #f97316;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-text: #ffffff;
+
+  --glass-bg: rgba(26, 25, 23, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.05);
+
+  --color-gold-200: #ffecb3;
+  --color-gold-500: #f59e0b;
+  --color-gold-950: #451a03;
 }
 
 @theme inline {
@@ -44,23 +72,39 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-border: var(--card-border);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-input-text: var(--input-text);
+
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
-
-  /* Royale Palette */
-  --color-royale-orange: #f97316;
-  --color-royale-dark: #0e0d0c;
-  --color-royale-card: var(--color-royale-card);
 
   /* Gold Tones */
   --color-gold-200: var(--color-gold-200);
   --color-gold-500: var(--color-gold-500);
   --color-gold-950: var(--color-gold-950);
 
-  /* Inputs */
-  --color-input-bg: var(--input-bg);
-  --color-input-border: var(--input-border);
-  --color-input-text: var(--input-text);
+  /* Royale Palette (Legacy mappings) */
+  --color-royale-orange: #f97316;
+  --color-royale-dark: #0e0d0c;
+  --color-royale-card: var(--card);
 
   --breakpoint-xs: 480px;
 }
@@ -72,14 +116,14 @@
 }
 
 @utility premium-card {
-  background-color: var(--color-royale-card);
+  background-color: var(--card);
   border-radius: 2.5rem;
   padding: 1.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--color-royale-card-border);
+  border: 1px solid var(--card-border);
   transition: all 0.3s ease;
 
-  @media (prefers-color-scheme: dark) {
+  .dark & {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
 

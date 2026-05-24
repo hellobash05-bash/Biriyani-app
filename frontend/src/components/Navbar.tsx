@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { ThemeToggle } from './ThemeToggle';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +36,8 @@ export default function Navbar() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 sm:gap-4">
+          <ThemeToggle />
+
           <motion.button 
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsCartOpen(true)}
