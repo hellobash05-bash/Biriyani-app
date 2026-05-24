@@ -64,15 +64,15 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-600 relative overflow-hidden bg-background">
-      <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern" />
+    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-200 relative overflow-hidden bg-background">
+      <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern opacity-[0.03] dark:opacity-[0.07]" />
       
       <Navbar />
 
-      <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-7xl mx-auto">
+      <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-7xl mx-auto text-foreground">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-12">
           {/* User Header */}
-          <section className="flex flex-col md:flex-row items-center gap-8 premium-card !bg-background/40 backdrop-blur-xl p-10 rounded-[3rem] relative overflow-hidden">
+          <section className="flex flex-col md:flex-row items-center gap-8 premium-card p-10 rounded-[3rem] relative overflow-hidden">
             <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20">
               {profile?.name?.charAt(0) || user?.displayName?.charAt(0) || 'A'}
             </div>
@@ -175,7 +175,6 @@ export default function ProfilePage() {
                 )}
               </div>
             </section>
-
           </div>
 
           {/* Addresses Section - Full Width Below */}
