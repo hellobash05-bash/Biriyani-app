@@ -429,8 +429,22 @@ app.get('/api/admin/reviews', async (req, res) => {
 // --- REVIEW ROUTES ---
 app.post('/api/reviews', async (req, res) => {
   try {
-    const { userId, userName, foodId, orderId, rating, comment } = req.body;
-    
+    let { userId, userName, foodId, orderId, rating, comment, foodName } = req.body;
+
+    // Fallback: If foodId is missing, try to find it by name
+    if (!foodId && foodName) {
+      const item = await MenuItem.findOne({ name: new RegExp(`^${foodName}$`, 'i') });
+      if (item) {
+        foodId = item._id;
+      } else {
+        return res.status(400).json({ message: 'MenuItem not found for this review.' });
+      }
+    }
+
+    if (!foodId) {
+      return res.status(400).json({ message: 'Missing foodId for review.' });
+    }
+
     // Check if review already exists for this order/food combo
     const existingReview = await Review.findOne({ orderId, foodId });
     if (existingReview) {
@@ -445,18 +459,18 @@ app.post('/api/reviews', async (req, res) => {
       rating,
       comment
     });
-    
+
     await review.save();
-    
+
     // Emit real-time event for admin
-    req.io.emit('newReview', { ...review._doc, foodId: { name: (await MenuItem.findById(foodId))?.name } });
-    
+    const menuItem = await MenuItem.findById(foodId);
+    req.io.emit('newReview', { ...review._doc, foodId: { name: menuItem?.name } });
+
     res.status(201).json(review);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
-
 app.get('/api/reviews/:foodId', async (req, res) => {
   try {
     const reviews = await Review.find({ foodId: req.params.foodId }).sort({ createdAt: -1 });

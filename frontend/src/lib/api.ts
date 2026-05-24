@@ -195,6 +195,7 @@ export async function submitReview(reviewData: {
   userId: string;
   userName: string;
   foodId: string;
+  foodName?: string;
   orderId: string;
   rating: number;
   comment: string;

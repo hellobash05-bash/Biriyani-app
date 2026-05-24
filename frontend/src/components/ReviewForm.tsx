@@ -30,17 +30,13 @@ export default function ReviewForm({ orderId, foodItem, onSuccess }: ReviewFormP
     }
     if (!user || !profile) return;
 
-    if (!foodItem.foodId) {
-      toast.error('Cannot review older orders. Please try on a new order!');
-      return;
-    }
-
     setLoading(true);
     try {
       await submitReview({
         userId: profile._id,
         userName: profile.name || user.displayName || 'Royale Member',
-        foodId: foodItem.foodId, 
+        foodId: foodItem.foodId,
+        foodName: foodItem.name, // Fallback for name-based lookup in backend
         orderId,
         rating,
         comment
@@ -53,8 +49,7 @@ export default function ReviewForm({ orderId, foodItem, onSuccess }: ReviewFormP
     } finally {
       setLoading(false);
     }
-  };
-
+    };
   if (submitted) {
     return (
       <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-3xl text-center">
