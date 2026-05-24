@@ -28,9 +28,10 @@ export default function LoadingScreen() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 1, ease: "easeOut" }}
-              className="w-24 h-24 bg-gradient-to-tr from-gold-600 to-orange-400 rounded-3xl flex items-center justify-center text-white text-5xl font-black shadow-[0_0_50px_rgba(234,88,12,0.3)]"
+              className="w-24 h-24 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-3xl flex items-center justify-center text-white text-5xl font-black shadow-[0_0_50px_rgba(249,115,22,0.3)] relative"
             >
-              B
+              BR
+              <span className="absolute bottom-2 right-2 text-[8px] opacity-40 font-black">v1.1</span>
             </motion.div>
             <motion.div
               animate={{ 
@@ -50,17 +51,17 @@ export default function LoadingScreen() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="mt-8 flex flex-col items-center"
+            className="mt-12 flex flex-col items-center"
           >
-            <div className="text-gold-200 font-black tracking-[0.5em] uppercase text-xs mb-4">
-              Biriyani Royale
+            <div className="text-foreground font-black tracking-[0.6em] uppercase text-[10px] mb-6">
+              Biriyani <span className="text-orange-600">Royale</span>
             </div>
-            <div className="w-48 h-[1px] bg-gold-900/30 relative overflow-hidden">
+            <div className="w-48 h-1 bg-foreground/5 rounded-full relative overflow-hidden">
                <motion.div 
                  initial={{ x: "-100%" }}
                  animate={{ x: "100%" }}
-                 transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                 className="absolute inset-0 bg-gradient-to-r from-transparent via-gold-500 to-transparent w-full"
+                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                 className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500 to-transparent w-full"
                />
             </div>
           </motion.div>
