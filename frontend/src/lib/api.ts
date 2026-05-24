@@ -161,11 +161,46 @@ export async function fetchCustomers() {
 
 export async function fetchAdminReviews() {
   const response = await fetch(`${API_BASE_URL}/admin/reviews`);
-  if (!response.ok) throw new Error('Failed to fetch admin reviews');
+  if (!response.ok) throw new Error('Failed to fetch reviews');
   return response.json();
 }
 
-export async function fetchAnalytics() {
+export async function fetchDeliveryPartners() {
+  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners`);
+  if (!response.ok) throw new Error('Failed to fetch delivery partners');
+  return response.json();
+}
+
+export async function addDeliveryPartner(partnerData: any) {
+  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(partnerData),
+  });
+  if (!response.ok) throw new Error('Failed to add delivery partner');
+  return response.json();
+}
+
+export async function updateDeliveryPartner(id: string, partnerData: any) {
+  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(partnerData),
+  });
+  if (!response.ok) throw new Error('Failed to update delivery partner');
+  return response.json();
+}
+
+export async function deleteDeliveryPartner(id: string) {
+  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Failed to delete delivery partner');
+  return response.json();
+}
+
+export async function fetchReviews(foodId: string) {
+
   const response = await fetch(`${API_BASE_URL}/admin/analytics`);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

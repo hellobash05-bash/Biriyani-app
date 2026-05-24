@@ -11,6 +11,7 @@ import { User } from './models/User.js';
 import { Restaurant } from './models/Restaurant.js';
 import { Review } from './models/Review.js';
 import { Notification } from './models/Notification.js';
+import { DeliveryPartner } from './models/DeliveryPartner.js';
 
 dotenv.config();
 
@@ -414,6 +415,44 @@ app.delete('/api/admin/menu/:id', async (req, res) => {
   try {
     await MenuItem.findByIdAndDelete(req.params.id);
     res.json({ message: 'Item deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// --- ADMIN DELIVERY PARTNER MANAGEMENT ---
+app.get('/api/admin/delivery-partners', async (req, res) => {
+  try {
+    const partners = await DeliveryPartner.find().sort({ createdAt: -1 });
+    res.json(partners);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/admin/delivery-partners', async (req, res) => {
+  try {
+    const newPartner = new DeliveryPartner(req.body);
+    await newPartner.save();
+    res.status(201).json(newPartner);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.patch('/api/admin/delivery-partners/:id', async (req, res) => {
+  try {
+    const updatedPartner = await DeliveryPartner.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedPartner);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete('/api/admin/delivery-partners/:id', async (req, res) => {
+  try {
+    await DeliveryPartner.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Partner deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -4,37 +4,39 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import { fetchAdminOrders, updateOrderStatus, SOCKET_URL } from '@/lib/api';
+import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners, SOCKET_URL } from '@/lib/api';
 
 const STATUS_OPTIONS = ['Pending', 'Preparing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'history'>('live');
   
   // State for partner assignment modal
   const [assigningOrder, setAssigningOrder] = useState<any>(null);
-  const [partnerDetails, setPartnerDetails] = useState({ name: '', phone: '', vehicleNumber: '' });
+  const [selectedPartnerId, setSelectedPartnerId] = useState('');
 
-  async function loadOrders() {
+  async function loadData() {
     try {
-      const data = await fetchAdminOrders();
-      setOrders(data);
+      const [ordersData, partnersData] = await Promise.all([
+        fetchAdminOrders(),
+        fetchDeliveryPartners()
+      ]);
+      setOrders(ordersData);
+      setPartners(partnersData);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   }
 
-  const liveOrders = orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status));
-  const historyOrders = orders.filter(o => ['Delivered', 'Cancelled'].includes(o.status));
-  const displayOrders = activeTab === 'live' ? liveOrders : historyOrders;
-
   useEffect(() => {
-    loadOrders();
+    loadData();
 
     const socketInstance = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
@@ -47,16 +49,15 @@ export default function AdminOrders() {
 
     socketInstance.on('adminOrderUpdated', (updatedOrder) => {
       setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
-      toast(`Order #${updatedOrder._id.slice(-6)} updated to ${updatedOrder.status}`, { icon: '🔄' });
+      toast(`Order updated to ${updatedOrder.status}`, { icon: '🔄' });
     });
 
     socketInstance.on('newOrder', (newOrder) => {
       setOrders(prev => [newOrder, ...prev]);
-      toast.success(`NEW ORDER: #${newOrder._id.slice(-6)}`, {
+      toast.success(`NEW ORDER RECEIVED`, {
         duration: 6000,
         icon: '🥡',
       });
-      // Play sound notification if possible
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
       audio.play().catch(() => {});
     });
@@ -68,40 +69,50 @@ export default function AdminOrders() {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
-      // Optimistic update
       setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
       await updateOrderStatus(orderId, newStatus);
       toast.success(`Status changed to ${newStatus}`);
     } catch (err) {
       toast.error('Failed to update status');
-      loadOrders(); // Revert on failure
+      loadData();
     }
   };
 
   const handleAssignPartner = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assigningOrder) return;
+    if (!assigningOrder || !selectedPartnerId) return;
     
+    const partner = partners.find(p => p._id === selectedPartnerId);
+    if (!partner) return;
+
     try {
-      // Send both status update and partner details
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/admin/orders/${assigningOrder._id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          status: 'Out for Delivery', // Auto-update status when assigning
-          deliveryPartner: partnerDetails 
+          status: 'Out for Delivery', 
+          deliveryPartner: {
+            name: partner.name,
+            phone: partner.phone,
+            vehicleNumber: partner.vehicleNumber
+          }
         }),
       });
       
       if (response.ok) {
         setAssigningOrder(null);
-        setPartnerDetails({ name: '', phone: '', vehicleNumber: '' });
-        toast.success('Partner assigned successfully');
+        setSelectedPartnerId('');
+        toast.success(`Assigned to ${partner.name}`);
+        loadData();
       }
     } catch (err) {
       toast.error('Failed to assign partner');
     }
   };
+
+  const liveOrders = orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status));
+  const historyOrders = orders.filter(o => ['Delivered', 'Cancelled'].includes(o.status));
+  const displayOrders = activeTab === 'live' ? liveOrders : historyOrders;
 
   if (loading) return (
     <div className="flex flex-col gap-8 animate-pulse">
@@ -129,7 +140,7 @@ export default function AdminOrders() {
               <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Live
             </div>
           )}
-          <button onClick={loadOrders} className="p-4 bg-foreground/5 rounded-2xl border border-glass-border hover:bg-foreground/10 transition-all font-black text-xs">
+          <button onClick={loadData} className="p-4 bg-foreground/5 rounded-2xl border border-glass-border hover:bg-foreground/10 transition-all font-black text-xs">
              🔄
           </button>
         </div>
@@ -162,21 +173,30 @@ export default function AdminOrders() {
               <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
               <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Partner Name</label>
-                  <input type="text" placeholder="e.g. Rahul Kumar" value={partnerDetails.name} onChange={e => setPartnerDetails({...partnerDetails, name: e.target.value})} required className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Phone Number</label>
-                  <input type="tel" placeholder="+91 98765 00000" value={partnerDetails.phone} onChange={e => setPartnerDetails({...partnerDetails, phone: e.target.value})} required className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Vehicle Number</label>
-                  <input type="text" placeholder="KL 07 AB 1234" value={partnerDetails.vehicleNumber} onChange={e => setPartnerDetails({...partnerDetails, vehicleNumber: e.target.value})} required className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Select Partner</label>
+                  <select 
+                    value={selectedPartnerId} 
+                    onChange={e => setSelectedPartnerId(e.target.value)} 
+                    required 
+                    className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Choose a delivery boy...</option>
+                    {partners.filter(p => p.status === 'Available').map(p => (
+                      <option key={p._id} value={p._id}>{p.name} ({p.vehicleNumber})</option>
+                    ))}
+                  </select>
                 </div>
                 
+                {selectedPartnerId && (
+                   <div className="p-4 bg-orange-500/5 rounded-2xl border border-orange-500/10 animate-in fade-in slide-in-from-top-2">
+                      <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Partner Contact</p>
+                      <p className="text-sm font-bold text-foreground">{partners.find(p => p._id === selectedPartnerId)?.phone}</p>
+                   </div>
+                )}
+                
                 <div className="flex gap-4 mt-4">
-                  <button type="button" onClick={() => setAssigningOrder(null)} className="flex-1 py-5 rounded-[2rem] font-black uppercase tracking-widest text-[10px] text-stone-500 hover:text-stone-400 transition-colors">Cancel</button>
-                  <button type="submit" className="flex-[2] bg-orange-600 text-white py-5 rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20">Assign & Update</button>
+                  <button type="button" onClick={() => { setAssigningOrder(null); setSelectedPartnerId(''); }} className="flex-1 py-5 rounded-[2rem] font-black uppercase tracking-widest text-[10px] text-stone-500 hover:text-stone-400 transition-colors">Cancel</button>
+                  <button type="submit" disabled={!selectedPartnerId} className="flex-[2] bg-orange-600 text-white py-5 rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20 disabled:opacity-50">Confirm Assignment</button>
                 </div>
               </form>
             </motion.div>

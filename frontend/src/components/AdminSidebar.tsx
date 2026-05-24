@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', path: '/admin', icon: '📊' },
   { label: 'Orders', path: '/admin/orders', icon: '🛍️' },
   { label: 'Menu', path: '/admin/menu', icon: '🍽️' },
+  { label: 'Delivery Fleet', path: '/admin/delivery-partners', icon: '🛵' },
   { label: 'Customers', path: '/admin/customers', icon: '👥' },
   { label: 'Reviews', path: '/admin/reviews', icon: '⭐' },
 ];
