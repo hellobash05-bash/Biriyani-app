@@ -3,9 +3,14 @@ const isProd = typeof window !== 'undefined' && (
   window.location.hostname.includes('onrender.com') ||
   window.location.hostname.includes('vercel.app')
 );
-export const API_BASE_URL = isProd 
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (isProd 
   ? 'https://biriyani-backend.onrender.com/api' 
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
+  : 'http://localhost:5000/api');
+
+if (typeof window !== 'undefined') {
+  console.log('--- ROYALE API CONFIG ---');
+  console.log('Base URL:', API_BASE_URL);
+}
 
 export const SOCKET_URL = isProd
   ? 'https://biriyani-backend.onrender.com'

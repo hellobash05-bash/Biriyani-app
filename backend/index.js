@@ -19,13 +19,17 @@ const httpServer = createServer(app);
 
 app.get('/api/version', (req, res) => {
   res.json({ 
-    version: '1.2.2', 
+    version: '1.2.3', 
     status: 'Royale Backend Online',
     timestamp: new Date().toISOString()
   });
 });
 
-console.log('--- ROYALE BACKEND BOOTING V1.2.2 ---');
+app.get('/ping', (req, res) => {
+  res.send('pong');
+});
+
+console.log('--- ROYALE BACKEND BOOTING V1.2.3 ---');
 
 app.get('/', (req, res) => {
   res.send('<h1>Biriyani Backend is Running</h1><p>Please visit the frontend at <a href="http://localhost:3000">localhost:3000</a></p>');
