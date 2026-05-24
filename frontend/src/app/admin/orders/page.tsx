@@ -278,53 +278,61 @@ export default function AdminOrders() {
                     </div>
 
                     <div className="flex flex-col gap-4">
-                       {order.status === 'Pending' ? (
-                         <div className="flex flex-col gap-4">
-                           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">AUTHORIZATION</span>
-                           <div className="flex gap-4">
-                             <button 
-                               onClick={() => handleStatusChange(order._id, 'Preparing')}
-                               className="flex-1 bg-green-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-green-600/20 hover:scale-[1.05] transition-all"
-                             >
-                               APPROVE
-                             </button>
-                             <button 
-                               onClick={() => handleStatusChange(order._id, 'Cancelled')}
-                               className="flex-1 bg-red-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-red-600/20 hover:scale-[1.05] transition-all"
-                             >
-                               CANCEL
-                             </button>
-                           </div>
-                         </div>
-                       ) : (
+                       {activeTab === 'live' ? (
                          <>
-                           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">TRANSITION TO</span>
-                           <div className="flex flex-wrap gap-2">
-                             {STATUS_OPTIONS.map(status => (
-                               <button
-                                 key={status}
-                                 onClick={() => handleStatusChange(order._id, status)}
-                                 disabled={order.status === status}
-                                 className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                                   order.status === status 
-                                   ? 'bg-foreground/5 text-stone-700 pointer-events-none' 
-                                   : 'bg-background text-foreground/60 border border-glass-border hover:bg-orange-600 hover:text-white hover:border-orange-500'
-                                 }`}
-                               >
-                                 {status}
-                               </button>
-                             ))}
-                           </div>
+                           {order.status === 'Pending' ? (
+                             <div className="flex flex-col gap-4">
+                               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">AUTHORIZATION</span>
+                               <div className="flex gap-4">
+                                 <button 
+                                   onClick={() => handleStatusChange(order._id, 'Preparing')}
+                                   className="flex-1 bg-green-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-green-600/20 hover:scale-[1.05] transition-all"
+                                 >
+                                   APPROVE
+                                 </button>
+                                 <button 
+                                   onClick={() => handleStatusChange(order._id, 'Cancelled')}
+                                   className="flex-1 bg-red-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-red-600/20 hover:scale-[1.05] transition-all"
+                                 >
+                                   CANCEL
+                                 </button>
+                               </div>
+                             </div>
+                           ) : (
+                             <>
+                               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">TRANSITION TO</span>
+                               <div className="flex flex-wrap gap-2">
+                                 {STATUS_OPTIONS.map(status => (
+                                   <button
+                                     key={status}
+                                     onClick={() => handleStatusChange(order._id, status)}
+                                     disabled={order.status === status}
+                                     className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                       order.status === status 
+                                       ? 'bg-foreground/5 text-stone-700 pointer-events-none' 
+                                       : 'bg-background text-foreground/60 border border-glass-border hover:bg-orange-600 hover:text-white hover:border-orange-500'
+                                     }`}
+                                   >
+                                     {status}
+                                   </button>
+                                 ))}
+                               </div>
+                             </>
+                           )}
+                           
+                           {!order.deliveryPartner?.name && !['Delivered', 'Cancelled', 'Pending'].includes(order.status) && (
+                             <button 
+                               onClick={() => setAssigningOrder(order)}
+                               className="mt-4 w-full py-5 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-2xl"
+                             >
+                               + ASSIGN DELIVERY PARTNER
+                             </button>
+                           )}
                          </>
-                       )}
-                       
-                       {!order.deliveryPartner?.name && !['Delivered', 'Cancelled', 'Pending'].includes(order.status) && (
-                         <button 
-                           onClick={() => setAssigningOrder(order)}
-                           className="mt-4 w-full py-5 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-2xl"
-                         >
-                           + ASSIGN DELIVERY PARTNER
-                         </button>
+                       ) : (
+                         <div className="pt-4 border-t border-glass-border">
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest italic">This order is archived and cannot be modified.</p>
+                         </div>
                        )}
                     </div>
                  </div>
