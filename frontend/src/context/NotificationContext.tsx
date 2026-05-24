@@ -25,10 +25,17 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { profile, user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
+
+  const playNotificationSound = () => {
+    const audio = new Audio(NOTIFICATION_SOUND);
+    audio.play().catch(err => console.log('Audio play blocked:', err));
+  };
 
   const refreshNotifications = async () => {
     if (profile?._id) {
@@ -54,6 +61,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     socketInstance.on('smartNotification', (data: any) => {
       // Check if this notification is for the current user
       if (profile?._id && data.userIds.includes(profile._id)) {
+        playNotificationSound();
         toast.success(`${data.title}: ${data.message}`, {
           icon: '🔔',
           duration: 6000

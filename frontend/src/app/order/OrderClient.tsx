@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import ReviewForm from '@/components/ReviewForm';
 
-import { fetchOrderById, SOCKET_URL } from '@/lib/api';
+import { fetchOrderById, cancelOrder, SOCKET_URL } from '@/lib/api';
 
 const STATUS_STEPS = [
   { label: 'Pending', icon: '🕒' },
@@ -19,12 +19,20 @@ const STATUS_STEPS = [
   { label: 'Delivered', icon: '🎉' }
 ];
 
+const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+
 export default function OrderTrackingPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
+
+  const playNotificationSound = () => {
+    const audio = new Audio(NOTIFICATION_SOUND);
+    audio.play().catch(err => console.log('Audio play blocked:', err));
+  };
 
   useEffect(() => {
     if (!orderId) {
@@ -58,6 +66,7 @@ export default function OrderTrackingPage() {
 
     socketInstance.on('orderStatusUpdated', (updatedOrder) => {
       console.log('Real-time update received:', updatedOrder);
+      playNotificationSound();
       
       // Determine what to show in the toast
       let message = `Status Update: ${updatedOrder.status}`;
@@ -68,7 +77,7 @@ export default function OrderTrackingPage() {
       if (updatedOrder.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
       if (updatedOrder.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
       if (updatedOrder.status === 'Cancelled') { 
-        toast.error('Order Cancelled. Please contact support.', { icon: '✕' });
+        toast.error('Order Cancelled.', { icon: '✕' });
         setOrder(updatedOrder);
         return;
       }
@@ -82,6 +91,22 @@ export default function OrderTrackingPage() {
     };
   }, [orderId]);
 
+  const handleCancelOrder = async () => {
+    if (!orderId) return;
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+
+    setCancelling(true);
+    try {
+      const updatedOrder = await cancelOrder(orderId);
+      setOrder(updatedOrder);
+      toast.error('Order Cancelled successfully', { icon: '✕' });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel order');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Loading Tracker...</div>;
   }
@@ -92,6 +117,7 @@ export default function OrderTrackingPage() {
 
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.label === order.status);
   const progressPercentage = Math.max(0, (currentStepIndex / (STATUS_STEPS.length - 1)) * 100);
+  const isCancellable = ['Pending', 'Preparing', 'Packed'].includes(order.status);
 
   return (
     <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 bg-background text-foreground relative overflow-hidden">
@@ -109,7 +135,21 @@ export default function OrderTrackingPage() {
           {order.status === 'Cancelled' ? (
             <p className="text-red-500 text-sm font-bold uppercase tracking-widest">Order Cancelled</p>
           ) : (
-            <p className="text-stone-500 text-sm font-bold">Estimated Arrival: {order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Calculating...'}</p>
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-stone-500 text-sm font-bold">Estimated Arrival: {order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Calculating...'}</p>
+              
+              {isCancellable && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="px-6 py-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                >
+                  {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                </motion.button>
+              )}
+            </div>
           )}
         </div>
 
@@ -133,7 +173,7 @@ export default function OrderTrackingPage() {
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-8 bg-red-500/5 border-red-500/20 text-center">
             <div className="w-16 h-16 bg-red-500/10 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-black">✕</div>
             <h2 className="text-xl font-black text-foreground uppercase tracking-tighter mb-2">Order Cancelled</h2>
-            <p className="text-stone-500 text-sm font-medium italic mb-6">We're sorry, your order has been cancelled by the restaurant. Please reach out to our support team for any queries.</p>
+            <p className="text-stone-500 text-sm font-medium italic mb-6">Your order has been cancelled. Please reach out to our support team if you have any questions or need a refund.</p>
             <button className="px-6 py-3 bg-foreground text-background rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-colors">Contact Support</button>
           </motion.div>
         )}

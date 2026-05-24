@@ -72,36 +72,77 @@ io.on('connection', (socket) => {
 let mongoServer;
 const connectDB = async () => {
   let uri = process.env.MONGODB_URI;
-  
-  // Force local memory server if cloud fails or for easier dev
-  if (!uri || uri.includes('mongodb+srv')) {
-    console.log('Using local Memory Server for database...');
+  let isMemoryServer = false;
+
+  if (uri) {
+    console.log('Attempting to connect to provided MONGODB_URI...');
     try {
-      mongoServer = await MongoMemoryServer.create();
-      uri = mongoServer.getUri();
+      await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+      console.log('Successfully connected to Persistent Database');
+      return;
     } catch (err) {
-      console.error('Failed to create MongoMemoryServer:', err);
-      // Fallback to local default if memory server fails to start
-      uri = 'mongodb://localhost:27017/biriyani-db';
+      console.error('Persistent Database connection failed. Falling back to alternatives...');
     }
   }
 
+  // If we reach here, either MONGODB_URI was not provided or it failed
+  console.log('Trying local MongoDB fallback (mongodb://localhost:27017/biriyani-db)...');
   try {
-    await mongoose.connect(uri);
-    console.log('Connected to Database');
-    
-    // Seed data if it's a new memory server
-    if (mongoServer) {
-      console.log('Seeding initial data to Memory Server...');
-      await seedInitialData();
-    }
+    await mongoose.connect('mongodb://localhost:27017/biriyani-db', { serverSelectionTimeoutMS: 2000 });
+    console.log('Connected to Local MongoDB');
+    return;
   } catch (err) {
-    console.error('Database connection error:', err);
+    console.log('Local MongoDB not available. Starting MongoMemoryServer for development...');
+  }
+
+  try {
+    mongoServer = await MongoMemoryServer.create();
+    uri = mongoServer.getUri();
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+    isMemoryServer = true;
+    console.log('Connected to MongoMemoryServer');
+    console.log('NOTE: Data will not persist across server restarts in this mode.');
+    
+    // Seed data only for memory server
+    console.log('Seeding initial data...');
+    await seedInitialData();
+  } catch (err) {
+    console.error('All database connection attempts failed:', err);
   }
 };
 
 async function seedInitialData() {
   try {
+    // Seed Admin User
+    const userCount = await User.countDocuments();
+    let adminUser;
+    if (userCount === 0) {
+      adminUser = await User.create({
+        name: 'Arun Kumar',
+        email: 'hellobash05@gmail.com',
+        role: 'admin',
+        phone: '+91 9876543210'
+      });
+      console.log('Seeded Admin User');
+    } else {
+      adminUser = await User.findOne({ email: 'hellobash05@gmail.com' });
+    }
+
+    // Seed Restaurant
+    const restaurantCount = await Restaurant.countDocuments();
+    if (restaurantCount === 0 && adminUser) {
+      await Restaurant.create({
+        name: 'Biriyani Royale Heritage',
+        description: 'Authentic Hyderabadi and Malabar Biriyanis since 1985.',
+        address: '123 Heritage Lane, Kochi, Kerala',
+        owner: adminUser._id,
+        type: 'hotel',
+        cuisine: ['Hyderabadi', 'Malabar', 'South Indian'],
+        isVerified: true
+      });
+      console.log('Seeded Heritage Restaurant');
+    }
+
     const count = await MenuItem.countDocuments();
     if (count === 0) {
       const items = [
@@ -112,24 +153,28 @@ async function seedInitialData() {
           offerPrice: 199,
           discountPercentage: 20,
           category: 'Chicken',
+          isAvailable: true
         },
         {
           name: 'Mutton Dum Biriyani',
           description: 'Traditional slow-cooked mutton with long-grain rice.',
           price: 350,
           category: 'Mutton',
+          isAvailable: true
         },
         {
           name: 'Special Veg Biriyani',
           description: 'Assorted seasonal vegetables layered with aromatic rice.',
           price: 180,
           category: 'Veg',
+          isAvailable: true
         },
         {
           name: 'Chicken 65',
           description: 'Spicy, deep-fried chicken appetizer.',
           price: 150,
           category: 'Starters',
+          isAvailable: true
         }
       ];
       await MenuItem.insertMany(items);
@@ -186,6 +231,34 @@ app.get('/api/user/orders', async (req, res) => {
     // In a real app, we'd get the user ID from the auth token
     const orders = await Order.find().sort({ createdAt: -1 }); 
     res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.patch('/api/orders/:id/cancel', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const cancellableStatuses = ['Pending', 'Preparing', 'Packed'];
+    if (!cancellableStatuses.includes(order.status)) {
+      return res.status(400).json({ 
+        message: `Order cannot be cancelled because it is already ${order.status}` 
+      });
+    }
+
+    order.status = 'Cancelled';
+    order.updatedAt = new Date();
+    const updatedOrder = await order.save();
+
+    // Emit real-time event
+    req.io.to(`order_${updatedOrder._id}`).emit('orderStatusUpdated', updatedOrder);
+    req.io.emit('adminOrderUpdated', updatedOrder);
+
+    res.json(updatedOrder);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

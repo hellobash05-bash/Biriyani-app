@@ -20,6 +20,12 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const router = useRouter();
 
+  const playNotificationSound = () => {
+    const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+    const audio = new Audio(NOTIFICATION_SOUND);
+    audio.play().catch(err => console.log('Audio play blocked:', err));
+  };
+
   const [addressForm, setAddressForm] = useState({
     name: '',
     phone: '',
@@ -126,6 +132,7 @@ export default function CheckoutPage() {
       };
 
       const result = await placeOrder(orderData);
+      playNotificationSound();
       setOrderId(result._id);
       setOrderSuccess(true);
       clearCart();

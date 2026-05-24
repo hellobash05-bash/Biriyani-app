@@ -236,6 +236,17 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return response.json();
 }
 
+export async function cancelOrder(orderId: string) {
+  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+    method: 'PATCH',
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to cancel order');
+  }
+  return response.json();
+}
+
 export async function submitReview(reviewData: {
   userId: string;
   userName: string;
