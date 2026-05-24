@@ -54,8 +54,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     socketInstance.on('smartNotification', (data: any) => {
       // Check if this notification is for the current user
       if (profile?._id && data.userIds.includes(profile._id)) {
-        toast.success(data.title, {
-          description: data.message,
+        toast.success(`${data.title}: ${data.message}`, {
           icon: '🔔',
           duration: 6000
         });

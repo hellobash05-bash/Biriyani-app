@@ -77,6 +77,5 @@ export default function RestaurantCard({ name, description, type, rating, cuisin
         Order Now
       </motion.button>
     </motion.div>
-    </motion.div>
   );
 }
