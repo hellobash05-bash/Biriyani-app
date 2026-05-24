@@ -17,6 +17,10 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
+app.get('/api/version', (req, res) => {
+  res.json({ version: '1.2.1', status: 'Royale Backend Online' });
+});
+
 app.get('/', (req, res) => {
   res.send('<h1>Biriyani Backend is Running</h1><p>Please visit the frontend at <a href="http://localhost:3000">localhost:3000</a></p>');
 });
@@ -424,10 +428,6 @@ app.get('/api/admin/reviews', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-});
-
-app.get('/api/version', (req, res) => {
-  res.json({ version: '1.2.0', status: 'Royale Backend Online' });
 });
 
 // --- REVIEW ROUTES ---
