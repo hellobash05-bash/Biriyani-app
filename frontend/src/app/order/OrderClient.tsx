@@ -12,11 +12,11 @@ import ReviewForm from '@/components/ReviewForm';
 import { fetchOrderById, SOCKET_URL } from '@/lib/api';
 
 const STATUS_STEPS = [
-  'Pending',
-  'Preparing',
-  'Packed',
-  'Out for Delivery',
-  'Delivered'
+  { label: 'Pending', icon: '🕒' },
+  { label: 'Preparing', icon: '👨‍🍳' },
+  { label: 'Packed', icon: '🥡' },
+  { label: 'Out for Delivery', icon: '🛵' },
+  { label: 'Delivered', icon: '🎉' }
 ];
 
 export default function OrderTrackingPage() {
@@ -90,7 +90,7 @@ export default function OrderTrackingPage() {
     return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">Order not found.</div>;
   }
 
-  const currentStepIndex = STATUS_STEPS.indexOf(order.status);
+  const currentStepIndex = STATUS_STEPS.findIndex(s => s.label === order.status);
   const progressPercentage = Math.max(0, (currentStepIndex / (STATUS_STEPS.length - 1)) * 100);
 
   return (
@@ -140,19 +140,27 @@ export default function OrderTrackingPage() {
 
         {/* Progress Tracker Card */}
         {order.status !== 'Cancelled' && (
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-6 md:p-8">
-             <h2 className="text-sm font-black uppercase tracking-widest text-stone-400 mb-8 text-center">Delivery Status</h2>
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="premium-card p-8 md:p-10 relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-amber-400 opacity-20"></div>
              
-             <div className="relative pt-2 pb-8">
+             <div className="flex justify-between items-center mb-10">
+               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">Journey Status</h2>
+               <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-600 animate-ping"></span>
+                  <span className="text-[10px] font-black uppercase text-orange-600 tracking-widest">{order.status}</span>
+               </div>
+             </div>
+             
+             <div className="relative pt-4 pb-12">
                {/* Background Line */}
-               <div className="absolute top-6 left-[10%] right-[10%] h-1 bg-foreground/10 rounded-full" />
+               <div className="absolute top-10 left-0 right-0 h-1.5 bg-foreground/5 rounded-full" />
                
-               {/* Animated Progress Line */}
+               {/* Animated Progress Line with Glow */}
                <motion.div 
                  initial={{ width: 0 }}
-                 animate={{ width: `${progressPercentage * 0.8 + 10}%` }}
-                 transition={{ duration: 1, ease: "easeInOut" }}
-                 className="absolute top-6 left-0 h-1 bg-orange-500 rounded-full z-0"
+                 animate={{ width: `${progressPercentage}%` }}
+                 transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+                 className="absolute top-10 left-0 h-1.5 bg-gradient-to-r from-orange-600 to-orange-400 rounded-full z-0 shadow-[0_0_15px_rgba(249,115,22,0.4)]"
                />
 
                {/* Steps */}
@@ -161,28 +169,34 @@ export default function OrderTrackingPage() {
                    const isCompleted = idx <= currentStepIndex;
                    const isCurrent = idx === currentStepIndex;
                    return (
-                     <div key={step} className="flex flex-col items-center gap-3 w-1/5 relative">
+                     <div key={step.label} className="flex flex-col items-center gap-4 w-1/5 relative">
                        <motion.div 
                          initial={false}
                          animate={{ 
-                           scale: isCurrent ? 1.2 : 1,
-                           backgroundColor: isCompleted ? '#f97316' : 'var(--input-bg)',
-                           borderColor: isCurrent ? '#fbbf24' : 'transparent'
+                           scale: isCurrent ? 1.25 : 1,
+                           backgroundColor: isCompleted ? 'var(--primary)' : 'var(--input-bg)',
+                           boxShadow: isCurrent ? '0 0 25px rgba(249,115,22,0.4)' : 'none',
+                           borderColor: isCurrent ? '#ffffff' : 'transparent'
                          }}
-                         className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-lg transition-colors border-2 ${isCompleted ? 'text-white' : 'text-stone-600'}`}
+                         className={`w-10 h-10 md:w-14 md:h-14 rounded-2xl flex items-center justify-center transition-all border-2 ${isCompleted ? 'text-white' : 'text-stone-500'}`}
                        >
-                         {isCompleted && <span className="text-[10px] md:text-xs">✓</span>}
+                         <span className={`text-xl md:text-2xl ${isCompleted ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                           {isCompleted ? (isCurrent ? step.icon : '✓') : step.icon}
+                         </span>
                        </motion.div>
-                       <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center transition-colors ${isCurrent ? 'text-orange-500' : isCompleted ? 'text-foreground' : 'text-stone-400'}`}>
-                         {step.split(' ').join('\n')}
-                       </span>
                        
-                       {/* Pulse effect for current step */}
+                       <div className="flex flex-col items-center">
+                         <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.1em] text-center leading-tight transition-colors ${isCurrent ? 'text-orange-600 scale-110' : isCompleted ? 'text-foreground' : 'text-stone-400'}`}>
+                           {step.label}
+                         </span>
+                       </div>
+                       
+                       {/* Ripple effect for current step */}
                        {isCurrent && (
                          <motion.div
-                           animate={{ scale: [1, 2], opacity: [0.5, 0] }}
+                           animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
                            transition={{ duration: 2, repeat: Infinity }}
-                           className="absolute top-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-500 -z-10"
+                           className="absolute top-0 w-10 h-10 md:w-14 md:h-14 rounded-2xl bg-orange-500 -z-10"
                          />
                        )}
                      </div>
