@@ -43,10 +43,11 @@ export function NotificationBell() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full right-0 mt-4 w-80 sm:w-96 bg-background border border-glass-border rounded-3xl shadow-2xl z-[110] overflow-hidden backdrop-blur-3xl"
+            className="fixed md:absolute top-20 md:top-full left-4 right-4 md:left-auto md:right-0 md:mt-4 md:w-96 bg-background border border-glass-border rounded-3xl shadow-2xl z-[110] overflow-hidden backdrop-blur-3xl mx-auto max-w-[calc(100vw-2rem)]"
           >
-            <div className="p-6 border-b border-glass-border bg-foreground/2">
+            <div className="p-6 border-b border-glass-border bg-foreground/2 flex justify-between items-center">
               <h3 className="text-sm font-black uppercase tracking-widest text-foreground">Royale Alerts</h3>
+              {unreadCount > 0 && <span className="text-[9px] font-black bg-orange-600 text-white px-2 py-1 rounded-full animate-pulse">{unreadCount} NEW</span>}
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto no-scrollbar">
