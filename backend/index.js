@@ -10,6 +10,7 @@ import { Order } from './models/Order.js';
 import { User } from './models/User.js';
 import { Restaurant } from './models/Restaurant.js';
 import { Review } from './models/Review.js';
+import { Notification } from './models/Notification.js';
 
 dotenv.config();
 
@@ -255,6 +256,44 @@ app.post('/api/users/address', async (req, res) => {
   }
 });
 
+// --- FAVORITES & NOTIFICATIONS ---
+app.post('/api/users/favorites/toggle', async (req, res) => {
+  try {
+    const { email, foodId } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const isFavorite = user.favorites.includes(foodId);
+    if (isFavorite) {
+      user.favorites = user.favorites.filter(id => id.toString() !== foodId);
+    } else {
+      user.favorites.push(foodId);
+    }
+    await user.save();
+    res.json({ favorites: user.favorites, isFavorite: !isFavorite });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/notifications/:userId', async (req, res) => {
+  try {
+    const notifications = await Notification.find({ userId: req.params.userId }).sort({ createdAt: -1 }).limit(20);
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.patch('/api/notifications/:id/read', async (req, res) => {
+  try {
+    await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
+    res.json({ message: 'Notification marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.get('/api/admin/orders', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
@@ -305,11 +344,51 @@ app.post('/api/admin/menu', async (req, res) => {
 
 app.patch('/api/admin/menu/:id', async (req, res) => {
   try {
+    const oldItem = await MenuItem.findById(req.params.id);
     const updatedItem = await MenuItem.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
+
+    if (updatedItem && oldItem) {
+      // Detect Price Drop or New Offer
+      const priceDropped = updatedItem.offerPrice && (!oldItem.offerPrice || updatedItem.offerPrice < oldItem.offerPrice);
+      const newOffer = updatedItem.discountPercentage && (!oldItem.discountPercentage || updatedItem.discountPercentage > oldItem.discountPercentage);
+
+      if (priceDropped || newOffer) {
+        // Find users who have this item in their favorites
+        const interestedUsers = await User.find({ favorites: req.params.id });
+        
+        const title = priceDropped ? '🔥 Price Drop Alert!' : '🎉 New Royale Offer!';
+        const message = priceDropped 
+          ? `${updatedItem.name} is now available for ₹${updatedItem.offerPrice}! Grab it before it's gone.`
+          : `Exclusive ${updatedItem.discountPercentage}% OFF on ${updatedItem.name}. Order your favorite now!`;
+
+        // Create in-app notifications
+        const notificationPromises = interestedUsers.map(user => {
+          const notify = new Notification({
+            userId: user._id,
+            title,
+            message,
+            type: priceDropped ? 'price_drop' : 'offer',
+            relatedId: updatedItem._id
+          });
+          return notify.save();
+        });
+
+        await Promise.all(notificationPromises);
+
+        // Emit real-time notification to all interested users connected via socket
+        req.io.emit('smartNotification', {
+          title,
+          message,
+          foodId: updatedItem._id,
+          userIds: interestedUsers.map(u => u._id) // Frontend will check if it belongs to them
+        });
+      }
+    }
+
     res.json(updatedItem);
   } catch (error) {
     res.status(400).json({ message: error.message });

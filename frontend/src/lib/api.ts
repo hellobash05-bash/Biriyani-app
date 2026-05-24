@@ -227,3 +227,27 @@ export async function fetchReviews(foodId: string) {
   return response.json();
 }
 
+export async function toggleFavorite(email: string, foodId: string) {
+  const response = await fetch(`${API_BASE_URL}/users/favorites/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, foodId }),
+  });
+  if (!response.ok) throw new Error('Failed to toggle favorite');
+  return response.json();
+}
+
+export async function fetchNotifications(userId: string) {
+  const response = await fetch(`${API_BASE_URL}/notifications/${userId}`);
+  if (!response.ok) throw new Error('Failed to fetch notifications');
+  return response.json();
+}
+
+export async function markNotificationAsRead(id: string) {
+  const response = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+    method: 'PATCH',
+  });
+  if (!response.ok) throw new Error('Failed to mark notification as read');
+  return response.json();
+}
+

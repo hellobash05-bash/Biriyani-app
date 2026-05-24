@@ -5,6 +5,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import CartSidebar from "@/components/CartSidebar";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from "@/components/ThemeProvider";
 
@@ -44,37 +45,39 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <CartProvider>
-              <LoadingScreen />
-              <CartSidebar />
-              <Toaster 
-                position="top-center" 
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#1a1917',
-                    color: '#fff',
-                    borderRadius: '1.5rem',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    fontWeight: 900,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    fontSize: '11px',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.4)'
-                  },
-                  success: {
-                    iconTheme: {
-                      primary: '#f97316',
-                      secondary: '#fff',
+            <NotificationProvider>
+              <CartProvider>
+                <LoadingScreen />
+                <CartSidebar />
+                <Toaster 
+                  position="top-center" 
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: '#1a1917',
+                      color: '#fff',
+                      borderRadius: '1.5rem',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      fontWeight: 900,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      fontSize: '11px',
+                      boxShadow: '0 20px 50px rgba(0,0,0,0.4)'
                     },
-                  },
-                }} 
-              />
-              <div className="fixed inset-0 -z-10 biriyani-pattern" />
-              <main className="relative flex-1">
-                {children}
-              </main>
-            </CartProvider>
+                    success: {
+                      iconTheme: {
+                        primary: '#f97316',
+                        secondary: '#fff',
+                      },
+                    },
+                  }} 
+                />
+                <div className="fixed inset-0 -z-10 biriyani-pattern" />
+                <main className="relative flex-1">
+                  {children}
+                </main>
+              </CartProvider>
+            </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -90,6 +90,47 @@ export default function ProfilePage() {
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Wishlist Section */}
+            <section className="flex flex-col gap-8">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-4">
+                <span className="w-8 h-1 bg-red-500 rounded-full"></span>
+                My Wishlist
+              </h2>
+              <div className="flex flex-col gap-6">
+                {profile?.favorites?.length > 0 ? profile.favorites.map((item: any) => (
+                  <motion.div 
+                    key={item._id}
+                    whileHover={{ scale: 1.02 }}
+                    className="premium-card p-6 flex items-center gap-6 group relative overflow-hidden"
+                  >
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-foreground/5 shrink-0">
+                      <img src={item.image || '/images/biriyani-placeholder.jpg'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    </div>
+                    <div className="flex-1">
+                       <h3 className="text-lg font-black text-foreground uppercase tracking-tight leading-none mb-1">{item.name}</h3>
+                       <p className="text-xs text-stone-500 font-bold uppercase tracking-widest">{item.category}</p>
+                       <div className="mt-3 flex items-center gap-3">
+                          <span className="text-xl font-black text-orange-600">₹{item.offerPrice || item.price}</span>
+                          {item.offerPrice && <span className="text-xs font-bold text-stone-400 line-through">₹{item.price}</span>}
+                       </div>
+                    </div>
+                    <button 
+                      onClick={() => router.push('/menu')}
+                      className="w-10 h-10 rounded-full bg-foreground/5 flex items-center justify-center text-foreground hover:bg-orange-600 hover:text-white transition-all shadow-lg"
+                    >
+                      →
+                    </button>
+                  </motion.div>
+                )) : (
+                  <div className="bg-foreground/5 p-16 rounded-[3rem] border border-dashed border-glass-border text-center flex flex-col items-center gap-4">
+                    <span className="text-4xl opacity-30">❤️</span>
+                    <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">No favorites saved yet.</p>
+                    <button onClick={() => router.push('/menu')} className="mt-2 px-6 py-2 bg-foreground text-background rounded-full text-[9px] font-black uppercase tracking-widest">Explore Collection</button>
+                  </div>
+                )}
+              </div>
+            </section>
+
             {/* Orders Section */}
             <section className="flex flex-col gap-8">
               <h2 className="text-2xl font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-4">
@@ -135,39 +176,40 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            {/* Addresses Section */}
-            <section className="flex flex-col gap-8">
-              <h2 className="text-2xl font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-4">
-                <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
-                Saved Addresses
-              </h2>
-              <div className="flex flex-col gap-6">
-                {profile?.addresses?.map((addr: any, idx: number) => (
-                  <div key={idx} className="premium-card p-8 group flex flex-col gap-3 relative overflow-hidden">
-                    {addr.isDefault && (
-                      <div className="absolute top-0 right-0 bg-orange-600 text-[8px] font-black text-white px-4 py-2 uppercase tracking-[0.3em] rounded-bl-2xl shadow-xl">
-                        Default
-                      </div>
-                    )}
-                    <h3 className="text-lg font-black text-foreground uppercase tracking-tighter">{addr.label}</h3>
-                    <p className="text-stone-500 dark:text-stone-400 font-medium leading-relaxed italic text-sm group-hover:text-stone-600 dark:group-hover:text-stone-300 transition-colors">"{addr.detail}"</p>
-                  </div>
-                ))}
-                <button onClick={() => setIsAddressModalOpen(true)} className="w-full border-2 border-dashed border-glass-border p-10 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2">
-                  <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
-                  Add New Destination
-                </button>
-              </div>
-
-              {/* Account Actions */}
-              <div className="mt-12 flex flex-col gap-4">
-                 <button onClick={handleLogout} className="flex justify-between items-center p-8 rounded-[2.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group text-foreground">
-                    <span className="font-black uppercase tracking-widest text-xs text-red-500/80 group-hover:text-red-500">Secure Logout</span>
-                    <svg className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                 </button>
-              </div>
-            </section>
           </div>
+
+          {/* Addresses Section - Full Width Below */}
+          <section className="flex flex-col gap-8 pt-12 border-t border-glass-border">
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-4">
+              <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
+              Saved Addresses
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {profile?.addresses?.map((addr: any, idx: number) => (
+                <div key={idx} className="premium-card p-8 group flex flex-col gap-3 relative overflow-hidden">
+                  {addr.isDefault && (
+                    <div className="absolute top-0 right-0 bg-orange-600 text-[8px] font-black text-white px-4 py-2 uppercase tracking-[0.3em] rounded-bl-2xl shadow-xl">
+                      Default
+                    </div>
+                  )}
+                  <h3 className="text-lg font-black text-foreground uppercase tracking-tighter">{addr.label}</h3>
+                  <p className="text-stone-500 dark:text-stone-400 font-medium leading-relaxed italic text-sm group-hover:text-stone-600 dark:group-hover:text-stone-300 transition-colors">"{addr.detail}"</p>
+                </div>
+              ))}
+              <button onClick={() => setIsAddressModalOpen(true)} className="w-full border-2 border-dashed border-glass-border p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2">
+                <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
+                Add New Destination
+              </button>
+            </div>
+
+            {/* Account Actions */}
+            <div className="mt-8">
+               <button onClick={handleLogout} className="flex justify-between items-center p-8 rounded-[2.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group text-foreground w-full">
+                  <span className="font-black uppercase tracking-widest text-xs text-red-500/80 group-hover:text-red-500">Secure Logout</span>
+                  <svg className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+               </button>
+            </div>
+          </section>
         </motion.div>
       </main>
       <BottomNav />

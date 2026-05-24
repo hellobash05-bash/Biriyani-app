@@ -6,15 +6,38 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { fetchMenu, seedData, fetchReviews } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { toggleFavorite } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const CATEGORIES = ['All', 'Chicken', 'Mutton', 'Veg'];
 
 export default function MenuPage() {
+  const { profile, user, refreshProfile } = useAuth();
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const [ratings, setRatings] = useState<Record<string, { average: number; total: number }>>({});
   const { addToCart, itemCount, total, setIsCartOpen, isCartOpen } = useCart();
+
+  const handleToggleFavorite = async (e: React.MouseEvent, foodId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user?.email) {
+      toast.error('Please login to save favorites');
+      return;
+    }
+    try {
+      await toggleFavorite(user.email, foodId);
+      await refreshProfile();
+    } catch (err) {
+      toast.error('Failed to update favorites');
+    }
+  };
+
+  const isFavorite = (foodId: string) => {
+    return profile?.favorites?.some((fav: any) => (fav._id || fav) === foodId);
+  };
 
   useEffect(() => {
     async function loadMenu() {
@@ -121,6 +144,20 @@ export default function MenuPage() {
                 >
                   {/* Image Section */}
                   <div className="h-72 w-full relative overflow-hidden bg-background">
+                    {/* Heart Button */}
+                    <button
+                      onClick={(e) => handleToggleFavorite(e, item._id)}
+                      className="absolute top-6 left-6 z-20 w-10 h-10 bg-background/80 backdrop-blur-md rounded-full flex items-center justify-center border border-glass-border shadow-xl hover:scale-110 active:scale-90 transition-all"
+                    >
+                      <motion.span
+                        initial={false}
+                        animate={{ scale: isFavorite(item._id) ? [1, 1.2, 1] : 1 }}
+                        className={`text-xl ${isFavorite(item._id) ? 'text-red-500' : 'text-stone-400'}`}
+                      >
+                        {isFavorite(item._id) ? '❤️' : '🤍'}
+                      </motion.span>
+                    </button>
+
                     <img 
                       src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop'} 
                       alt={item.name}
