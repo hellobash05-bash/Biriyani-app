@@ -143,11 +143,30 @@ export default function MenuPage() {
                   className="group flex flex-col relative overflow-hidden premium-card !p-0 hover:border-orange-500/20 transition-all duration-500"
                 >
                   {/* Image Section */}
-                  <div className="h-72 w-full relative overflow-hidden bg-background">
+                  <div className="h-72 w-full relative overflow-hidden bg-stone-100 dark:bg-stone-900 flex items-center justify-center">
+                    {/* Ambient Glow / Placeholder behind image */}
+                    <div className="absolute inset-0 z-0 flex items-center justify-center opacity-20">
+                       <span className="text-4xl">🥘</span>
+                    </div>
+
+                    <img 
+                      src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop'} 
+                      alt={item.name}
+                      onLoad={() => console.log(`Image loaded successfully for: ${item.name}`)}
+                      onError={(e) => {
+                        console.error(`Image failed to load for: ${item.name}. URL: ${item.image}`);
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop';
+                      }}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 z-10"
+                    />
+
+                    {/* Subtle Gradient Overlay - Only at the bottom */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
+
                     {/* Heart Button */}
                     <button
                       onClick={(e) => handleToggleFavorite(e, item._id)}
-                      className="absolute top-6 left-6 z-20 w-10 h-10 bg-background/80 backdrop-blur-md rounded-full flex items-center justify-center border border-glass-border shadow-xl hover:scale-110 active:scale-90 transition-all"
+                      className="absolute top-6 left-6 z-30 w-10 h-10 bg-background/80 backdrop-blur-md rounded-full flex items-center justify-center border border-glass-border shadow-xl hover:scale-110 active:scale-90 transition-all"
                     >
                       <motion.span
                         initial={false}
@@ -157,23 +176,16 @@ export default function MenuPage() {
                         {isFavorite(item._id) ? '❤️' : '🤍'}
                       </motion.span>
                     </button>
-
-                    <img 
-                      src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop'} 
-                      alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-80 group-hover:opacity-100"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                     
                     {item.offerPrice && (
-                      <div className="absolute top-6 right-6 bg-orange-600 text-white text-[10px] font-black uppercase px-4 py-2 rounded-xl shadow-2xl shadow-orange-600/30 rotate-6 z-10 border border-white/10">
+                      <div className="absolute top-6 right-6 bg-orange-600 text-white text-[10px] font-black uppercase px-4 py-2 rounded-xl shadow-2xl shadow-orange-600/30 rotate-6 z-30 border border-white/10">
                         {item.discountPercentage}% OFF
                       </div>
                     )}
 
                     {/* Quick Rating Badge */}
                     {ratings[item._id]?.total > 0 && (
-                      <div className="absolute bottom-12 left-6 bg-background/90 backdrop-blur-md text-foreground px-3 py-1.5 rounded-full border border-glass-border flex items-center gap-1.5 shadow-xl">
+                      <div className="absolute bottom-6 left-6 bg-background/90 backdrop-blur-md text-foreground px-3 py-1.5 rounded-full border border-glass-border flex items-center gap-1.5 shadow-xl z-30">
                         <span className="text-orange-500">★</span>
                         <span className="text-[10px] font-black">{ratings[item._id].average}</span>
                         <span className="text-[8px] text-stone-500 font-bold">({ratings[item._id].total})</span>

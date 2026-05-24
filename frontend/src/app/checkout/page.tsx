@@ -22,8 +22,11 @@ export default function CheckoutPage() {
 
   const playNotificationSound = () => {
     const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+    console.log('Playing order success sound...');
     const audio = new Audio(NOTIFICATION_SOUND);
-    audio.play().catch(err => console.log('Audio play blocked:', err));
+    audio.play().catch(err => {
+      console.warn('Audio play blocked or failed:', err);
+    });
   };
 
   const [addressForm, setAddressForm] = useState({

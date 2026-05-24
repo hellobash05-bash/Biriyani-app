@@ -30,8 +30,11 @@ export default function OrderTrackingPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   const playNotificationSound = () => {
+    console.log('Playing status update sound...');
     const audio = new Audio(NOTIFICATION_SOUND);
-    audio.play().catch(err => console.log('Audio play blocked:', err));
+    audio.play().catch(err => {
+      console.warn('Audio play blocked or failed. This usually requires a user interaction on the page first.', err);
+    });
   };
 
   useEffect(() => {
@@ -56,16 +59,18 @@ export default function OrderTrackingPage() {
     // 2. Setup Socket.IO connection
     const socketInstance = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5
     });
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
-      console.log('Connected to real-time tracking');
+      console.log('Connected to real-time tracking for room:', `order_${orderId}`);
       socketInstance.emit('joinOrderRoom', orderId);
     });
 
     socketInstance.on('orderStatusUpdated', (updatedOrder) => {
-      console.log('Real-time update received:', updatedOrder);
+      console.log('Real-time update received for status:', updatedOrder.status);
       playNotificationSound();
       
       // Determine what to show in the toast
@@ -77,13 +82,23 @@ export default function OrderTrackingPage() {
       if (updatedOrder.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
       if (updatedOrder.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
       if (updatedOrder.status === 'Cancelled') { 
-        toast.error('Order Cancelled.', { icon: '✕' });
+        toast.error('Order Cancelled.', { 
+          icon: '✕',
+          duration: 10000 
+        });
         setOrder(updatedOrder);
         return;
       }
       
-      toast.success(message, { icon });
+      toast.success(message, { 
+        icon,
+        duration: 8000 // 10 seconds for status updates
+      });
       setOrder(updatedOrder);
+    });
+
+    socketInstance.on('disconnect', () => {
+      console.log('Tracking socket disconnected');
     });
 
     return () => {

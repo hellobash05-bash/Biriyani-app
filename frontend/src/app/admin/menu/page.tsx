@@ -18,7 +18,7 @@ export default function AdminMenu() {
     offerPrice: '',
     discountPercentage: '',
     category: 'Chicken',
-    image: '/images/biriyani-placeholder.jpg',
+    image: '',
     isAvailable: true
   });
 
@@ -78,7 +78,7 @@ export default function AdminMenu() {
       }
       setIsAdding(false);
       setEditingItem(null);
-      setFormData({ name: '', description: '', price: '', offerPrice: '', discountPercentage: '', category: 'Chicken', image: '/images/biriyani-placeholder.jpg', isAvailable: true });
+      setFormData({ name: '', description: '', price: '', offerPrice: '', discountPercentage: '', category: 'Chicken', image: '', isAvailable: true });
       loadMenu();
     } catch (err) {
       alert('Action failed');
@@ -108,7 +108,7 @@ export default function AdminMenu() {
           onClick={() => { 
             setIsAdding(true); 
             setEditingItem(null); 
-            setFormData({ name: '', description: '', price: '', offerPrice: '', discountPercentage: '', category: 'Chicken', image: '/images/biriyani-placeholder.jpg', isAvailable: true });
+            setFormData({ name: '', description: '', price: '', offerPrice: '', discountPercentage: '', category: 'Chicken', image: '', isAvailable: true });
           }}
           className="w-full md:w-auto p-6 bg-orange-600 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl shadow-orange-600/20 hover:scale-105 transition-all"
         >
@@ -170,6 +170,47 @@ export default function AdminMenu() {
                       onChange={e => setFormData({...formData, image: e.target.value})}
                       className="w-full bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold outline-none border border-input-border focus:border-orange-500" 
                     />
+                  </div>
+                </div>
+
+                {/* Image Preview & Presets */}
+                <div className="flex flex-col md:flex-row gap-5 p-6 bg-stone-100 dark:bg-stone-900/50 rounded-[2rem] border border-glass-border">
+                  <div className="w-full md:w-32 h-32 rounded-2xl bg-foreground/5 overflow-hidden shrink-0 border border-glass-border">
+                    {formData.image ? (
+                      <img 
+                        src={formData.image} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=200&auto=format&fit=crop';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-[10px] font-black text-stone-400 uppercase text-center p-2">
+                        <span>No Image</span>
+                        <span className="opacity-40">Preview</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-3">
+                    <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest">Royale Presets (One-Click)</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: 'Chicken', url: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop' },
+                        { label: 'Mutton', url: 'https://images.unsplash.com/photo-1543353071-873f17a7a088?q=80&w=600&auto=format&fit=crop' },
+                        { label: 'Veg', url: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600&auto=format&fit=crop' },
+                        { label: 'Starter', url: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?q=80&w=600&auto=format&fit=crop' }
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, image: preset.url })}
+                          className="px-4 py-2 bg-background border border-glass-border rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-orange-500 hover:text-orange-500 transition-all"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 

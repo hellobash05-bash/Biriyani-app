@@ -56,8 +56,9 @@ export async function syncUser(userData: { uid: string; name: string | null; ema
   return response.json();
 }
 
-export async function fetchUserOrders() {
-  const response = await fetch(`${API_BASE_URL}/user/orders`);
+export async function fetchUserOrders(email?: string) {
+  const url = email ? `${API_BASE_URL}/user/orders?email=${email}` : `${API_BASE_URL}/user/orders`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch user orders');
   }

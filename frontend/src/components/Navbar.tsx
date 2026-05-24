@@ -12,6 +12,20 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, isAdmin } = useAuth();
   const { itemCount, setIsCartOpen } = useCart();
+  const [dbStatus, setDbStatus] = useState({ status: 'checking', type: 'unknown' });
+
+  useEffect(() => {
+    const checkDb = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/db-status`);
+        const data = await res.json();
+        setDbStatus(data);
+      } catch (e) {
+        setDbStatus({ status: 'failed', type: 'unknown' });
+      }
+    };
+    checkDb();
+  }, []);
 
   return (
     <motion.nav 
@@ -20,6 +34,9 @@ export default function Navbar() {
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       className="sticky top-0 z-50 w-full px-4 sm:px-6 md:px-12 py-4 bg-background/80 backdrop-blur-xl border-b border-glass-border"
     >
+      {dbStatus.type === 'temporary' && (
+        <div className="absolute -bottom-px left-0 right-0 h-0.5 bg-red-500 animate-pulse z-[60]" title="Warning: Temporary Database Mode. Data will be lost on restart." />
+      )}
       <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
         {/* Logo Section */}
         <motion.div 

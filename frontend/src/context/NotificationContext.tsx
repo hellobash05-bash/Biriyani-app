@@ -33,8 +33,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [socket, setSocket] = useState<Socket | null>(null);
 
   const playNotificationSound = () => {
+    console.log('Playing offer notification sound...');
     const audio = new Audio(NOTIFICATION_SOUND);
-    audio.play().catch(err => console.log('Audio play blocked:', err));
+    audio.play().catch(err => {
+      console.warn('Audio play blocked or failed. User may need to interact with the page first.', err);
+    });
   };
 
   const refreshNotifications = async () => {
@@ -59,13 +62,36 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setSocket(socketInstance);
 
     socketInstance.on('smartNotification', (data: any) => {
+      console.log('Smart notification received:', data.title);
       // Check if this notification is for the current user
-      if (profile?._id && data.userIds.includes(profile._id)) {
+      // Ensure IDs are compared as strings
+      const currentUserId = profile?._id?.toString();
+      const targetUserIds = data.userIds.map((id: any) => id.toString());
+
+      if (currentUserId && targetUserIds.includes(currentUserId)) {
+        console.log('Notification belongs to current user, playing sound...');
         playNotificationSound();
-        toast.success(`${data.title}: ${data.message}`, {
-          icon: '🔔',
-          duration: 6000
-        });
+        
+        toast.success(
+          (t) => (
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <span className="font-black uppercase tracking-tight">{data.title}</span>
+                <span className="text-[10px] opacity-80">{data.message}</span>
+              </div>
+              <button 
+                onClick={() => toast.dismiss(t.id)}
+                className="bg-orange-500/10 text-orange-600 w-6 h-6 rounded-full flex items-center justify-center font-black text-xs hover:bg-orange-500 hover:text-white transition-all"
+              >
+                ✕
+              </button>
+            </div>
+          ),
+          {
+            icon: '🔥',
+            duration: 30000 // 30 seconds for special offers
+          }
+        );
         refreshNotifications();
       }
     });

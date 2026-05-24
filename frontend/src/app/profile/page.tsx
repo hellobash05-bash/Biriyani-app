@@ -16,12 +16,24 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkDb = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/db-status`);
+        const data = await res.json();
+        setIsTemporaryMode(data.type === 'temporary');
+      } catch (e) {}
+    };
+    checkDb();
+  }, []);
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const ordersData = await fetchUserOrders();
+        const ordersData = await fetchUserOrders(user?.email || undefined);
         setOrders(ordersData);
       } catch (err) {
         console.error('Failed to fetch orders:', err);
@@ -72,6 +84,25 @@ export default function ProfilePage() {
 
       <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-7xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-12">
+          
+          {isTemporaryMode && (
+            <section className="bg-red-500/10 border border-red-500/20 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-2xl">⚠️</span>
+                <p className="text-red-500 text-xs font-bold uppercase tracking-widest leading-relaxed">
+                  Temporary Mode Active: Your Cloud Database (Atlas) is unreachable. <br />
+                  Data added now will be deleted when the server restarts.
+                </p>
+              </div>
+              <button 
+                onClick={() => window.open('https://www.mongodb.com/docs/atlas/security-whitelist/', '_blank')}
+                className="bg-red-500 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shrink-0"
+              >
+                Fix Connection
+              </button>
+            </section>
+          )}
+
           {/* User Header */}
           <section className="flex flex-col md:flex-row items-center gap-8 premium-card p-10 rounded-[3rem] relative overflow-hidden border border-stone-200 dark:border-white/5 bg-white dark:bg-stone-900/40">
             <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20 shrink-0">

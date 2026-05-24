@@ -70,6 +70,9 @@ io.on('connection', (socket) => {
 
 // Use a self-invoking function to handle async setup if needed
 let mongoServer;
+let dbStatus = 'connecting';
+let dbType = 'unknown';
+
 const connectDB = async () => {
   let uri = process.env.MONGODB_URI;
   let isMemoryServer = false;
@@ -78,10 +81,15 @@ const connectDB = async () => {
     console.log('Attempting to connect to provided MONGODB_URI...');
     try {
       await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
-      console.log('Successfully connected to Persistent Database');
+      console.log('Successfully connected to Persistent Database (Atlas)');
+      dbStatus = 'connected';
+      dbType = 'persistent';
       return;
     } catch (err) {
-      console.error('Persistent Database connection failed. Falling back to alternatives...');
+      console.error('--- PERSISTENT DB CONNECTION ERROR ---');
+      console.error('Error Code:', err.code);
+      console.error('Error Message:', err.message);
+      console.log('Falling back to alternatives...');
     }
   }
 
@@ -90,6 +98,8 @@ const connectDB = async () => {
   try {
     await mongoose.connect('mongodb://localhost:27017/biriyani-db', { serverSelectionTimeoutMS: 2000 });
     console.log('Connected to Local MongoDB');
+    dbStatus = 'connected';
+    dbType = 'local';
     return;
   } catch (err) {
     console.log('Local MongoDB not available. Starting MongoMemoryServer for development...');
@@ -100,16 +110,24 @@ const connectDB = async () => {
     uri = mongoServer.getUri();
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
     isMemoryServer = true;
+    dbStatus = 'connected';
+    dbType = 'temporary';
     console.log('Connected to MongoMemoryServer');
-    console.log('NOTE: Data will not persist across server restarts in this mode.');
+    console.log('!!! WARNING: DATA WILL BE WIPED ON RESTART !!!');
     
     // Seed data only for memory server
     console.log('Seeding initial data...');
     await seedInitialData();
   } catch (err) {
+    dbStatus = 'failed';
     console.error('All database connection attempts failed:', err);
   }
 };
+
+// ... inside routes ...
+app.get('/api/db-status', (req, res) => {
+  res.json({ status: dbStatus, type: dbType });
+});
 
 async function seedInitialData() {
   try {
@@ -153,6 +171,7 @@ async function seedInitialData() {
           offerPrice: 199,
           discountPercentage: 20,
           category: 'Chicken',
+          image: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop',
           isAvailable: true
         },
         {
@@ -160,6 +179,7 @@ async function seedInitialData() {
           description: 'Traditional slow-cooked mutton with long-grain rice.',
           price: 350,
           category: 'Mutton',
+          image: 'https://images.unsplash.com/photo-1543353071-873f17a7a088?q=80&w=600&auto=format&fit=crop',
           isAvailable: true
         },
         {
@@ -167,6 +187,7 @@ async function seedInitialData() {
           description: 'Assorted seasonal vegetables layered with aromatic rice.',
           price: 180,
           category: 'Veg',
+          image: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600&auto=format&fit=crop',
           isAvailable: true
         },
         {
@@ -174,6 +195,7 @@ async function seedInitialData() {
           description: 'Spicy, deep-fried chicken appetizer.',
           price: 150,
           category: 'Starters',
+          image: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?q=80&w=600&auto=format&fit=crop',
           isAvailable: true
         }
       ];
@@ -228,8 +250,11 @@ app.post('/api/orders', async (req, res) => {
 
 app.get('/api/user/orders', async (req, res) => {
   try {
-    // In a real app, we'd get the user ID from the auth token
-    const orders = await Order.find().sort({ createdAt: -1 }); 
+    const { email } = req.query;
+    let query = {};
+    if (email) query.userEmail = email;
+    
+    const orders = await Order.find(query).sort({ createdAt: -1 }); 
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -255,7 +280,8 @@ app.patch('/api/orders/:id/cancel', async (req, res) => {
     const updatedOrder = await order.save();
 
     // Emit real-time event
-    req.io.to(`order_${updatedOrder._id}`).emit('orderStatusUpdated', updatedOrder);
+    const orderRoom = `order_${updatedOrder._id.toString()}`;
+    req.io.to(orderRoom).emit('orderStatusUpdated', updatedOrder);
     req.io.emit('adminOrderUpdated', updatedOrder);
 
     res.json(updatedOrder);
@@ -409,7 +435,8 @@ app.patch('/api/admin/orders/:id/status', async (req, res) => {
     
     if (updatedOrder) {
       // Emit to specific order room for customer tracking
-      req.io.to(`order_${updatedOrder._id}`).emit('orderStatusUpdated', updatedOrder);
+      const orderRoom = `order_${updatedOrder._id.toString()}`;
+      req.io.to(orderRoom).emit('orderStatusUpdated', updatedOrder);
       // Emit to all admins
       req.io.emit('adminOrderUpdated', updatedOrder);
     }
@@ -473,7 +500,7 @@ app.patch('/api/admin/menu/:id', async (req, res) => {
           title,
           message,
           foodId: updatedItem._id,
-          userIds: interestedUsers.map(u => u._id) // Frontend will check if it belongs to them
+          userIds: interestedUsers.map(u => u._id.toString()) // Stringify for frontend comparison
         });
       }
     }
