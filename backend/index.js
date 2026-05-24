@@ -426,6 +426,10 @@ app.get('/api/admin/reviews', async (req, res) => {
   }
 });
 
+app.get('/api/version', (req, res) => {
+  res.json({ version: '1.2.0', status: 'Royale Backend Online' });
+});
+
 // --- REVIEW ROUTES ---
 app.post('/api/reviews', async (req, res) => {
   try {
