@@ -33,7 +33,7 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center gap-6">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
         <motion.div 
           animate={{ 
             rotate: 360,
@@ -50,9 +50,9 @@ export default function AdminLayout({
   // Final safety gate
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center text-center p-6">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center p-6">
         <div className="text-6xl mb-6">🔒</div>
-        <h1 className="text-3xl font-black text-white uppercase tracking-tighter mb-2">Access Restricted</h1>
+        <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-2">Access Restricted</h1>
         <p className="text-stone-500 italic max-w-xs">This area is reserved for the Royale Administration only.</p>
         <button 
           onClick={() => router.push('/')}
@@ -65,7 +65,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-stone-50 dark:bg-stone-950 selection:bg-orange-200 dark:selection:bg-orange-900/30">
+    <div className="flex min-h-screen bg-background selection:bg-orange-200 dark:selection:bg-orange-900/30">
       <AdminSidebar />
       <main className="flex-1 lg:ml-64 p-6 md:p-10 relative pt-24 lg:pt-10">
         <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern opacity-[0.03] dark:opacity-[0.07]" />

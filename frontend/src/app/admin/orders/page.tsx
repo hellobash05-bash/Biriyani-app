@@ -100,9 +100,9 @@ export default function AdminOrders() {
 
   if (loading) return (
     <div className="flex flex-col gap-8 animate-pulse">
-      <div className="h-12 w-64 bg-white/5 rounded-2xl" />
+      <div className="h-12 w-64 bg-foreground/5 rounded-2xl" />
       {[1, 2, 3].map(i => (
-        <div key={i} className="h-64 bg-white/5 rounded-[3rem]" />
+        <div key={i} className="h-64 bg-foreground/5 rounded-[3rem]" />
       ))}
     </div>
   );
@@ -111,14 +111,14 @@ export default function AdminOrders() {
     <div className="flex flex-col gap-6 md:gap-8 relative">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase mb-2 leading-none">Live Orders</h1>
+          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-2 leading-none">Live Orders</h1>
           <p className="text-stone-500 font-medium italic text-xs uppercase tracking-widest">Real-time management • Socket.IO enabled</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-500 bg-green-500/5 border border-green-500/10 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.1)]">
             <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Live
           </div>
-          <button onClick={loadOrders} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all font-black text-xs">
+          <button onClick={loadOrders} className="p-4 bg-foreground/5 rounded-2xl border border-glass-border hover:bg-foreground/10 transition-all font-black text-xs">
              🔄
           </button>
         </div>
@@ -131,20 +131,20 @@ export default function AdminOrders() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6"
           >
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-[#0e0d0c] border border-white/5 rounded-[3rem] p-10 shadow-2xl">
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-background border border-glass-border rounded-[3rem] p-10 shadow-2xl">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
               <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Partner Name</label>
-                  <input type="text" placeholder="e.g. Rahul Kumar" value={partnerDetails.name} onChange={e => setPartnerDetails({...partnerDetails, name: e.target.value})} required className="w-full bg-white/5 text-white p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-transparent focus:border-orange-500 transition-all" />
+                  <input type="text" placeholder="e.g. Rahul Kumar" value={partnerDetails.name} onChange={e => setPartnerDetails({...partnerDetails, name: e.target.value})} required className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Phone Number</label>
-                  <input type="tel" placeholder="+91 98765 00000" value={partnerDetails.phone} onChange={e => setPartnerDetails({...partnerDetails, phone: e.target.value})} required className="w-full bg-white/5 text-white p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-transparent focus:border-orange-500 transition-all" />
+                  <input type="tel" placeholder="+91 98765 00000" value={partnerDetails.phone} onChange={e => setPartnerDetails({...partnerDetails, phone: e.target.value})} required className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Vehicle Number</label>
-                  <input type="text" placeholder="KL 07 AB 1234" value={partnerDetails.vehicleNumber} onChange={e => setPartnerDetails({...partnerDetails, vehicleNumber: e.target.value})} required className="w-full bg-white/5 text-white p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-transparent focus:border-orange-500 transition-all" />
+                  <input type="text" placeholder="KL 07 AB 1234" value={partnerDetails.vehicleNumber} onChange={e => setPartnerDetails({...partnerDetails, vehicleNumber: e.target.value})} required className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
                 </div>
                 
                 <div className="flex gap-4 mt-4">
@@ -166,11 +166,11 @@ export default function AdminOrders() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-stone-900/40 rounded-[3rem] border border-white/5 overflow-hidden group hover:border-orange-500/20 transition-all duration-500"
+              className="premium-card rounded-[3rem] overflow-hidden group hover:border-orange-500/20 transition-all duration-500"
             >
               <div className="flex flex-col lg:flex-row">
                  {/* Order Info */}
-                 <div className="flex-1 p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-white/5">
+                 <div className="flex-1 p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-glass-border">
                     <div className="flex justify-between items-start mb-8">
                        <div>
                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">CULINARY ORDER</span>
@@ -178,14 +178,14 @@ export default function AdminOrders() {
                        </div>
                        <div className="text-right">
                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">ROYALE TOTAL</span>
-                         <span className="text-3xl font-black text-white tracking-tighter">₹{order.totalAmount}</span>
+                         <span className="text-3xl font-black text-foreground tracking-tighter">₹{order.totalAmount}</span>
                        </div>
                     </div>
 
                     <div className="flex flex-col gap-4 mb-10">
                        {order.items.map((item: any, idx: number) => (
                          <div key={idx} className="flex justify-between items-center text-sm">
-                           <span className="text-white font-bold leading-tight pr-4">
+                           <span className="text-foreground font-bold leading-tight pr-4">
                              <span className="font-black text-orange-600 mr-3 italic">{item.quantity}x</span>
                              {item.name}
                            </span>
@@ -194,9 +194,9 @@ export default function AdminOrders() {
                        ))}
                     </div>
 
-                    <div className="pt-10 border-t border-white/5">
+                    <div className="pt-10 border-t border-glass-border">
                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-4">GUEST INFORMATION</span>
-                       <p className="font-black text-2xl text-white uppercase tracking-tighter mb-2">{order.customer.name}</p>
+                       <p className="font-black text-2xl text-foreground uppercase tracking-tighter mb-2">{order.customer.name}</p>
                        <div className="flex flex-col gap-2">
                          <span className="text-sm font-bold text-orange-600 tracking-wide">{order.customer.phone}</span>
                          <p className="text-xs text-stone-500 italic leading-relaxed max-w-md">
@@ -207,7 +207,7 @@ export default function AdminOrders() {
                  </div>
 
                  {/* Status Control */}
-                 <div className="w-full lg:w-96 p-8 md:p-10 bg-[#0e0d0c]/40 flex flex-col justify-between gap-10">
+                 <div className="w-full lg:w-96 p-8 md:p-10 bg-foreground/5 flex flex-col justify-between gap-10">
                     <div>
                        <div className="flex justify-between items-center mb-6">
                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600">MISSION STATUS</span>
@@ -221,7 +221,7 @@ export default function AdminOrders() {
                          order.status === 'Delivered' ? 'bg-green-600 text-white' :
                          order.status === 'Pending' ? 'bg-amber-600 text-white' : 
                          order.status === 'Cancelled' ? 'bg-red-600 text-white' : 
-                         'bg-white text-stone-900'
+                         'bg-foreground text-background'
                        }`}>
                          {order.status}
                        </div>
@@ -257,8 +257,8 @@ export default function AdminOrders() {
                                  disabled={order.status === status}
                                  className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
                                    order.status === status 
-                                   ? 'bg-white/5 text-stone-700 pointer-events-none' 
-                                   : 'bg-stone-900 text-white/60 border border-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-500'
+                                   ? 'bg-foreground/5 text-stone-700 pointer-events-none' 
+                                   : 'bg-background text-foreground/60 border border-glass-border hover:bg-orange-600 hover:text-white hover:border-orange-500'
                                  }`}
                                >
                                  {status}
@@ -271,7 +271,7 @@ export default function AdminOrders() {
                        {!order.deliveryPartner?.name && !['Delivered', 'Cancelled', 'Pending'].includes(order.status) && (
                          <button 
                            onClick={() => setAssigningOrder(order)}
-                           className="mt-4 w-full py-5 bg-white text-[#0e0d0c] rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-2xl"
+                           className="mt-4 w-full py-5 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-2xl"
                          >
                            + ASSIGN DELIVERY PARTNER
                          </button>

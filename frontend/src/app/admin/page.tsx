@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     <div className="flex flex-col gap-8 md:gap-12">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase mb-2 leading-none">
+          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-2 leading-none">
             Dashboard
           </h1>
           <p className="text-stone-500 font-medium italic text-sm md:text-base uppercase tracking-widest text-[9px]">
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-stone-900/40 p-8 rounded-[2.5rem] border border-white/5 group hover:border-orange-500/20 transition-all cursor-default relative overflow-hidden"
+            className="premium-card p-8 group cursor-default relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                <span className="text-6xl">{card.icon}</span>
@@ -88,11 +88,11 @@ export default function AdminDashboard() {
             
             <div className="flex items-center justify-between mb-4 relative z-10">
                <span className={`p-3 rounded-2xl ${card.color} text-xl shadow-inner`}>{card.icon}</span>
-               <span className="text-[10px] font-black px-2 py-1 bg-white/5 rounded-lg text-stone-500">{card.trend}</span>
+               <span className="text-[10px] font-black px-2 py-1 bg-foreground/5 rounded-lg text-stone-500">{card.trend}</span>
             </div>
             <div className="relative z-10">
               <h3 className="text-stone-500 font-black uppercase tracking-[0.2em] text-[10px] mb-1">{card.title}</h3>
-              <p className="text-2xl md:text-3xl font-black text-white">{card.value}</p>
+              <p className="text-2xl md:text-3xl font-black text-foreground">{card.value}</p>
             </div>
           </motion.div>
         ))}
@@ -100,9 +100,9 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
         {/* Popular Items - Large Span */}
-        <div className="lg:col-span-2 bg-stone-900/40 p-8 rounded-[3rem] border border-white/5">
+        <div className="lg:col-span-2 premium-card p-8">
            <div className="flex items-center justify-between mb-8">
-             <h2 className="text-xl font-black text-white tracking-tighter uppercase flex items-center gap-3">
+             <h2 className="text-xl font-black text-foreground tracking-tighter uppercase flex items-center gap-3">
                 <span className="text-orange-500">🔥</span> Popular Items
              </h2>
              <button className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:underline">View All</button>
@@ -115,20 +115,20 @@ export default function AdminDashboard() {
                  initial={{ opacity: 0, x: -10 }}
                  animate={{ opacity: 1, x: 0 }}
                  transition={{ delay: i * 0.1 + 0.5 }}
-                 className="flex items-center justify-between p-5 bg-white/2 border border-transparent hover:border-orange-500/10 rounded-2xl transition-all group"
+                 className="flex items-center justify-between p-5 bg-foreground/2 border border-transparent hover:border-orange-500/10 rounded-2xl transition-all group"
                >
                  <div className="flex items-center gap-4">
-                   <span className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl text-[10px] font-black group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                   <span className="w-10 h-10 flex items-center justify-center bg-foreground/5 rounded-xl text-[10px] font-black group-hover:bg-orange-600 group-hover:text-white transition-colors">
                      #{i + 1}
                    </span>
                    <div>
-                     <p className="font-bold text-sm md:text-base text-white">{item.name}</p>
+                     <p className="font-bold text-sm md:text-base text-foreground">{item.name}</p>
                      <p className="text-[10px] text-stone-500 font-black uppercase tracking-widest">Main Collection</p>
                    </div>
                  </div>
                  <div className="text-right">
                    <span className="text-orange-500 font-black text-sm md:text-base">{item.count} Sold</span>
-                   <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
+                   <div className="w-24 h-1 bg-foreground/5 rounded-full mt-2 overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${(item.count / stats.popularItems[0].count) * 100}%` }}
@@ -142,8 +142,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-stone-900/40 p-8 rounded-[3rem] border border-white/5 flex flex-col">
-           <h2 className="text-xl font-black text-white tracking-tighter uppercase mb-8 flex items-center gap-3">
+        <div className="premium-card p-8 flex flex-col">
+           <h2 className="text-xl font-black text-foreground tracking-tighter uppercase mb-8 flex items-center gap-3">
               <span className="text-blue-500">⚡</span> Quick Actions
            </h2>
            <div className="grid grid-cols-1 gap-3 flex-1">
@@ -155,19 +155,19 @@ export default function AdminDashboard() {
              </button>
              <button 
                onClick={() => router.push('/admin/orders')}
-               className="flex items-center gap-4 p-5 bg-white text-stone-950 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all"
+               className="flex items-center gap-4 p-5 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all"
              >
                <span className="text-lg">🛒</span> Manage Orders
              </button>
              <button 
                onClick={() => router.push('/admin/customers')}
-               className="flex items-center gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all text-white/60"
+               className="flex items-center gap-4 p-5 bg-foreground/5 border border-glass-border rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-foreground/10 transition-all text-stone-500"
              >
                <span className="text-lg">👥</span> Our Community
              </button>
              <button 
                onClick={() => router.push('/admin/reviews')}
-               className="flex items-center gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all text-white/60"
+               className="flex items-center gap-4 p-5 bg-foreground/5 border border-glass-border rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-foreground/10 transition-all text-stone-500"
              >
                <span className="text-lg">⭐</span> Customer Feedback
              </button>

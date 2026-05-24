@@ -11,8 +11,8 @@ export default function AdminSettings() {
   return (
     <div className="flex flex-col gap-10">
       <header>
-        <h1 className="text-4xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase mb-2">Settings</h1>
-        <p className="text-stone-500 dark:text-gold-300/60 font-medium italic text-lg tracking-tight">Configure your Royale empire.</p>
+        <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase mb-2">Settings</h1>
+        <p className="text-stone-500 font-medium italic text-lg tracking-tight">Configure your Royale empire.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -20,24 +20,24 @@ export default function AdminSettings() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="premium-card"
+            className="premium-card p-8"
           >
-            <h2 className="text-xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase mb-6 flex items-center gap-3">
+            <h2 className="text-xl font-black text-foreground tracking-tighter uppercase mb-6 flex items-center gap-3">
                <span className="p-2 bg-orange-500/10 rounded-lg text-orange-500 text-sm">👤</span>
                Profile Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-2">Display Name</label>
-                 <input type="text" defaultValue={profile?.name} className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
+                 <input type="text" defaultValue={profile?.name} className="w-full bg-input-bg text-input-text border border-input-border focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
                </div>
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-2">Email Address</label>
-                 <input type="email" defaultValue={profile?.email} disabled className="w-full bg-stone-100 dark:bg-white/5 border border-transparent p-4 rounded-2xl font-bold outline-none opacity-50 cursor-not-allowed" />
+                 <input type="email" defaultValue={profile?.email} disabled className="w-full bg-input-bg text-input-text border border-input-border p-4 rounded-2xl font-bold outline-none opacity-50 cursor-not-allowed" />
                </div>
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-2">Phone Number</label>
-                 <input type="text" defaultValue={profile?.phone} className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
+                 <input type="text" defaultValue={profile?.phone} className="w-full bg-input-bg text-input-text border border-input-border focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
                </div>
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-2">Role</label>
@@ -47,7 +47,7 @@ export default function AdminSettings() {
             <div className="mt-8 flex justify-end">
                <button 
                  onClick={() => { setSaving(true); setTimeout(() => setSaving(false), 1500); }}
-                 className="bg-stone-900 dark:bg-gold-500 text-white dark:text-gold-950 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-stone-900/20"
+                 className="bg-foreground text-background px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-stone-900/20 hover:bg-orange-600 hover:text-white"
                >
                  {saving ? 'Saving...' : 'Update Profile'}
                </button>
@@ -58,25 +58,25 @@ export default function AdminSettings() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="premium-card"
+            className="premium-card p-8"
           >
-            <h2 className="text-xl font-black text-stone-900 dark:text-gold-100 tracking-tighter uppercase mb-6 flex items-center gap-3">
+            <h2 className="text-xl font-black text-foreground tracking-tighter uppercase mb-6 flex items-center gap-3">
                <span className="p-2 bg-blue-500/10 rounded-lg text-blue-500 text-sm">🏪</span>
                Restaurant Configuration
             </h2>
             <div className="space-y-6">
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-2">Restaurant Name</label>
-                 <input type="text" defaultValue="Biriyani Royale" className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
+                 <input type="text" defaultValue="Biriyani Royale" className="w-full bg-input-bg text-input-text border border-input-border focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-2">Opening Time</label>
-                    <input type="time" defaultValue="09:00" className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
+                    <input type="time" defaultValue="09:00" className="w-full bg-input-bg text-input-text border border-input-border focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-2">Closing Time</label>
-                    <input type="time" defaultValue="23:00" className="w-full bg-stone-100 dark:bg-white/5 border border-transparent focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
+                    <input type="time" defaultValue="23:00" className="w-full bg-input-bg text-input-text border border-input-border focus:border-orange-500/30 p-4 rounded-2xl font-bold outline-none transition-all" />
                   </div>
                </div>
             </div>
