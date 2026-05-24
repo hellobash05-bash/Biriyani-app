@@ -48,7 +48,7 @@ export default function BottomNav() {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0e0d0c]/90 backdrop-blur-2xl border-t border-white/5 pb-safe">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-2xl border-t border-glass-border pb-safe">
       <div className="flex justify-around items-center h-20 px-4">
         {NAV_ITEMS.map((item) => (
           <button

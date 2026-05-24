@@ -50,7 +50,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen pb-20 md:pb-0 selection:bg-orange-600 overflow-hidden relative bg-[#0e0d0c]">
+    <div className="flex flex-col w-full min-h-screen pb-20 md:pb-0 selection:bg-orange-600 overflow-hidden relative bg-background">
       {/* Ambient Animated Blobs */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <motion.div 
@@ -108,7 +108,7 @@ export default function Home() {
                  <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-white text-[#0e0d0c] px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm shadow-2xl hover:bg-orange-600 hover:text-white transition-all w-full sm:min-w-[240px]"
+                  className="bg-foreground text-background px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm shadow-2xl hover:bg-orange-600 hover:text-white transition-all w-full sm:min-w-[240px]"
                  >
                    Start Your Order
                  </motion.button>
@@ -117,7 +117,7 @@ export default function Home() {
                  <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-white/5 backdrop-blur-xl border border-white/5 text-white/80 px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-white/10 transition-all w-full sm:min-w-[240px]"
+                  className="bg-foreground/5 backdrop-blur-xl border border-glass-border text-foreground/80 px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-foreground/10 transition-all w-full sm:min-w-[240px]"
                  >
                    Login to Account
                  </motion.button>
