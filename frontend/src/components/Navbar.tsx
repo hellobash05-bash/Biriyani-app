@@ -27,8 +27,9 @@ export default function Navbar() {
           whileTap={{ scale: 0.98 }}
           className="flex items-center gap-3"
         >
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white font-black shadow-[0_0_30px_rgba(249,115,22,0.3)] text-xl">
-            B
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white font-black shadow-[0_0_30px_rgba(249,115,22,0.3)] text-xl relative">
+            BR
+            <span className="absolute -bottom-1 -right-1 text-[6px] opacity-40">v1.1</span>
           </div>
           <Link href="/" className="text-xl sm:text-2xl font-black tracking-tighter text-foreground uppercase flex flex-col leading-none">
             Biriyani <span className="text-orange-500 italic text-[0.7em] tracking-normal">Royale</span>
