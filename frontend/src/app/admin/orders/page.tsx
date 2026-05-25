@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners, SOCKET_URL } from '@/lib/api';
+import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 const STATUS_OPTIONS = ['Pending', 'Preparing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
@@ -12,7 +12,6 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'history'>('live');
   
   // State for partner assignment modal
@@ -38,32 +37,70 @@ export default function AdminOrders() {
   useEffect(() => {
     loadData();
 
-    const socketInstance = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-    });
-    setSocket(socketInstance);
+    console.log('--- SETTING UP ADMIN REALTIME SUBSCRIPTIONS ---');
 
-    socketInstance.on('connect', () => {
-      console.log('Admin connected to socket');
-    });
+    const channel = supabase
+      .channel('admin-orders-channel')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('📢 New Order Received via Realtime:', payload.new);
+          const newOrder = payload.new as any;
+          
+          // Format for frontend
+          const formattedOrder = { 
+            ...newOrder, 
+            _id: newOrder.id, 
+            totalAmount: newOrder.total_amount,
+            customer: {
+              name: newOrder.customer_name,
+              phone: newOrder.customer_phone,
+              address: {
+                house: newOrder.address_house,
+                street: newOrder.address_street,
+                city: newOrder.address_city,
+                pincode: newOrder.address_pincode,
+                landmark: newOrder.address_landmark
+              }
+            },
+            items: [] // Items need a separate fetch or backend join if complex
+          };
 
-    socketInstance.on('adminOrderUpdated', (updatedOrder) => {
-      setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
-      toast(`Order updated to ${updatedOrder.status}`, { icon: '🔄' });
-    });
-
-    socketInstance.on('newOrder', (newOrder) => {
-      setOrders(prev => [newOrder, ...prev]);
-      toast.success(`NEW ORDER RECEIVED`, {
-        duration: 6000,
-        icon: '🥡',
-      });
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.play().catch(() => {});
-    });
+          setOrders(prev => [formattedOrder, ...prev]);
+          toast.success(`NEW ORDER RECEIVED: #${formattedOrder._id.slice(-6)}`, {
+            duration: 8000,
+            icon: '🥡',
+          });
+          
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+          audio.play().catch(() => {});
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('📢 Order Update Received via Realtime:', payload.new);
+          const updated = payload.new as any;
+          
+          setOrders(prev => prev.map(o => o._id === updated.id ? { 
+            ...o, 
+            status: updated.status,
+            deliveryPartner: updated.delivery_partner_name ? {
+              name: updated.delivery_partner_name,
+              phone: updated.delivery_partner_phone,
+              vehicleNumber: updated.delivery_partner_vehicle
+            } : o.deliveryPartner
+          } : o));
+          
+          toast(`Order #${updated.id.slice(-6)} updated to ${updated.status}`, { icon: '🔄' });
+        }
+      )
+      .subscribe();
 
     return () => {
-      socketInstance.disconnect();
+      supabase.removeChannel(channel);
     };
   }, []);
 

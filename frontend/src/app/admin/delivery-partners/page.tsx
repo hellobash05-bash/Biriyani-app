@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchDeliveryPartners, addDeliveryPartner, updateDeliveryPartner, deleteDeliveryPartner } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDeliveryPartners() {
   const [partners, setPartners] = useState<any[]>([]);
@@ -31,6 +32,44 @@ export default function AdminDeliveryPartners() {
 
   useEffect(() => {
     loadPartners();
+
+    console.log('--- SETTING UP PARTNER REALTIME SUBSCRIPTIONS ---');
+
+    const channel = supabase
+      .channel('delivery-partners-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'delivery_partners' },
+        (payload) => {
+          console.log('📢 Partner Realtime Update Received:', payload.eventType, payload.new);
+          
+          if (payload.eventType === 'INSERT') {
+            const newPartner = payload.new as any;
+            setPartners(prev => [{ ...newPartner, _id: newPartner.id, vehicleNumber: newPartner.vehicle_number }, ...prev]);
+            toast.success(`New Partner Registered: ${newPartner.name}`);
+          }
+          
+          if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as any;
+            setPartners(prev => prev.map(p => p._id === updated.id ? { 
+              ...updated, 
+              _id: updated.id, 
+              vehicleNumber: updated.vehicle_number,
+              activeOrders: updated.active_orders 
+            } : p));
+          }
+          
+          if (payload.eventType === 'DELETE') {
+            const deleted = payload.old as any;
+            setPartners(prev => prev.filter(p => p._id !== deleted.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

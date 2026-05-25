@@ -1,15 +1,13 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import ReviewForm from '@/components/ReviewForm';
+import { supabase } from '@/lib/supabase';
 
-import { fetchOrderById, cancelOrder, SOCKET_URL } from '@/lib/api';
+import { fetchOrderById, cancelOrder } from '@/lib/api';
 
 const STATUS_STEPS = [
   { label: 'Pending', icon: '🕒' },
@@ -27,13 +25,12 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
 
   const playNotificationSound = () => {
     console.log('Playing status update sound...');
     const audio = new Audio(NOTIFICATION_SOUND);
     audio.play().catch(err => {
-      console.warn('Audio play blocked or failed. This usually requires a user interaction on the page first.', err);
+      console.warn('Audio play blocked or failed.', err);
     });
   };
 
@@ -56,55 +53,63 @@ export default function OrderTrackingPage() {
     };
     fetchOrder();
 
-    // 2. Setup Socket.IO connection
-    const socketInstance = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5
-    });
-    setSocket(socketInstance);
+    // 2. Setup Supabase Realtime for this order
+    console.log(`--- SETTING UP REALTIME TRACKING FOR ORDER: ${orderId} ---`);
+    
+    const channel = supabase
+      .channel(`order-tracking-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`
+        },
+        (payload) => {
+          console.log('📢 Realtime Order Update Received:', payload.new);
+          const updatedOrder = payload.new as any;
+          
+          // Map snake_case from DB to camelCase expected by component
+          const formattedOrder = {
+            ...updatedOrder,
+            _id: updatedOrder.id,
+            totalAmount: updatedOrder.total_amount,
+            estimatedDeliveryTime: updatedOrder.estimated_delivery_time,
+            deliveryPartner: updatedOrder.delivery_partner_name ? {
+              name: updatedOrder.delivery_partner_name,
+              phone: updatedOrder.delivery_partner_phone,
+              vehicleNumber: updatedOrder.delivery_partner_vehicle
+            } : null,
+            // Items are not part of the order update usually, keep existing ones
+            items: order?.items || [] 
+          };
 
-    socketInstance.on('connect', () => {
-      console.log('Connected to real-time tracking for room:', `order_${orderId}`);
-      socketInstance.emit('joinOrderRoom', orderId);
-    });
-
-    socketInstance.on('orderStatusUpdated', (updatedOrder) => {
-      console.log('Real-time update received for status:', updatedOrder.status);
-      playNotificationSound();
-      
-      // Determine what to show in the toast
-      let message = `Status Update: ${updatedOrder.status}`;
-      let icon = '🔔';
-      
-      if (updatedOrder.status === 'Preparing') { message = 'Chefs are preparing your feast!'; icon = '👨‍🍳'; }
-      if (updatedOrder.status === 'Packed') { message = 'Your order is packed and ready!'; icon = '📦'; }
-      if (updatedOrder.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
-      if (updatedOrder.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
-      if (updatedOrder.status === 'Cancelled') { 
-        toast.error('Order Cancelled.', { 
-          icon: '✕',
-          duration: 10000 
-        });
-        setOrder(updatedOrder);
-        return;
-      }
-      
-      toast.success(message, { 
-        icon,
-        duration: 8000 // 10 seconds for status updates
-      });
-      setOrder(updatedOrder);
-    });
-
-    socketInstance.on('disconnect', () => {
-      console.log('Tracking socket disconnected');
-    });
+          playNotificationSound();
+          
+          let message = `Status Update: ${formattedOrder.status}`;
+          let icon = '🔔';
+          
+          if (formattedOrder.status === 'Preparing') { message = 'Chefs are preparing your feast!'; icon = '👨‍🍳'; }
+          if (formattedOrder.status === 'Packed') { message = 'Your order is packed and ready!'; icon = '📦'; }
+          if (formattedOrder.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
+          if (formattedOrder.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
+          if (formattedOrder.status === 'Cancelled') { 
+            toast.error('Order Cancelled.', { icon: '✕', duration: 10000 });
+            setOrder(formattedOrder);
+            return;
+          }
+          
+          toast.success(message, { icon, duration: 8000 });
+          setOrder(formattedOrder);
+        }
+      )
+      .subscribe();
 
     return () => {
-      socketInstance.disconnect();
+      supabase.removeChannel(channel);
     };
-  }, [orderId]);
+  }, [orderId, order?.items]);
 
   const handleCancelOrder = async () => {
     if (!orderId) return;

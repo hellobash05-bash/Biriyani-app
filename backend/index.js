@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
 import ws from 'ws';
 import multer from 'multer';
@@ -43,7 +42,7 @@ const httpServer = createServer(app);
 app.get('/api/version', (req, res) => {
   res.json({ 
     version: '2.0.0', 
-    status: 'Royale Backend Online (Supabase)',
+    status: 'Royale Backend Online (Supabase Realtime Ready)',
     sync_id: 'ROYALE-SYNC-SUPABASE',
     timestamp: new Date().toISOString()
   });
@@ -59,32 +58,14 @@ app.get('/', (req, res) => {
   res.send('<h1>Biriyani Backend V2.0.0 (Supabase)</h1>');
 });
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: "*", 
-    methods: ["GET", "POST", "PATCH", "DELETE"]
-  }
-});
-
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
-  req.io = io;
   req.supabase = supabase;
   next();
-});
-
-io.on('connection', (socket) => {
-  console.log('A client connected:', socket.id);
-  socket.on('joinOrderRoom', (orderId) => {
-    socket.join(`order_${orderId}`);
-  });
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
 });
 
 app.get('/api/db-status', async (req, res) => {
@@ -209,7 +190,6 @@ app.post('/api/orders', async (req, res) => {
 
     // Format for frontend
     const responseOrder = { ...orderData, _id: orderData.id, items };
-    req.io.emit('newOrder', responseOrder);
     res.status(201).json(responseOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -286,9 +266,6 @@ app.patch('/api/orders/:id/cancel', async (req, res) => {
   if (error) return res.status(500).json({ message: error.message });
 
   const formattedOrder = { ...updatedOrder, _id: updatedOrder.id };
-  const orderRoom = `order_${formattedOrder._id}`;
-  req.io.to(orderRoom).emit('orderStatusUpdated', formattedOrder);
-  req.io.emit('adminOrderUpdated', formattedOrder);
 
   res.json(formattedOrder);
 });
@@ -509,8 +486,6 @@ app.patch('/api/admin/orders/:id/status', async (req, res) => {
   if (error) return res.status(400).json({ message: error.message });
 
   const formattedOrder = { ...updatedOrder, _id: updatedOrder.id };
-  req.io.to(`order_${formattedOrder._id}`).emit('orderStatusUpdated', formattedOrder);
-  req.io.emit('adminOrderUpdated', formattedOrder);
   
   res.json(formattedOrder);
 });
@@ -615,7 +590,6 @@ app.post('/api/reviews', async (req, res) => {
     return res.status(400).json({ message: error.message });
   }
 
-  req.io.emit('newReview', { ...data, _id: data.id });
   res.status(201).json({ ...data, _id: data.id });
 });
 
@@ -693,5 +667,5 @@ app.use((err, req, res, next) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`Biriyani Server & Socket.IO running on port ${PORT} with Supabase`);
+  console.log(`Biriyani Server & Supabase running on port ${PORT}`);
 });

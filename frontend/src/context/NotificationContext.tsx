@@ -1,19 +1,24 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { fetchNotifications, markNotificationAsRead, SOCKET_URL } from '@/lib/api';
+import { fetchNotifications, markNotificationAsRead } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
 
 interface Notification {
   _id: string;
+  id: string; // Supabase uses id
   title: string;
   message: string;
   isRead: boolean;
+  is_read: boolean; // Supabase uses is_read
   type: string;
   createdAt: string;
+  created_at: string; // Supabase uses created_at
   relatedId?: string;
+  related_id?: string; // Supabase uses related_id
+  user_id?: string;
 }
 
 interface NotificationContextType {
@@ -28,22 +33,17 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 const NOTIFICATION_SOUND = 'https://cdn.pixabay.com/audio/2022/03/15/audio_5072705b4b.mp3';
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
 
   const playNotificationSound = () => {
-    console.log('🔔 ATTEMPTING TO PLAY OFFER SOUND...');
+    console.log('🔔 ATTEMPTING TO PLAY NOTIFICATION SOUND...');
     const audio = new Audio(NOTIFICATION_SOUND);
     audio.volume = 0.8;
     audio.play()
-      .then(() => console.log('✅ OFFER SOUND PLAYED SUCCESSFULY'))
+      .then(() => console.log('✅ NOTIFICATION SOUND PLAYED SUCCESSFULY'))
       .catch(err => {
-        console.warn('❌ OFFER SOUND BLOCKED:', err);
-        // Sometimes a second attempt works if the first is blocked but user just clicked
-        setTimeout(() => {
-          audio.play().catch(() => {});
-        }, 500);
+        console.warn('❌ NOTIFICATION SOUND BLOCKED:', err);
       });
   };
 
@@ -51,7 +51,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (profile?._id) {
       try {
         const data = await fetchNotifications(profile._id);
-        setNotifications(data);
+        // Map snake_case to camelCase for frontend compatibility
+        const formatted = data.map((n: any) => ({
+          ...n,
+          _id: n.id,
+          isRead: n.is_read,
+          createdAt: n.created_at,
+          relatedId: n.related_id
+        }));
+        setNotifications(formatted);
       } catch (err) {
         console.error('Failed to fetch notifications:', err);
       }
@@ -65,58 +73,60 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!profile?._id) return;
 
-    const socketInstance = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-    });
-    setSocket(socketInstance);
-
-    socketInstance.on('connect', () => {
-      console.log('✅ Notification Socket Connected');
-    });
-
-    socketInstance.on('smartNotification', (data: any) => {
-      console.log('📢 Received smartNotification event:', data.title);
-      
-      const currentUserId = profile?._id?.toString();
-      const targetUserIds = data.userIds || [];
-
-      console.log('User Matching Check:', { 
-        currentUserId, 
-        isTargeted: targetUserIds.includes(currentUserId) 
-      });
-
-      if (currentUserId && targetUserIds.includes(currentUserId)) {
-        console.log('🎯 Match found! Playing notification...');
-        playNotificationSound();
-        
-        toast.success(
-          (t) => (
-            <div className="flex items-center justify-between gap-4 min-w-[280px]">
-              <div className="flex flex-col">
-                <span className="font-black uppercase tracking-tight text-sm">{data.title}</span>
-                <span className="text-[10px] font-bold opacity-70 leading-tight">{data.message}</span>
+    console.log('--- SETTING UP SUPABASE REALTIME NOTIFICATIONS ---');
+    
+    const channel = supabase
+      .channel(`user-notifications-${profile._id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${profile._id}`
+        },
+        (payload) => {
+          console.log('📢 Realtime Notification Received:', payload.new);
+          const newNotif = payload.new as any;
+          
+          playNotificationSound();
+          
+          toast.success(
+            (t) => (
+              <div className="flex items-center justify-between gap-4 min-w-[280px]">
+                <div className="flex flex-col">
+                  <span className="font-black uppercase tracking-tight text-sm">{newNotif.title}</span>
+                  <span className="text-[10px] font-bold opacity-70 leading-tight">{newNotif.message}</span>
+                </div>
+                <button 
+                  onClick={() => toast.dismiss(t.id)}
+                  className="bg-orange-500/10 text-orange-600 w-8 h-8 rounded-full flex items-center justify-center font-black text-xs hover:bg-orange-500 hover:text-white transition-all shrink-0"
+                >
+                  ✕
+                </button>
               </div>
-              <button 
-                onClick={() => toast.dismiss(t.id)}
-                className="bg-orange-500/10 text-orange-600 w-8 h-8 rounded-full flex items-center justify-center font-black text-xs hover:bg-orange-500 hover:text-white transition-all shrink-0"
-              >
-                ✕
-              </button>
-            </div>
-          ),
-          {
-            icon: '🔥',
-            duration: 30000,
-            position: 'top-right'
-          }
-        );
-        refreshNotifications();
-      }
-    });
+            ),
+            {
+              icon: '🔔',
+              duration: 10000,
+              position: 'top-right'
+            }
+          );
+          
+          // Prepend new notification
+          setNotifications(prev => [{
+            ...newNotif,
+            _id: newNotif.id,
+            isRead: newNotif.is_read,
+            createdAt: newNotif.created_at,
+            relatedId: newNotif.related_id
+          }, ...prev]);
+        }
+      )
+      .subscribe();
 
     return () => {
-      socketInstance.off('smartNotification');
-      socketInstance.disconnect();
+      supabase.removeChannel(channel);
     };
   }, [profile?._id]);
 
