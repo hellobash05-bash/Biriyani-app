@@ -21,6 +21,10 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
+console.log('--- SUPABASE CONFIG CHECK ---');
+console.log('URL:', supabaseUrl);
+console.log('Key Type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE (Bypasses RLS)' : 'ANON_KEY (Restricted)');
+
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: false
@@ -214,42 +218,53 @@ app.post('/api/orders', async (req, res) => {
 
 app.get('/api/user/orders', async (req, res) => {
   const { email } = req.query;
-  let query = supabase.from('orders').select(`
-    *,
-    order_items (*)
-  `).order('created_at', { ascending: false });
+  console.log(`--- FETCHING ORDERS FOR: ${email || 'All Users'} ---`);
 
-  if (email) {
-    query = query.eq('user_email', email);
+  try {
+    let query = supabase.from('orders').select(`
+      *,
+      order_items (*)
+    `).order('created_at', { ascending: false });
+
+    if (email) {
+      query = query.eq('user_email', email);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('Order fetch error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+    
+    // Format data for frontend expectations
+    const formattedOrders = data.map(order => ({
+      _id: order.id,
+      createdAt: order.created_at,
+      totalAmount: order.total_amount,
+      status: order.status,
+      customer: {
+         name: order.customer_name,
+         phone: order.customer_phone,
+         address: {
+           house: order.address_house,
+           street: order.address_street,
+           city: order.address_city,
+           pincode: order.address_pincode
+         }
+      },
+      items: order.order_items ? order.order_items.map(item => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      })) : []
+    }));
+
+    console.log(`✅ Fetched ${formattedOrders.length} orders for ${email || 'Admin'}`);
+    res.json(formattedOrders);
+  } catch (err) {
+    console.error('User orders endpoint crash:', err);
+    res.status(500).json({ message: 'Internal server error fetching orders' });
   }
-
-  const { data, error } = await query;
-  if (error) return res.status(500).json({ message: error.message });
-  
-  // Format data for frontend expectations
-  const formattedOrders = data.map(order => ({
-    _id: order.id,
-    createdAt: order.created_at,
-    totalAmount: order.total_amount,
-    status: order.status,
-    customer: {
-       name: order.customer_name,
-       phone: order.customer_phone,
-       address: {
-         house: order.address_house,
-         street: order.address_street,
-         city: order.address_city,
-         pincode: order.address_pincode
-       }
-    },
-    items: order.order_items.map(item => ({
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity
-    }))
-  }));
-
-  res.json(formattedOrders);
 });
 
 app.patch('/api/orders/:id/cancel', async (req, res) => {
@@ -294,25 +309,50 @@ app.get('/api/orders/:id', async (req, res) => {
 // --- USER ROUTES ---
 app.get('/api/profile', async (req, res) => {
   const { email, uid } = req.query;
+  console.log(`--- FETCHING PROFILE FOR: ${email || uid} ---`);
   
-  let query = supabase.from('users').select('*, addresses(*), user_favorites(menu_item_id)');
-  if (email) query = query.eq('email', email);
-  if (uid) query = query.eq('uid', uid);
-  
-  const { data: users, error } = await query;
-  
-  if (error || !users || users.length === 0) {
-    return res.status(404).json({ message: 'User profile not found.' });
-  }
+  try {
+    let query = supabase
+      .from('users')
+      .select('*, addresses(*), user_favorites(menu_item_id)');
+    
+    if (email) query = query.eq('email', email);
+    if (uid) query = query.eq('uid', uid);
+    
+    const { data: users, error } = await query;
+    
+    if (error) {
+      console.error('Profile fetch error:', error);
+      return res.status(500).json({ message: error.message });
+    }
 
-  const user = users[0];
-  const favorites = user.user_favorites.map(f => f.menu_item_id);
-  
-  res.json({ ...user, _id: user.id, favorites, addresses: user.addresses });
+    if (!users || users.length === 0) {
+      console.warn(`Profile not found for: ${email || uid}`);
+      return res.status(404).json({ message: 'User profile not found.' });
+    }
+
+    const user = users[0];
+    
+    // Format favorites into a simple array of IDs
+    const favorites = user.user_favorites ? user.user_favorites.map(f => f.menu_item_id) : [];
+    
+    console.log(`✅ Profile fetched for ${user.email} with ${user.addresses?.length || 0} addresses`);
+    
+    res.json({ 
+      ...user, 
+      _id: user.id, 
+      favorites, 
+      addresses: user.addresses || [] 
+    });
+  } catch (err) {
+    console.error('Profile endpoint crash:', err);
+    res.status(500).json({ message: 'Internal server error fetching profile' });
+  }
 });
 
 app.post('/api/users/sync', async (req, res) => {
   const { uid, name, email, phone } = req.body;
+  console.log(`--- SYNC REQUEST RECEIVED FOR: ${email} (UID: ${uid}) ---`);
   const isAdminEmail = email === 'hellobash05@gmail.com';
   
   try {
@@ -347,6 +387,7 @@ app.post('/api/users/sync', async (req, res) => {
         .single();
       if (error) throw error;
       user = data;
+      console.log(`✅ New user created: ${user.email} (ID: ${user.id})`);
     }
     
     res.json({ ...user, _id: user.id });
