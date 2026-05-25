@@ -159,6 +159,22 @@ export async function deleteMenuItem(itemId: string) {
   return await response.json();
 }
 
+export async function uploadImage(file: File) {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch(`${API_BASE_URL}/admin/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to upload image');
+  }
+  return response.json();
+}
+
 export async function fetchCustomers() {
   const response = await fetch(`${API_BASE_URL}/admin/customers`);
   if (!response.ok) {
@@ -316,4 +332,3 @@ export async function markNotificationAsRead(id: string) {
   if (!response.ok) throw new Error('Failed to mark notification as read');
   return response.json();
 }
-

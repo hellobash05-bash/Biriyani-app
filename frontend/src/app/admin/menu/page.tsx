@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchMenu, addMenuItem, updateMenuItem, deleteMenuItem } from '@/lib/api';
+import { fetchMenu, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } from '@/lib/api';
 
 export default function AdminMenu() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -59,6 +60,22 @@ export default function AdminMenu() {
     }
     
     setFormData({ ...formData, offerPrice: e.target.value, discountPercentage: discount });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const { url } = await uploadImage(file);
+      setFormData({ ...formData, image: url });
+    } catch (err) {
+      alert('Failed to upload image');
+      console.error(err);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,14 +179,26 @@ export default function AdminMenu() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Image URL</label>
-                    <input 
-                      type="text" 
-                      placeholder="https://..." 
-                      value={formData.image}
-                      onChange={e => setFormData({...formData, image: e.target.value})}
-                      className="w-full bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold outline-none border border-input-border focus:border-orange-500" 
-                    />
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Image Setup</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="https://..." 
+                        value={formData.image}
+                        onChange={e => setFormData({...formData, image: e.target.value})}
+                        className="flex-1 bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold outline-none border border-input-border focus:border-orange-500" 
+                      />
+                      <label className="cursor-pointer group">
+                        <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                        <div className={`h-full px-6 flex items-center justify-center rounded-2xl border-2 border-dashed transition-all ${isUploading ? 'bg-orange-500 border-orange-500' : 'border-stone-200 dark:border-white/10 hover:border-orange-500'}`}>
+                          {isUploading ? (
+                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                             <span className="text-xl">📸</span>
+                          )}
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 </div>
 

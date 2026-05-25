@@ -5,8 +5,12 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
 import ws from 'ws';
+import multer from 'multer';
 
 dotenv.config();
+
+// Configure Multer for memory storage
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -91,6 +95,45 @@ app.get('/api/db-status', async (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Biriyani Backend is running with Supabase' });
+});
+
+// --- IMAGE UPLOAD ROUTE ---
+app.post('/api/admin/upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const file = req.file;
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `menu/${fileName}`;
+
+    console.log(`--- UPLOADING IMAGE TO SUPABASE: ${fileName} ---`);
+
+    const { data, error } = await supabase.storage
+      .from('menu-images')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true
+      });
+
+    if (error) {
+      console.error('Supabase Storage Error:', error);
+      throw error;
+    }
+
+    // Get Public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('menu-images')
+      .getPublicUrl(filePath);
+
+    console.log('✅ Image uploaded successfully:', publicUrl);
+    res.json({ url: publicUrl });
+  } catch (err) {
+    console.error('Upload endpoint crash:', err);
+    res.status(500).json({ message: 'Error uploading image', error: err.message });
+  }
 });
 
 // --- RESTAURANT ROUTES ---
