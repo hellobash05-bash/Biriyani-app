@@ -11,7 +11,7 @@ import { auth } from '@/lib/firebase';
 import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { fetchProfileByEmail } from '@/lib/api';
+import { fetchProfileByEmail, syncUser } from '@/lib/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -24,23 +24,6 @@ export default function LoginPage() {
     localStorage.removeItem('admin_demo_mode');
     localStorage.removeItem('user_role');
   }, []);
-
-  const syncUserToBackend = async (user: any) => {
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/users/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: user.uid,
-          name: user.displayName || 'Royale Member',
-          email: user.email,
-          phone: user.phoneNumber || '',
-        }),
-      });
-    } catch (err) {
-      console.error('Failed to sync user to backend:', err);
-    }
-  };
 
   const handleRedirect = async (userEmail: string) => {
     try {
@@ -61,7 +44,12 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      await syncUserToBackend(result.user);
+      await syncUser({
+        uid: result.user.uid,
+        name: result.user.displayName,
+        email: result.user.email,
+        phone: result.user.phoneNumber
+      });
       await handleRedirect(result.user.email!);
     } catch (err: any) {
       setError(err.message);
@@ -76,7 +64,12 @@ export default function LoginPage() {
     setError('');
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      await syncUserToBackend(result.user);
+      await syncUser({
+        uid: result.user.uid,
+        name: result.user.displayName,
+        email: result.user.email,
+        phone: result.user.phoneNumber
+      });
       await handleRedirect(email);
     } catch (err: any) {
       setError(err.message);

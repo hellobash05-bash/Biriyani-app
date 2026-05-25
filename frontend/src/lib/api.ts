@@ -43,15 +43,23 @@ export async function fetchProfile() {
   return response.json();
 }
 
-export async function syncUser(userData: { uid: string; name: string | null; email: string | null; phone?: string }) {
+export async function syncUser(userData: { uid: string; name: string | null; email: string | null; phone?: string | null }) {
+  console.log('--- SYNCING USER TO DATABASE ---', userData.email);
   const response = await fetch(`${API_BASE_URL}/users/sync`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData),
+    body: JSON.stringify({
+      uid: userData.uid,
+      name: userData.name || 'Royale Member',
+      email: userData.email,
+      phone: userData.phone || '',
+    }),
   });
+  
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to sync user');
+    console.error('Sync error details:', errorData);
+    throw new Error(errorData.message || 'Failed to sync user with database');
   }
   return response.json();
 }

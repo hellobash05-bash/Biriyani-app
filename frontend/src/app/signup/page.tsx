@@ -12,6 +12,7 @@ import { auth } from '@/lib/firebase';
 import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { syncUser } from '@/lib/api';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -21,23 +22,6 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const syncUserToBackend = async (user: any, additionalData: any) => {
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/users/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: user.uid,
-          name: additionalData.name || user.displayName,
-          email: user.email,
-          phone: additionalData.phone || user.phoneNumber,
-        }),
-      });
-    } catch (err) {
-      console.error('Failed to sync user to backend:', err);
-    }
-  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,8 +34,13 @@ export default function SignupPage() {
       // Update Firebase Profile
       await updateProfile(user, { displayName: name });
       
-      // Sync to MongoDB
-      await syncUserToBackend(user, { name, phone });
+      // Sync to Supabase
+      await syncUser({
+        uid: user.uid,
+        name,
+        email: user.email,
+        phone,
+      });
       
       router.push('/profile');
     } catch (err: any) {
@@ -66,7 +55,12 @@ export default function SignupPage() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      await syncUserToBackend(result.user, {});
+      await syncUser({
+        uid: result.user.uid,
+        name: result.user.displayName,
+        email: result.user.email,
+        phone: result.user.phoneNumber,
+      });
       router.push('/profile');
     } catch (err: any) {
       setError(err.message);

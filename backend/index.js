@@ -10,10 +10,10 @@ dotenv.config();
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('FATAL ERROR: SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env');
+  console.error('FATAL ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
   process.exit(1);
 }
 
@@ -272,50 +272,66 @@ app.post('/api/users/sync', async (req, res) => {
   const { uid, name, email, phone } = req.body;
   const isAdminEmail = email === 'hellobash05@gmail.com';
   
-  // Check if user exists
-  const { data: existingUsers } = await supabase.from('users').select('*').eq('email', email);
-  
-  let user;
-  if (existingUsers && existingUsers.length > 0) {
-    // Update
-    const { data, error } = await supabase.from('users')
-      .update({ uid, name, phone, role: isAdminEmail ? 'admin' : existingUsers[0].role })
-      .eq('email', email)
-      .select()
-      .single();
-    if (error) return res.status(400).json({ message: error.message });
-    user = data;
-  } else {
-    // Insert
-    const { data, error } = await supabase.from('users')
-      .insert([{ uid, name, email, phone, role: isAdminEmail ? 'admin' : 'customer' }])
-      .select()
-      .single();
-    if (error) return res.status(400).json({ message: error.message });
-    user = data;
+  try {
+    // Check if user exists
+    const { data: existingUsers, error: fetchError } = await supabase.from('users').select('*').eq('email', email);
+    
+    if (fetchError) {
+      console.error('Error fetching user during sync:', fetchError);
+      return res.status(500).json({ message: 'Error checking user existence', error: fetchError.message });
+    }
+
+    let user;
+    if (existingUsers && existingUsers.length > 0) {
+      // Update
+      const { data, error } = await supabase.from('users')
+        .update({ 
+          uid, 
+          name: name || existingUsers[0].name, 
+          phone: phone || existingUsers[0].phone, 
+          role: isAdminEmail ? 'admin' : existingUsers[0].role 
+        })
+        .eq('email', email)
+        .select()
+        .single();
+      if (error) throw error;
+      user = data;
+    } else {
+      // Insert
+      const { data, error } = await supabase.from('users')
+        .insert([{ uid, name, email, phone, role: isAdminEmail ? 'admin' : 'customer' }])
+        .select()
+        .single();
+      if (error) throw error;
+      user = data;
+    }
+    
+    res.json({ ...user, _id: user.id });
+  } catch (error) {
+    console.error('Sync user crash:', error);
+    res.status(400).json({ message: error.message });
   }
-  
-  res.json({ ...user, _id: user.id });
 });
 
 app.post('/api/users/address', async (req, res) => {
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   console.log(`--- ADDING ADDRESS FOR: ${email} ---`);
   
-  // Find user by email
-  const { data: user, error: userError } = await supabase.from('users').select('id').eq('email', email).single();
-  
-  if (userError || !user) {
-    console.error('User search error:', userError);
-    return res.status(404).json({ message: 'User not found in database. Please ensure you are logged in correctly.' });
-  }
-
   try {
-    if (isDefault) {
-      await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+    // Find user by email
+    const { data: user, error: userError } = await supabase.from('users').select('id').eq('email', email).single();
+    
+    if (userError || !user) {
+      console.error('User search error:', userError);
+      return res.status(404).json({ message: 'User not found in database. Please ensure you are logged in correctly.' });
     }
 
-    const { data: newAddress, error } = await supabase.from('addresses')
+    if (isDefault) {
+      const { error: updateError } = await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+      if (updateError) console.error('Error clearing old defaults:', updateError);
+    }
+
+    const { data: newAddress, error: insertError } = await supabase.from('addresses')
       .insert([{ 
         user_id: user.id, 
         label, 
@@ -331,16 +347,16 @@ app.post('/api/users/address', async (req, res) => {
       }])
       .select();
 
-    if (error) {
-      console.error('Address insert error:', error);
-      return res.status(400).json({ message: error.message });
+    if (insertError) {
+      console.error('Address insert error:', insertError);
+      return res.status(400).json({ message: insertError.message });
     }
 
     console.log('✅ Address saved successfully');
     res.json(newAddress);
   } catch (err) {
     console.error('Address endpoint crash:', err);
-    res.status(500).json({ message: 'Server error saving address' });
+    res.status(500).json({ message: 'Server error saving address', error: err.message });
   }
 });
 
