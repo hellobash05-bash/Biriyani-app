@@ -41,13 +41,21 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
+    console.log('--- STARTING GOOGLE REDIRECT LOGIN (v1.2) ---');
     const provider = new GoogleAuthProvider();
     try {
       await signInWithRedirect(auth, provider);
-      // The user is redirected, so no further code executes here
     } catch (err: any) {
-      console.error('Login Error:', err.code, err.message);
-      setError(err.message || 'An error occurred during Google login');
+      console.error('CRITICAL LOGIN ERROR:', err);
+      console.error('Error Code:', err.code);
+      console.error('Error Message:', err.message);
+      
+      let displayError = err.message;
+      if (err.code === 'auth/popup-blocked') {
+        displayError = 'Browser blocked the login window. Please allow redirects for this site or try a different browser.';
+      }
+      
+      setError(displayError || 'An error occurred during Google login');
       setLoading(false);
     }
   };
