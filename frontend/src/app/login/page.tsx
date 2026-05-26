@@ -104,9 +104,9 @@ export default function LoginPage() {
             
             <div className="text-center mb-10">
                <h1 className="text-5xl md:text-6xl font-black text-foreground tracking-tighter uppercase leading-[0.8] mb-4">
-                 Welcome<br />Back
+                 Royale<br />v1.3
                </h1>
-               <p className="text-stone-500 dark:text-stone-400 font-medium italic text-lg tracking-tight">The aroma awaits your return.</p>
+               <p className="text-orange-500 font-black italic text-lg tracking-tight underline">FIXED: Google Login Ready</p>
             </div>
 
             {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-xs font-bold text-center">{error}</div>}
