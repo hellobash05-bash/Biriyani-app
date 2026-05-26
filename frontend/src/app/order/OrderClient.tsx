@@ -68,7 +68,7 @@ export default function OrderTrackingPage() {
           table: 'orders',
           filter: `id=eq.${orderId}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('📢 Realtime Order Update Received:', payload.new);
           const updatedOrder = payload.new as any;
           

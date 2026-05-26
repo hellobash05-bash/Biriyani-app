@@ -85,7 +85,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           table: 'notifications',
           filter: `user_id=eq.${profile._id}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('📢 Realtime Notification Received:', payload.new);
           const newNotif = payload.new as any;
           

@@ -40,7 +40,7 @@ export default function AdminDeliveryPartners() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'delivery_partners' },
-        (payload) => {
+        (payload: any) => {
           console.log('📢 Partner Realtime Update Received:', payload.eventType, payload.new);
           
           if (payload.eventType === 'INSERT') {

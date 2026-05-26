@@ -49,7 +49,7 @@ export default function AdminOrders() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'orders' },
-        (payload) => {
+        (payload: any) => {
           console.log('📢 New Order Received via Realtime:', payload.new);
           const newOrder = payload.new as any;
           
@@ -85,7 +85,7 @@ export default function AdminOrders() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders' },
-        (payload) => {
+        (payload: any) => {
           console.log('📢 Order Update Received via Realtime:', payload.new);
           const updated = payload.new as any;
           
