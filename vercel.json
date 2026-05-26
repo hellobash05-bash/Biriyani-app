@@ -1,7 +1,7 @@
 {
-  "name": "biriyani-royale",
-  "framework": "nextjs",
+  "version": 2,
   "buildCommand": "npm run build --workspace=frontend",
   "outputDirectory": "frontend/.next",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "framework": "nextjs"
 }
