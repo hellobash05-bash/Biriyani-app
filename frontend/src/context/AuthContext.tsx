@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser, signOut, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { fetchProfileByEmail, syncUser } from '@/lib/api';
 
@@ -47,6 +47,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Handle the redirect result when the user returns from Google
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log('--- REDIRECT LOGIN SUCCESSFUL ---', result.user.email);
+          await fetchUserProfile(result.user);
+        }
+      } catch (error: any) {
+        console.error('--- REDIRECT LOGIN ERROR ---', error.code, error.message);
+      }
+    };
+
+    handleRedirect();
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
