@@ -150,12 +150,12 @@ export default function MenuPage() {
                     </div>
 
                     <img 
-                      src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop'} 
+                      src={item.image || 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=800&auto=format&fit=crop'} 
                       alt={item.name}
                       onLoad={() => console.log(`Image loaded successfully for: ${item.name}`)}
                       onError={(e) => {
                         console.error(`Image failed to load for: ${item.name}. URL: ${item.image}`);
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop';
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600&auto=format&fit=crop';
                       }}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 z-10"
                     />

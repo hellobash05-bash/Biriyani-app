@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -292,13 +294,17 @@ export default function OrderTrackingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="premium-card p-6 flex flex-col gap-4">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 border-b border-glass-border pb-2">Delivery Address</h3>
-            <div>
-              <p className="font-bold text-foreground">{order.customer.name}</p>
-              <p className="text-xs text-stone-500 mt-1">{order.customer.phone}</p>
-              <p className="text-sm font-medium text-stone-500 dark:text-stone-400 mt-3 leading-relaxed">
-                {order.customer.address.fullAddress || order.customer.address}
-              </p>
-            </div>
+            {order.customer ? (
+              <div>
+                <p className="font-bold text-foreground">{order.customer.name}</p>
+                <p className="text-xs text-stone-500 mt-1">{order.customer.phone}</p>
+                <p className="text-sm font-medium text-stone-500 dark:text-stone-400 mt-3 leading-relaxed">
+                  {order.customer.address?.fullAddress || order.customer.address}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-500 italic">Address details loading...</p>
+            )}
           </motion.div>
 
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="premium-card p-6 flex flex-col gap-4">

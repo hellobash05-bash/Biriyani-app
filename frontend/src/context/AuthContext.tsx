@@ -25,25 +25,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserProfile = async (firebaseUser: FirebaseUser) => {
     if (!firebaseUser.email) return;
     try {
-      const profileData = await fetchProfileByEmail(firebaseUser.email);
-      setProfile(profileData);
+      console.log('--- FETCHING & SYNCING USER PROFILE ---', firebaseUser.email);
+      // Always sync on login to ensure role/uid/name are up to date
+      const syncedProfile = await syncUser({
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName,
+        email: firebaseUser.email,
+        phone: firebaseUser.phoneNumber || undefined
+      });
+      setProfile(syncedProfile);
     } catch (error: any) {
-      if (error.message.includes('not found')) {
-        try {
-          // Auto-sync new users if they exist in Firebase but not in our DB
-          const syncedProfile = await syncUser({
-            uid: firebaseUser.uid,
-            name: firebaseUser.displayName,
-            email: firebaseUser.email,
-            phone: firebaseUser.phoneNumber || undefined
-          });
-          setProfile(syncedProfile);
-        } catch (syncError) {
-          console.error('Error syncing user:', syncError);
-          setProfile(null);
-        }
-      } else {
-        console.error('Error fetching profile:', error);
+      console.error('Error fetching/syncing profile:', error);
+      // Fallback: try to fetch at least
+      try {
+        const profileData = await fetchProfileByEmail(firebaseUser.email);
+        setProfile(profileData);
+      } catch (fetchError) {
         setProfile(null);
       }
     }

@@ -39,6 +39,30 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 const app = express();
 const httpServer = createServer(app);
 
+app.use(cors());
+app.use(express.json());
+
+app.use((req, res, next) => {
+  req.supabase = supabase;
+  next();
+});
+
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Welcome to the Royale Biriyani API',
+    status: 'online',
+    endpoints: [
+      '/api/version',
+      '/api/db-status',
+      '/api/db-test-write',
+      '/api/restaurants',
+      '/api/menu',
+      '/api/admin/orders',
+      '/api/admin/customers'
+    ]
+  });
+});
+
 app.get('/api/version', (req, res) => {
   res.json({ 
     version: '2.0.0', 
@@ -60,26 +84,64 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(express.json());
-
-app.use((req, res, next) => {
-  req.supabase = supabase;
-  next();
+app.get('/api/db-status', async (req, res) => {
+  console.log('--- CHECKING DB STATUS ---');
+  try {
+    const { data, error, count } = await supabase
+      .from('menu_items')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) {
+       console.error('❌ Supabase Connection Check Failed:', error);
+       return res.json({ status: 'failed', type: 'supabase', error: error.message });
+    }
+    
+    console.log(`✅ Supabase Connected. Table "menu_items" has ${count} rows.`);
+    res.json({ status: 'connected', type: 'supabase', url: supabaseUrl, rowCount: count });
+  } catch (err) {
+    console.error('💥 DB Status endpoint crash:', err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
 });
 
-app.get('/api/db-status', async (req, res) => {
-  // Check Supabase connection by making a simple query
-  const { data, error } = await supabase.from('menu_items').select('id').limit(1);
-  if (error) {
-     res.json({ status: 'failed', type: 'supabase', error: error.message });
-  } else {
-     res.json({ status: 'connected', type: 'supabase' });
+app.get('/api/db-test-write', async (req, res) => {
+  console.log('--- TESTING DB WRITE PERMISSIONS ---');
+  const testId = `test-${Date.now()}`;
+  try {
+    // Attempt a test insert into restaurants (it has owner_id nullable)
+    const { data, error } = await supabase.from('restaurants').insert([{
+      name: 'Test Write Restaurant',
+      address: '123 Test St',
+      type: 'Test'
+    }]).select();
+
+    if (error) {
+      console.error('❌ DB Write Test Failed:', error);
+      return res.status(400).json({ status: 'failed', error: error.message });
+    }
+
+    console.log('✅ DB Write Test Succeeded:', data);
+
+    // Clean up
+    const { error: delError } = await supabase.from('restaurants').delete().eq('id', data[0].id);
+    if (delError) console.warn('⚠️ Could not clean up test restaurant:', delError.message);
+
+    res.json({ status: 'success', message: 'Write permissions verified', data });
+  } catch (err) {
+    console.error('💥 DB Write Test Crash:', err);
+    res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Biriyani Backend is running with Supabase' });
+  res.json({ 
+    status: 'ok', 
+    message: 'Biriyani Backend is running with Supabase',
+    environment: {
+      url: supabaseUrl,
+      keyType: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE' : 'ANON_KEY'
+    }
+  });
 });
 
 // --- IMAGE UPLOAD ROUTE ---
@@ -150,14 +212,17 @@ app.get('/api/menu', async (req, res) => {
 
 // --- ORDER ROUTES ---
 app.post('/api/orders', async (req, res) => {
-  const { customer, items, totalAmount, paymentMethod } = req.body;
+  const { customer, items, totalAmount, paymentMethod, userEmail } = req.body;
+  const normalizedEmail = userEmail ? userEmail.toLowerCase().trim() : null;
+  
+  console.log(`--- PLACING ORDER FOR: ${normalizedEmail || customer.name} ---`);
   
   try {
     // 1. Insert Order
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .insert([{
-        user_email: req.body.userEmail,
+        user_email: normalizedEmail,
         customer_name: customer.name,
         customer_phone: customer.phone,
         address_house: customer.address.house,
@@ -171,7 +236,12 @@ app.post('/api/orders', async (req, res) => {
       .select()
       .single();
 
-    if (orderError) throw orderError;
+    if (orderError) {
+      console.error('❌ Order Insert Error:', orderError);
+      throw orderError;
+    }
+
+    console.log(`✅ Order created successfully: ID ${orderData.id}`);
 
     // 2. Insert Order Items
     if (items && items.length > 0) {
@@ -185,13 +255,18 @@ app.post('/api/orders', async (req, res) => {
       }));
       
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('❌ Order Items Insert Error:', itemsError);
+        throw itemsError;
+      }
+      console.log(`✅ ${items.length} items added to order ${orderData.id}`);
     }
 
     // Format for frontend
     const responseOrder = { ...orderData, _id: orderData.id, items };
     res.status(201).json(responseOrder);
   } catch (error) {
+    console.error('💥 Order placement crash:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -329,47 +404,44 @@ app.get('/api/profile', async (req, res) => {
 
 app.post('/api/users/sync', async (req, res) => {
   const { uid, name, email, phone } = req.body;
-  console.log(`--- SYNC REQUEST RECEIVED FOR: ${email} (UID: ${uid}) ---`);
-  const isAdminEmail = email === 'hellobash05@gmail.com';
+  if (!uid) return res.status(400).json({ message: 'UID is required for sync' });
+  
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  console.log(`--- SYNC REQUEST RECEIVED FOR UID: ${uid} (Email: ${normalizedEmail}) ---`);
+  
+  const isAdminEmail = normalizedEmail === 'hellobash05@gmail.com';
   
   try {
-    // Check if user exists
-    const { data: existingUsers, error: fetchError } = await supabase.from('users').select('*').eq('email', email);
+    // Use upsert logic targeting the 'uid' unique constraint
+    // This handles both new users and existing users updating their info
+    const { data: user, error } = await supabase
+      .from('users')
+      .upsert({ 
+        uid, 
+        name: name || 'Royale Member', 
+        email: normalizedEmail, 
+        phone: phone || '', 
+        role: isAdminEmail ? 'admin' : undefined // Don't overwrite role if not admin
+      }, { 
+        onConflict: 'uid',
+        ignoreDuplicates: false 
+      })
+      .select()
+      .single();
     
-    if (fetchError) {
-      console.error('Error fetching user during sync:', fetchError);
-      return res.status(500).json({ message: 'Error checking user existence', error: fetchError.message });
+    if (error) {
+      console.error('❌ User Sync/Upsert Error:', error);
+      // If it's an email conflict (another user has this email but different UID)
+      if (error.code === '23505' && error.message.includes('email')) {
+         return res.status(409).json({ message: 'A user with this email already exists with a different login method.' });
+      }
+      throw error;
     }
 
-    let user;
-    if (existingUsers && existingUsers.length > 0) {
-      // Update
-      const { data, error } = await supabase.from('users')
-        .update({ 
-          uid, 
-          name: name || existingUsers[0].name, 
-          phone: phone || existingUsers[0].phone, 
-          role: isAdminEmail ? 'admin' : existingUsers[0].role 
-        })
-        .eq('email', email)
-        .select()
-        .single();
-      if (error) throw error;
-      user = data;
-    } else {
-      // Insert
-      const { data, error } = await supabase.from('users')
-        .insert([{ uid, name, email, phone, role: isAdminEmail ? 'admin' : 'customer' }])
-        .select()
-        .single();
-      if (error) throw error;
-      user = data;
-      console.log(`✅ New user created: ${user.email} (ID: ${user.id})`);
-    }
-    
+    console.log(`✅ User synced: ${user.email} (ID: ${user.id}, Role: ${user.role})`);
     res.json({ ...user, _id: user.id });
   } catch (error) {
-    console.error('Sync user crash:', error);
+    console.error('💥 Sync user crash:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -627,6 +699,29 @@ app.get('/api/admin/analytics', async (req, res) => {
 });
 
 // Seed endpoint adjusted for Supabase
+const BIRIYANI_IMAGE = 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=800&auto=format&fit=crop';
+
+app.get('/api/admin/repair-images', async (req, res) => {
+  console.log('--- REPAIRING BROKEN IMAGE URLS ---');
+  const brokenUrl = 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop';
+  
+  try {
+    const { data, error } = await supabase
+      .from('menu_items')
+      .update({ image: BIRIYANI_IMAGE })
+      .eq('image', brokenUrl)
+      .select();
+    
+    if (error) throw error;
+    
+    console.log(`✅ Repaired ${data?.length || 0} broken image links.`);
+    res.json({ message: `Successfully repaired ${data?.length || 0} images.`, repairedItems: data });
+  } catch (err) {
+    console.error('💥 Image repair crash:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 app.get('/api/seed', async (req, res) => {
   try {
     console.log('--- SEEDING DATABASE ---');
@@ -639,7 +734,7 @@ app.get('/api/seed', async (req, res) => {
 
     if (existingItems && existingItems.length === 0) {
         const items = [
-          { name: 'Hyderabadi Chicken Biriyani', description: 'Fragrant basmati rice cooked with succulent chicken and spices.', price: 250, offer_price: 199, discount_percentage: 20, category: 'Chicken', image: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop' },
+          { name: 'Hyderabadi Chicken Biriyani', description: 'Fragrant basmati rice cooked with succulent chicken and spices.', price: 250, offer_price: 199, discount_percentage: 20, category: 'Chicken', image: BIRIYANI_IMAGE },
           { name: 'Mutton Dum Biriyani', description: 'Traditional slow-cooked mutton with long-grain rice.', price: 350, category: 'Mutton', image: 'https://images.unsplash.com/photo-1543353071-873f17a7a088?q=80&w=600&auto=format&fit=crop' },
           { name: 'Special Veg Biriyani', description: 'Assorted seasonal vegetables layered with aromatic rice.', price: 180, category: 'Veg', image: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600&auto=format&fit=crop' },
           { name: 'Chicken 65', description: 'Spicy, deep-fried chicken appetizer.', price: 150, category: 'Starters', image: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?q=80&w=600&auto=format&fit=crop' }

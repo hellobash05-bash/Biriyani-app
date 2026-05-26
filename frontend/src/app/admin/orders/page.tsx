@@ -37,6 +37,11 @@ export default function AdminOrders() {
   useEffect(() => {
     loadData();
 
+    if (!supabase) {
+      console.warn('Supabase client not initialized. Realtime admin updates disabled.');
+      return;
+    }
+
     console.log('--- SETTING UP ADMIN REALTIME SUBSCRIPTIONS ---');
 
     const channel = supabase
@@ -283,13 +288,19 @@ export default function AdminOrders() {
 
                     <div className="pt-10 border-t border-glass-border">
                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-4">GUEST INFORMATION</span>
-                       <p className="font-black text-2xl text-foreground uppercase tracking-tighter mb-2">{order.customer.name}</p>
-                       <div className="flex flex-col gap-2">
-                         <span className="text-sm font-bold text-orange-600 tracking-wide">{order.customer.phone}</span>
-                         <p className="text-xs text-stone-500 italic leading-relaxed max-w-md">
-                           "{order.customer.address?.fullAddress || order.customer.address}"
-                         </p>
-                       </div>
+                       {order.customer ? (
+                         <>
+                           <p className="font-black text-2xl text-foreground uppercase tracking-tighter mb-2">{order.customer.name}</p>
+                           <div className="flex flex-col gap-2">
+                             <span className="text-sm font-bold text-orange-600 tracking-wide">{order.customer.phone}</span>
+                             <p className="text-xs text-stone-500 italic leading-relaxed max-w-md">
+                               "{order.customer.address?.fullAddress || order.customer.address || 'No address provided'}"
+                             </p>
+                           </div>
+                         </>
+                       ) : (
+                         <p className="text-xs text-stone-500 italic">Guest information unavailable</p>
+                       )}
                     </div>
                  </div>
 

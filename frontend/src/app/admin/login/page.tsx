@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { fetchProfileByEmail } from '@/lib/api';
@@ -25,39 +25,12 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
     const provider = new GoogleAuthProvider();
+    // Hint: For Redirect to work correctly, you must be using the authorized admin email.
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      if (user.email !== 'hellobash05@gmail.com') {
-        setError('Access denied. Only the authorized administrator account can use Google Login.');
-        await auth.signOut();
-        return;
-      }
-
-      // Sync user to backend
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/users/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: user.uid,
-          name: user.displayName || 'Admin',
-          email: user.email,
-          phone: user.phoneNumber || '',
-        }),
-      });
-
-      const profile = await fetchProfileByEmail(user.email!);
-      if (profile.role === 'admin') {
-        await refreshProfile();
-        router.push('/admin');
-      } else {
-        setError('Access denied. Administrator privileges not found in database.');
-        await auth.signOut();
-      }
+      await signInWithRedirect(auth, provider);
+      // User is redirected
     } catch (err: any) {
-      setError(err.message || 'Failed to login with Google.');
-    } finally {
+      setError(err.message || 'Failed to start Google login redirect.');
       setLoading(false);
     }
   };
@@ -93,7 +66,7 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       console.error('Login Error:', err);
       if (err.message.includes('503') || err.message.includes('Database Connection')) {
-        setError('Database Offline. Check MongoDB connection.');
+        setError('The Royale Backend is waking up. Please wait 30 seconds and try again.');
       } else {
         setError(err.message || 'Failed to login. Please check your credentials.');
       }

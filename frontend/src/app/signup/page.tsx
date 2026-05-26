@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithRedirect
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Navbar from '@/components/Navbar';
@@ -52,19 +52,14 @@ export default function SignupPage() {
 
   const handleGoogleSignup = async () => {
     setLoading(true);
+    setError('');
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      await syncUser({
-        uid: result.user.uid,
-        name: result.user.displayName,
-        email: result.user.email,
-        phone: result.user.phoneNumber,
-      });
-      router.push('/profile');
+      await signInWithRedirect(auth, provider);
+      // User is redirected
     } catch (err: any) {
-      setError(err.message);
-    } finally {
+      console.error('Signup Error:', err.code, err.message);
+      setError(err.message || 'An error occurred during Google signup');
       setLoading(false);
     }
   };

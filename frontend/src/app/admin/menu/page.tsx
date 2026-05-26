@@ -211,7 +211,7 @@ export default function AdminMenu() {
                         alt="Preview" 
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=200&auto=format&fit=crop';
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=200&auto=format&fit=crop';
                         }}
                       />
                     ) : (
@@ -225,7 +225,7 @@ export default function AdminMenu() {
                     <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest">Royale Presets (One-Click)</span>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { label: 'Chicken', url: 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=600&auto=format&fit=crop' },
+                        { label: 'Chicken', url: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=800&auto=format&fit=crop' },
                         { label: 'Mutton', url: 'https://images.unsplash.com/photo-1543353071-873f17a7a088?q=80&w=600&auto=format&fit=crop' },
                         { label: 'Veg', url: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600&auto=format&fit=crop' },
                         { label: 'Starter', url: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?q=80&w=600&auto=format&fit=crop' }
@@ -337,7 +337,7 @@ export default function AdminMenu() {
             {/* Image Section */}
             <div className="h-48 w-full relative overflow-hidden bg-foreground/5">
               <img 
-                src={item.image || 'https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?q=80&w=2000&auto=format&fit=crop'} 
+                src={item.image || 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=2000&auto=format&fit=crop'} 
                 alt={item.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />

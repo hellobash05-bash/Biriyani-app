@@ -71,7 +71,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [profile?._id]);
 
   useEffect(() => {
-    if (!profile?._id) return;
+    if (!profile?._id || !supabase) return;
 
     console.log('--- SETTING UP SUPABASE REALTIME NOTIFICATIONS ---');
     
