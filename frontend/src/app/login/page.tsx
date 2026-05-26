@@ -19,6 +19,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { user, profile } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      console.log('--- USER ALREADY LOGGED IN, REDIRECTING ---');
+      router.push('/menu');
+    }
+  }, [user, router]);
 
   useEffect(() => {
     localStorage.removeItem('admin_demo_mode');
