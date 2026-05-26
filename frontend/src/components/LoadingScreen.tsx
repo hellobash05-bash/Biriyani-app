@@ -31,7 +31,7 @@ export default function LoadingScreen() {
               className="w-24 h-24 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-3xl flex items-center justify-center text-white text-5xl font-black shadow-[0_0_50px_rgba(249,115,22,0.3)] relative"
             >
               BR
-              <span className="absolute bottom-2 right-2 text-[8px] opacity-40 font-black">v1.3</span>            </motion.div>
+            </motion.div>
             <motion.div
               animate={{ 
                 scale: [1, 1.2, 1],

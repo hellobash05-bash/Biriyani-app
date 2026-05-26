@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Note: Next.js 16/15 uses the eslint object with ignoreDuringBuilds
     ignoreDuringBuilds: true,
   },
 };
