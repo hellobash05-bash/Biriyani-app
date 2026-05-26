@@ -47,11 +47,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     // Handle the redirect result when the user returns from Google
     const handleRedirect = async () => {
       try {
+        console.log('--- CHECKING REDIRECT RESULT ---');
         const result = await getRedirectResult(auth);
-        if (result?.user) {
+        if (result?.user && isMounted) {
           console.log('--- REDIRECT LOGIN SUCCESSFUL ---', result.user.email);
           await fetchUserProfile(result.user);
         }
@@ -63,16 +66,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     handleRedirect();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        await fetchUserProfile(firebaseUser);
-      } else {
-        setProfile(null);
+      if (isMounted) {
+        console.log('--- AUTH STATE CHANGED ---', firebaseUser?.email || 'No User');
+        setUser(firebaseUser);
+        if (firebaseUser) {
+          await fetchUserProfile(firebaseUser);
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
