@@ -4,6 +4,8 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
   output: 'export',
+  basePath: '/Biriyani-app',
+  assetPrefix: '/Biriyani-app/',
   images: {
     unoptimized: true,
   },
