@@ -12,6 +12,7 @@ import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchProfileByEmail, syncUser } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
