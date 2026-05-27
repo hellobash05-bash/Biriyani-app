@@ -418,11 +418,15 @@ app.post('/api/users/sync', async (req, res) => {
   
   try {
     // 1. Check if user exists to preserve their role
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: fetchError } = await supabase
       .from('users')
       .select('role')
       .eq('uid', uid)
-      .single();
+      .maybeSingle();
+
+    if (fetchError) {
+      console.warn('⚠️ Note: Error fetching existing role (might be a new user):', fetchError.message);
+    }
 
     const upsertData = { 
       uid, 
@@ -435,21 +439,25 @@ app.post('/api/users/sync', async (req, res) => {
     
     console.log('--- UPSERTING TO SUPABASE ---', JSON.stringify(upsertData, null, 2));
 
-    const { data: user, error } = await supabase
+    const { data: user, error: upsertError } = await supabase
       .from('users')
       .upsert(upsertData, { 
         onConflict: 'uid',
         ignoreDuplicates: false 
       })
       .select()
-      .single();
+      .maybeSingle();
     
-    if (error) {
-      console.error('❌ Supabase Upsert Error:', error);
-      if (error.code === '23505' && error.message.includes('email')) {
+    if (upsertError) {
+      console.error('❌ Supabase Upsert Error:', upsertError);
+      if (upsertError.code === '23505' && upsertError.message.includes('email')) {
          return res.status(409).json({ message: 'A user with this email already exists with a different login method.' });
       }
-      throw error;
+      throw upsertError;
+    }
+
+    if (!user) {
+      throw new Error('Failed to retrieve user after sync');
     }
 
     console.log(`✅ Sync Success: ${user.email} (ID: ${user.id})`);
