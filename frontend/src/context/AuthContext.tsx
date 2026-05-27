@@ -100,9 +100,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Code:', error.code);
         console.error('Message:', error.message);
         
-        // Show the error to the user so they can help diagnose (e.g. auth/unauthorized-domain)
-        if (error.code !== 'auth/web-storage-unsupported') {
-           toast.error(`Login Error: ${error.message}`);
+        // Handle common storage-partitioning errors silently as they are expected in some browsers
+        const silentErrors = [
+          'auth/web-storage-unsupported',
+          'auth/operation-not-supported-in-this-environment',
+          'auth/iframe-ad-blocker-present'
+        ];
+
+        if (!silentErrors.includes(error.code)) {
+           // For "missing initial state" or similar, provide a helpful message
+           if (error.message.includes('missing initial state') || error.code === 'auth/internal-error') {
+             toast.error('Login state lost. Please try logging in again using Chrome or disabling tracking protection.');
+           } else {
+             toast.error(`Login Error: ${error.message}`);
+           }
         }
       } finally {
         redirectChecked = true;

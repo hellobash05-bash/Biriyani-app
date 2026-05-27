@@ -168,11 +168,17 @@ export default function LoginPage() {
               <div className="mb-6 p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] text-red-500 flex flex-col gap-2">
                 <p className="text-[11px] font-black uppercase tracking-widest text-center">Login Issue Detected</p>
                 <p className="text-[10px] font-medium leading-relaxed italic opacity-80">{error}</p>
-                {error.includes('missing-client-identifier') || error.includes('initial state') || error.includes('network-error') ? (
+                {error.includes('missing-client-identifier') || error.includes('initial state') || error.includes('network-error') || error.includes('internal-error') ? (
                   <div className="mt-2 p-3 bg-red-500/10 rounded-xl border border-red-500/20">
-                    <p className="text-[9px] font-bold uppercase tracking-tight text-red-400">
-                      💡 Fix: Disable "Enhanced Tracking Protection" (Shield icon) or use Chrome.
+                    <p className="text-[9px] font-bold uppercase tracking-tight text-red-400 mb-1">
+                      💡 Quick Fixes:
                     </p>
+                    <ul className="text-[8px] space-y-1 list-disc ml-3 opacity-90">
+                      <li>Use Chrome or Edge for the best experience.</li>
+                      <li>Disable "Enhanced Tracking Protection" (Shield icon in Firefox).</li>
+                      <li>Avoid Incognito/Private mode.</li>
+                      <li>Try the "Force Redirect Mode" button below.</li>
+                    </ul>
                   </div>
                 ) : null}
               </div>
@@ -209,19 +215,19 @@ export default function LoginPage() {
                    </Link>
 
                    <div className="mt-4 pt-6 border-t border-glass-border">
-                     <p className="text-[9px] text-stone-500 font-bold uppercase tracking-widest mb-4">Trouble logging in?</p>
+                     <p className="text-[9px] text-stone-500 font-bold uppercase tracking-widest mb-4">Trouble with Google Login?</p>
                      <div className="flex flex-col gap-3">
                        <button 
                          onClick={checkCurrentSession}
                          className="bg-orange-500/10 text-orange-500 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border border-orange-500/20"
                        >
-                         Check if I'm already logged in
+                         Check for Active Session
                        </button>
                        <button onClick={handleManualRedirect} className="text-[10px] font-black text-orange-500/60 hover:text-orange-500 uppercase tracking-widest transition-all">
-                         Force Redirect Mode
+                         Force Redirect Login
                        </button>
-                       <p className="text-[8px] text-stone-600 leading-relaxed italic">
-                         Firefox user? Please click the <span className="text-orange-500 font-bold">Shield icon</span> in the address bar and turn off "Enhanced Tracking Protection" for this site.
+                       <p className="text-[8px] text-stone-600 leading-relaxed italic px-4">
+                         Firefox/Safari user? If you see "missing initial state", please use <span className="text-orange-500 font-bold">Chrome</span> or disable tracking protection.
                        </p>
                      </div>
                    </div>

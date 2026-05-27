@@ -54,13 +54,32 @@ export default function SignupPage() {
     setLoading(true);
     setError('');
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
     try {
-      await signInWithRedirect(auth, provider);
-      // User is redirected
+      console.log('--- SIGNUP: STARTING GOOGLE POPUP ---');
+      await signInWithPopup(auth, provider);
+      console.log('--- SIGNUP: POPUP SUCCESSFUL ---');
+      // AuthContext will handle the redirect/sync via onAuthStateChanged
     } catch (err: any) {
-      console.error('Signup Error:', err.code, err.message);
-      setError(err.message || 'An error occurred during Google signup');
-      setLoading(false);
+      console.warn('--- SIGNUP: Popup failed, trying redirect...', err.code);
+      
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+        setError('Popup blocked. Attempting redirect signup...');
+        setTimeout(async () => {
+          try {
+            await signInWithRedirect(auth, provider);
+          } catch (redirErr: any) {
+            setError(redirErr.message || 'An error occurred during Google signup');
+            setLoading(false);
+          }
+        }, 1500);
+      } else if (err.code !== 'auth/closed-by-user') {
+        setError(err.message || 'An error occurred during Google signup');
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 

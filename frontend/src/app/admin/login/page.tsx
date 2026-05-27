@@ -25,13 +25,31 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
     const provider = new GoogleAuthProvider();
-    // Hint: For Redirect to work correctly, you must be using the authorized admin email.
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
     try {
-      await signInWithRedirect(auth, provider);
-      // User is redirected
+      console.log('--- ADMIN: STARTING GOOGLE POPUP LOGIN ---');
+      await signInWithPopup(auth, provider);
+      console.log('--- ADMIN: POPUP LOGIN SUCCESSFUL ---');
     } catch (err: any) {
-      setError(err.message || 'Failed to start Google login redirect.');
-      setLoading(false);
+      console.warn('--- ADMIN: Popup login failed, trying redirect...', err.code);
+      
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+        setError('Popup was blocked by your browser. Attempting redirect login...');
+        setTimeout(async () => {
+          try {
+            await signInWithRedirect(auth, provider);
+          } catch (redirErr: any) {
+            setError(redirErr.message || 'Failed to start Google login redirect.');
+            setLoading(false);
+          }
+        }, 1500);
+      } else if (err.code !== 'auth/closed-by-user') {
+        setError(err.message || 'Failed to start Google login.');
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
