@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser, signOut, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { fetchProfileByEmail, syncUser } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -48,6 +49,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
+    let authStateChecked = false;
+    let redirectChecked = false;
+
+    // Helper to finish loading only when both checks are done
+    const finalizeLoading = () => {
+      if (authStateChecked && redirectChecked && isMounted) {
+        setLoading(false);
+      }
+    };
 
     // Handle the redirect result when the user returns from Google
     const handleRedirect = async () => {
@@ -56,10 +66,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await getRedirectResult(auth);
         if (result?.user && isMounted) {
           console.log('--- REDIRECT LOGIN SUCCESSFUL ---', result.user.email);
+          setUser(result.user);
           await fetchUserProfile(result.user);
+          toast.success('Welcome back, ' + (result.user.displayName || 'User'));
         }
       } catch (error: any) {
         console.error('--- REDIRECT LOGIN ERROR ---', error.code, error.message);
+        // Show the error to the user so they can help diagnose (e.g. auth/unauthorized-domain)
+        if (error.code !== 'auth/web-storage-unsupported') {
+           toast.error(`Login Error: ${error.message}`);
+        }
+      } finally {
+        redirectChecked = true;
+        finalizeLoading();
       }
     };
 
@@ -74,7 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null);
         }
-        setLoading(false);
+        authStateChecked = true;
+        finalizeLoading();
       }
     });
 

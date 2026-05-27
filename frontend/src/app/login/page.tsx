@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   signInWithRedirect,
+  signInWithPopup,
   GoogleAuthProvider, 
   signInWithEmailAndPassword,
 } from 'firebase/auth';
@@ -24,10 +25,20 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      console.log('--- USER ALREADY LOGGED IN, REDIRECTING ---');
-      router.push('/menu');
+      console.log('--- USER LOGGED IN, DETERMINING REDIRECT ---');
+      if (profile) {
+        if (profile.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/menu');
+        }
+      } else {
+        // If profile hasn't loaded yet, we can wait a bit or just go to menu
+        // as a safe default for now.
+        router.push('/menu');
+      }
     }
-  }, [user, router]);
+  }, [user, profile, router]);
 
   useEffect(() => {
     localStorage.removeItem('admin_demo_mode');
@@ -50,22 +61,36 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    console.log('--- STARTING GOOGLE REDIRECT LOGIN (v1.2) ---');
+    console.log('--- STARTING GOOGLE LOGIN ---');
     const provider = new GoogleAuthProvider();
+    
     try {
-      await signInWithRedirect(auth, provider);
+      // Try popup first as it is more reliable in most desktop browsers
+      await signInWithPopup(auth, provider);
+      console.log('--- POPUP LOGIN SUCCESSFUL ---');
     } catch (err: any) {
-      console.error('CRITICAL LOGIN ERROR:', err);
-      console.error('Error Code:', err.code);
-      console.error('Error Message:', err.message);
+      console.warn('Popup login failed or blocked, trying redirect...', err.code);
       
-      let displayError = err.message;
-      if (err.code === 'auth/popup-blocked') {
-        displayError = 'Browser blocked the login window. Please allow redirects for this site or try a different browser.';
+      // If popup is blocked or other error, fallback to redirect
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+        // Show a brief message so user knows why the page is reloading
+        setError('Popup blocked. Redirecting to Google login...');
+        setTimeout(async () => {
+          try {
+            await signInWithRedirect(auth, provider);
+          } catch (redirErr: any) {
+            console.error('CRITICAL LOGIN ERROR:', redirErr);
+            setError(redirErr.message || 'An error occurred during Google login');
+            setLoading(false);
+          }
+        }, 1500);
+      } else if (err.code !== 'auth/closed-by-user') {
+        console.error('GOOGLE LOGIN ERROR:', err);
+        setError(err.message || 'An error occurred during Google login');
+        setLoading(false);
+      } else {
+        setLoading(false);
       }
-      
-      setError(displayError || 'An error occurred during Google login');
-      setLoading(false);
     }
   };
 
