@@ -21,9 +21,11 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   const playNotificationSound = () => {
-    const NOTIFICATION_SOUND = 'https://cdn.pixabay.com/audio/2022/03/15/audio_5072705b4b.mp3';
+    // A celebratory chime/register sound
+    const ORDER_SUCCESS_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3';
     console.log('Playing order success sound...');
-    const audio = new Audio(NOTIFICATION_SOUND);
+    const audio = new Audio(ORDER_SUCCESS_SOUND);
+    audio.volume = 0.5;
     audio.play().catch(err => {
       console.warn('Audio play blocked or failed:', err);
     });

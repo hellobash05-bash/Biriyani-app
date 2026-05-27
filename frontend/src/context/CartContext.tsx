@@ -25,9 +25,24 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_ADD_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'; 
+const CART_REMOVE_SOUND = 'https://assets.mixkit.co/active_storage/sfx/256/256-preview.mp3';
+const CART_CLEAR_SOUND = 'https://assets.mixkit.co/active_storage/sfx/1487/1487-preview.mp3';
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const playSound = (url: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const audio = new Audio(url);
+      audio.volume = 0.3;
+      audio.play().catch(e => console.warn('Sound play blocked:', e.message));
+    } catch (e) {
+      console.warn('Sound error:', e);
+    }
+  };
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -47,6 +62,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart]);
 
   const addToCart = (item: any) => {
+    playSound(CART_ADD_SOUND);
     setCart((prev) => {
       const existing = prev.find((i) => i._id === item._id);
       const effectivePrice = item.offerPrice || item.price;
@@ -68,10 +84,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFromCart = (itemId: string) => {
+    playSound(CART_REMOVE_SOUND);
     setCart((prev) => prev.filter((i) => i._id !== itemId));
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
+    if (delta > 0) playSound(CART_ADD_SOUND);
+    else playSound(CART_REMOVE_SOUND);
+
     setCart((prev) => 
       prev.map((i) => {
         if (i._id === itemId) {
@@ -83,7 +103,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    playSound(CART_CLEAR_SOUND);
+    setCart([]);
+  };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
