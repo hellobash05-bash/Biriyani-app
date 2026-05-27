@@ -28,11 +28,12 @@ const itemVariants = {
   };
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && user) {
+      console.log('--- SESSION DETECTED ON LANDING ---');
       router.push('/menu');
     }
   }, [user, loading, router]);
