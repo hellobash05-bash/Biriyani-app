@@ -164,7 +164,19 @@ export default function LoginPage() {
                )}
             </div>
 
-            {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-[10px] font-bold text-center leading-relaxed">{error}</div>}
+            {error && (
+              <div className="mb-6 p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] text-red-500 flex flex-col gap-2">
+                <p className="text-[11px] font-black uppercase tracking-widest text-center">Login Issue Detected</p>
+                <p className="text-[10px] font-medium leading-relaxed italic opacity-80">{error}</p>
+                {error.includes('missing-client-identifier') || error.includes('initial state') || error.includes('network-error') ? (
+                  <div className="mt-2 p-3 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <p className="text-[9px] font-bold uppercase tracking-tight text-red-400">
+                      💡 Fix: Disable "Enhanced Tracking Protection" (Shield icon) or use Chrome.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             <div className="flex flex-col gap-4">
                <motion.button 
