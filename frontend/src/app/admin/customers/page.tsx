@@ -39,6 +39,7 @@ export default function AdminCustomers() {
               <th className="p-6 text-[10px] font-black uppercase tracking-widest text-stone-400">Patron Name</th>
               <th className="p-6 text-[10px] font-black uppercase tracking-widest text-stone-400">Mobile Number</th>
               <th className="p-6 text-[10px] font-black uppercase tracking-widest text-stone-400">Email Address</th>
+              <th className="p-6 text-[10px] font-black uppercase tracking-widest text-stone-400">Last Active</th>
               <th className="p-6 text-[10px] font-black uppercase tracking-widest text-stone-400 text-right">Registered On</th>
             </tr>
           </thead>
@@ -65,6 +66,11 @@ export default function AdminCustomers() {
                    </span>
                 </td>
                 <td className="p-6 font-medium text-stone-500">{customer.email}</td>
+                <td className="p-6">
+                   <span className="text-xs font-bold text-orange-600 bg-orange-600/5 px-2 py-1 rounded-lg">
+                      {customer.lastLogin ? new Date(customer.lastLogin).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Never'}
+                   </span>
+                </td>
                 <td className="p-6 text-xs text-stone-400 font-medium text-right">
                    {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                 </td>
@@ -102,6 +108,12 @@ export default function AdminCustomers() {
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Email Address</span>
                 <span className="text-sm font-bold text-stone-500 truncate">{customer.email}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Last Active</span>
+                <span className="text-sm font-bold text-orange-600">
+                  {customer.lastLogin ? new Date(customer.lastLogin).toLocaleString('en-GB') : 'Never'}
+                </span>
               </div>
               <div className="pt-4 border-t border-glass-border flex justify-between items-center">
                 <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Joined</span>

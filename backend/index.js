@@ -393,6 +393,8 @@ app.get('/api/profile', async (req, res) => {
     res.json({ 
       ...user, 
       _id: user.id, 
+      createdAt: user.created_at,
+      lastLogin: user.last_login,
       favorites, 
       addresses: user.addresses || [] 
     });
@@ -404,25 +406,38 @@ app.get('/api/profile', async (req, res) => {
 
 app.post('/api/users/sync', async (req, res) => {
   const { uid, name, email, phone } = req.body;
-  if (!uid) return res.status(400).json({ message: 'UID is required for sync' });
+  if (!uid) {
+    console.error('❌ Sync failed: No UID provided');
+    return res.status(400).json({ message: 'UID is required for sync' });
+  }
   
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
-  console.log(`--- SYNC REQUEST RECEIVED FOR UID: ${uid} (Email: ${normalizedEmail}) ---`);
+  console.log(`--- SYNC REQUEST: UID=${uid}, Name=${name}, Email=${normalizedEmail} ---`);
   
   const isAdminEmail = normalizedEmail === 'hellobash05@gmail.com';
   
   try {
-    // Use upsert logic targeting the 'uid' unique constraint
-    // This handles both new users and existing users updating their info
+    // 1. Check if user exists to preserve their role
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('role')
+      .eq('uid', uid)
+      .single();
+
+    const upsertData = { 
+      uid, 
+      name: name || 'Royale Member', 
+      email: normalizedEmail, 
+      phone: phone || '', 
+      role: existingUser ? existingUser.role : (isAdminEmail ? 'admin' : 'customer'),
+      last_login: new Date().toISOString()
+    };
+    
+    console.log('--- UPSERTING TO SUPABASE ---', JSON.stringify(upsertData, null, 2));
+
     const { data: user, error } = await supabase
       .from('users')
-      .upsert({ 
-        uid, 
-        name: name || 'Royale Member', 
-        email: normalizedEmail, 
-        phone: phone || '', 
-        role: isAdminEmail ? 'admin' : undefined // Don't overwrite role if not admin
-      }, { 
+      .upsert(upsertData, { 
         onConflict: 'uid',
         ignoreDuplicates: false 
       })
@@ -430,18 +445,17 @@ app.post('/api/users/sync', async (req, res) => {
       .single();
     
     if (error) {
-      console.error('❌ User Sync/Upsert Error:', error);
-      // If it's an email conflict (another user has this email but different UID)
+      console.error('❌ Supabase Upsert Error:', error);
       if (error.code === '23505' && error.message.includes('email')) {
          return res.status(409).json({ message: 'A user with this email already exists with a different login method.' });
       }
       throw error;
     }
 
-    console.log(`✅ User synced: ${user.email} (ID: ${user.id}, Role: ${user.role})`);
+    console.log(`✅ Sync Success: ${user.email} (ID: ${user.id})`);
     res.json({ ...user, _id: user.id });
   } catch (error) {
-    console.error('💥 Sync user crash:', error);
+    console.error('💥 Sync crash:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -635,7 +649,12 @@ app.delete('/api/admin/delivery-partners/:id', async (req, res) => {
 app.get('/api/admin/customers', async (req, res) => {
   const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
   if (error) return res.status(500).json({ message: error.message });
-  res.json(data.map(u => ({...u, _id: u.id})));
+  res.json(data.map(u => ({
+    ...u, 
+    _id: u.id,
+    createdAt: u.created_at,
+    lastLogin: u.last_login
+  })));
 });
 
 app.get('/api/admin/reviews', async (req, res) => {

@@ -24,24 +24,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUserProfile = async (firebaseUser: FirebaseUser) => {
-    if (!firebaseUser.email) return;
+    if (!firebaseUser.email) {
+       console.warn('--- AUTH: No email found for user ---', firebaseUser.uid);
+       return;
+    }
     try {
-      console.log('--- FETCHING & SYNCING USER PROFILE ---', firebaseUser.email);
-      // Always sync on login to ensure role/uid/name are up to date
+      console.log('--- AUTH: SYNCING USER ---', {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: firebaseUser.displayName
+      });
+      
       const syncedProfile = await syncUser({
         uid: firebaseUser.uid,
         name: firebaseUser.displayName,
         email: firebaseUser.email,
         phone: firebaseUser.phoneNumber || undefined
       });
+      
+      console.log('--- AUTH: SYNC SUCCESS ---', syncedProfile);
       setProfile(syncedProfile);
     } catch (error: any) {
-      console.error('Error fetching/syncing profile:', error);
-      // Fallback: try to fetch at least
+      console.error('--- AUTH: SYNC ERROR ---', error);
+      toast.error('Sync error: ' + (error.message || 'Check console'));
       try {
         const profileData = await fetchProfileByEmail(firebaseUser.email);
+        console.log('--- AUTH: FALLBACK FETCH SUCCESS ---', profileData);
         setProfile(profileData);
       } catch (fetchError) {
+        console.error('--- AUTH: FALLBACK FETCH FAILED ---', fetchError);
         setProfile(null);
       }
     }
