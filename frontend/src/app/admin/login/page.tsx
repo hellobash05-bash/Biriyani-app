@@ -22,24 +22,16 @@ export default function AdminLoginPage() {
   }, []);
 
   const handleGoogleLogin = async () => {
-    setError('');
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-      console.log('--- ADMIN: STARTING GOOGLE POPUP LOGIN ---');
-      setLoading(true);
       await signInWithPopup(auth, provider);
-      console.log('--- ADMIN: POPUP LOGIN SUCCESSFUL ---');
     } catch (err: any) {
-      setLoading(false);
       console.error('--- ADMIN: Google Login Error:', err);
-      
       if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked! Please allow popups for this site and try again.');
-      } else if (err.code === 'auth/cancelled-popup-request' || err.code === 'auth/closed-by-user') {
-        // Ignored
-      } else {
+        setError('Popup blocked! Please click the icon in your address bar to "Allow Popups" for this site.');
+      } else if (err.code !== 'auth/cancelled-popup-request' && err.code !== 'auth/closed-by-user') {
         setError(err.message || 'Failed to start Google login.');
       }
     }

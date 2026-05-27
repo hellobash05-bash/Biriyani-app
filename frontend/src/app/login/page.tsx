@@ -54,24 +54,19 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    setError('');
+    // 1. No async work or state updates BEFORE the popup
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-      console.log('--- STARTING GOOGLE POPUP LOGIN ---');
-      setLoading(true);
+      // 2. This must be the VERY FIRST thing triggered by the click
       await signInWithPopup(auth, provider);
-      console.log('--- POPUP LOGIN SUCCESSFUL ---');
     } catch (err: any) {
-      setLoading(false);
       console.error('GOOGLE LOGIN ERROR:', err);
       
       if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked! Please allow popups for this site in your browser settings and try again.');
-      } else if (err.code === 'auth/cancelled-popup-request' || err.code === 'auth/closed-by-user') {
-        // User closed the popup, no need for a loud error
-      } else {
+        setError('Popup blocked! Please look for the icon in your address bar and "Allow Popups" for this site.');
+      } else if (err.code !== 'auth/cancelled-popup-request' && err.code !== 'auth/closed-by-user') {
         setError(err.message || 'An error occurred during Google login');
       }
     }

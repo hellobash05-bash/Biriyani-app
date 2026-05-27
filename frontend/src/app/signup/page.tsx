@@ -51,21 +51,15 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignup = async () => {
-    setError('');
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
-      console.log('--- SIGNUP: STARTING GOOGLE POPUP ---');
-      setLoading(true);
       await signInWithPopup(auth, provider);
-      console.log('--- SIGNUP: POPUP SUCCESSFUL ---');
     } catch (err: any) {
-      setLoading(false);
       console.error('SIGNUP ERROR:', err);
-      
       if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked! Please allow popups for this site and try again.');
+        setError('Popup blocked! Please check your address bar and "Allow Popups" for this site.');
       } else if (err.code !== 'auth/closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         setError(err.message || 'An error occurred during Google signup');
       }
