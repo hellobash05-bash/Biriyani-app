@@ -55,38 +55,25 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
     setError('');
-    console.log('--- STARTING GOOGLE LOGIN ---');
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-      // Try popup first as it is more reliable in most desktop browsers
+      console.log('--- STARTING GOOGLE POPUP LOGIN ---');
+      setLoading(true);
       await signInWithPopup(auth, provider);
       console.log('--- POPUP LOGIN SUCCESSFUL ---');
     } catch (err: any) {
-      console.warn('Popup login failed or blocked, trying redirect...', err.code);
+      setLoading(false);
+      console.error('GOOGLE LOGIN ERROR:', err);
       
-      // If popup is blocked or other error, fallback to redirect
-      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-        // Show a brief message so user knows why the page is reloading
-        setError('Popup blocked. Redirecting to Google login...');
-        setTimeout(async () => {
-          try {
-            await signInWithRedirect(auth, provider);
-          } catch (redirErr: any) {
-            console.error('CRITICAL LOGIN ERROR:', redirErr);
-            setError(redirErr.message || 'An error occurred during Google login');
-            setLoading(false);
-          }
-        }, 1500);
-      } else if (err.code !== 'auth/closed-by-user') {
-        console.error('GOOGLE LOGIN ERROR:', err);
-        setError(err.message || 'An error occurred during Google login');
-        setLoading(false);
+      if (err.code === 'auth/popup-blocked') {
+        setError('Popup blocked! Please allow popups for this site in your browser settings and try again.');
+      } else if (err.code === 'auth/cancelled-popup-request' || err.code === 'auth/closed-by-user') {
+        // User closed the popup, no need for a loud error
       } else {
-        setLoading(false);
+        setError(err.message || 'An error occurred during Google login');
       }
     }
   };

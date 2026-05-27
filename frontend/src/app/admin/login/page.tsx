@@ -22,33 +22,25 @@ export default function AdminLoginPage() {
   }, []);
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
     setError('');
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
       console.log('--- ADMIN: STARTING GOOGLE POPUP LOGIN ---');
+      setLoading(true);
       await signInWithPopup(auth, provider);
       console.log('--- ADMIN: POPUP LOGIN SUCCESSFUL ---');
     } catch (err: any) {
-      console.warn('--- ADMIN: Popup login failed, trying redirect...', err.code);
+      setLoading(false);
+      console.error('--- ADMIN: Google Login Error:', err);
       
-      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-        setError('Popup was blocked by your browser. Attempting redirect login...');
-        setTimeout(async () => {
-          try {
-            await signInWithRedirect(auth, provider);
-          } catch (redirErr: any) {
-            setError(redirErr.message || 'Failed to start Google login redirect.');
-            setLoading(false);
-          }
-        }, 1500);
-      } else if (err.code !== 'auth/closed-by-user') {
-        setError(err.message || 'Failed to start Google login.');
-        setLoading(false);
+      if (err.code === 'auth/popup-blocked') {
+        setError('Popup blocked! Please allow popups for this site and try again.');
+      } else if (err.code === 'auth/cancelled-popup-request' || err.code === 'auth/closed-by-user') {
+        // Ignored
       } else {
-        setLoading(false);
+        setError(err.message || 'Failed to start Google login.');
       }
     }
   };

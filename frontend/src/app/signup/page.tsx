@@ -51,34 +51,23 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignup = async () => {
-    setLoading(true);
     setError('');
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
       console.log('--- SIGNUP: STARTING GOOGLE POPUP ---');
+      setLoading(true);
       await signInWithPopup(auth, provider);
       console.log('--- SIGNUP: POPUP SUCCESSFUL ---');
-      // AuthContext will handle the redirect/sync via onAuthStateChanged
     } catch (err: any) {
-      console.warn('--- SIGNUP: Popup failed, trying redirect...', err.code);
+      setLoading(false);
+      console.error('SIGNUP ERROR:', err);
       
-      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-        setError('Popup blocked. Attempting redirect signup...');
-        setTimeout(async () => {
-          try {
-            await signInWithRedirect(auth, provider);
-          } catch (redirErr: any) {
-            setError(redirErr.message || 'An error occurred during Google signup');
-            setLoading(false);
-          }
-        }, 1500);
-      } else if (err.code !== 'auth/closed-by-user') {
+      if (err.code === 'auth/popup-blocked') {
+        setError('Popup blocked! Please allow popups for this site and try again.');
+      } else if (err.code !== 'auth/closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         setError(err.message || 'An error occurred during Google signup');
-        setLoading(false);
-      } else {
-        setLoading(false);
       }
     }
   };
