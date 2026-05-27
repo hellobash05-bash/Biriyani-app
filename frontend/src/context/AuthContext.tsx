@@ -52,9 +52,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let authStateChecked = false;
     let redirectChecked = false;
 
+    // Debugging environment variables
+    if (typeof window !== 'undefined') {
+      console.log('--- AUTH CONFIG DEBUG ---');
+      console.log('Project ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+      console.log('Auth Domain:', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN);
+      if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+        console.error('CRITICAL: Firebase API Key is missing!');
+        toast.error('System Config Error: API Key missing');
+      }
+    }
+
     // Helper to finish loading only when both checks are done
     const finalizeLoading = () => {
       if (authStateChecked && redirectChecked && isMounted) {
+        console.log('--- AUTH INITIALIZATION COMPLETE ---');
         setLoading(false);
       }
     };
@@ -62,8 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Handle the redirect result when the user returns from Google
     const handleRedirect = async () => {
       try {
-        console.log('--- CHECKING REDIRECT RESULT ---');
+        console.log('--- STARTING getRedirectResult ---');
         const result = await getRedirectResult(auth);
+        console.log('--- getRedirectResult finished ---', result ? 'User Found' : 'No User');
+        
         if (result?.user && isMounted) {
           console.log('--- REDIRECT LOGIN SUCCESSFUL ---', result.user.email);
           setUser(result.user);
@@ -71,7 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           toast.success('Welcome back, ' + (result.user.displayName || 'User'));
         }
       } catch (error: any) {
-        console.error('--- REDIRECT LOGIN ERROR ---', error.code, error.message);
+        console.error('--- REDIRECT LOGIN ERROR ---');
+        console.error('Code:', error.code);
+        console.error('Message:', error.message);
+        
         // Show the error to the user so they can help diagnose (e.g. auth/unauthorized-domain)
         if (error.code !== 'auth/web-storage-unsupported') {
            toast.error(`Login Error: ${error.message}`);
@@ -86,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (isMounted) {
-        console.log('--- AUTH STATE CHANGED ---', firebaseUser?.email || 'No User');
+        console.log('--- ON AUTH STATE CHANGED ---', firebaseUser?.email || 'No User');
         setUser(firebaseUser);
         if (firebaseUser) {
           await fetchUserProfile(firebaseUser);
