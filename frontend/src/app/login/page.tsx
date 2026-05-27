@@ -98,6 +98,15 @@ export default function LoginPage() {
     await signInWithRedirect(auth, provider);
   };
 
+  const checkCurrentSession = () => {
+    if (user) {
+      toast.success(`Session active: ${user.email}`);
+      router.push(profile?.role === 'admin' ? '/admin' : '/menu');
+    } else {
+      toast.error('No active session found.');
+    }
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -189,12 +198,18 @@ export default function LoginPage() {
 
                    <div className="mt-4 pt-6 border-t border-glass-border">
                      <p className="text-[9px] text-stone-500 font-bold uppercase tracking-widest mb-4">Trouble logging in?</p>
-                     <div className="flex flex-col gap-2">
+                     <div className="flex flex-col gap-3">
+                       <button 
+                         onClick={checkCurrentSession}
+                         className="bg-orange-500/10 text-orange-500 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border border-orange-500/20"
+                       >
+                         Check if I'm already logged in
+                       </button>
                        <button onClick={handleManualRedirect} className="text-[10px] font-black text-orange-500/60 hover:text-orange-500 uppercase tracking-widest transition-all">
                          Force Redirect Mode
                        </button>
                        <p className="text-[8px] text-stone-600 leading-relaxed italic">
-                         Safari or Incognito user? <br /> Please disable "Block Third-Party Cookies" or use Chrome.
+                         Firefox user? Please click the <span className="text-orange-500 font-bold">Shield icon</span> in the address bar and turn off "Enhanced Tracking Protection" for this site.
                        </p>
                      </div>
                    </div>
