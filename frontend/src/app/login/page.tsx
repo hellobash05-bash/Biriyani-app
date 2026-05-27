@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  signInWithRedirect,
   signInWithPopup,
   GoogleAuthProvider, 
   signInWithEmailAndPassword,
@@ -76,13 +75,6 @@ export default function LoginPage() {
         setError(err.message || 'An error occurred during Google login');
       }
     }
-  };
-
-  const handleManualRedirect = async () => {
-    setLoading(true);
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    await signInWithRedirect(auth, provider);
   };
 
   const checkCurrentSession = () => {
@@ -210,11 +202,8 @@ export default function LoginPage() {
                        >
                          Check for Active Session
                        </button>
-                       <button onClick={handleManualRedirect} className="text-[10px] font-black text-orange-500/60 hover:text-orange-500 uppercase tracking-widest transition-all">
-                         Force Redirect Login
-                       </button>
                        <p className="text-[8px] text-stone-600 leading-relaxed italic px-4">
-                         Firefox/Safari user? If you see "missing initial state", please use <span className="text-orange-500 font-bold">Chrome</span> or disable tracking protection.
+                         Firefox/Safari user? If you see "missing initial state", please ensure <span className="text-orange-500 font-bold">Popups are allowed</span> for this site.
                        </p>
                      </div>
                    </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser, signOut, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { fetchProfileByEmail, syncUser } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -61,7 +61,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     let authStateChecked = false;
-    let redirectChecked = false;
 
     // Debugging environment variables
     if (typeof window !== 'undefined') {
@@ -74,55 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Helper to finish loading only when both checks are done
-    const finalizeLoading = () => {
-      if (authStateChecked && redirectChecked && isMounted) {
-        console.log('--- AUTH INITIALIZATION COMPLETE ---');
-        setLoading(false);
-      }
-    };
-
-    // Handle the redirect result when the user returns from Google
-    const handleRedirect = async () => {
-      try {
-        console.log('--- STARTING getRedirectResult ---');
-        const result = await getRedirectResult(auth);
-        console.log('--- getRedirectResult finished ---', result ? 'User Found' : 'No User');
-        
-        if (result?.user && isMounted) {
-          console.log('--- REDIRECT LOGIN SUCCESSFUL ---', result.user.email);
-          setUser(result.user);
-          await fetchUserProfile(result.user);
-          toast.success('Welcome back, ' + (result.user.displayName || 'User'));
-        }
-      } catch (error: any) {
-        console.error('--- REDIRECT LOGIN ERROR ---');
-        console.error('Code:', error.code);
-        console.error('Message:', error.message);
-        
-        // Handle common storage-partitioning errors silently as they are expected in some browsers
-        const silentErrors = [
-          'auth/web-storage-unsupported',
-          'auth/operation-not-supported-in-this-environment',
-          'auth/iframe-ad-blocker-present'
-        ];
-
-        if (!silentErrors.includes(error.code)) {
-           // For "missing initial state" or similar, provide a helpful message
-           if (error.message.includes('missing initial state') || error.code === 'auth/internal-error') {
-             toast.error('Login state lost. Please try logging in again using Chrome or disabling tracking protection.');
-           } else {
-             toast.error(`Login Error: ${error.message}`);
-           }
-        }
-      } finally {
-        redirectChecked = true;
-        finalizeLoading();
-      }
-    };
-
-    handleRedirect();
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (isMounted) {
         console.log('--- ON AUTH STATE CHANGED ---', firebaseUser?.email || 'No User');
@@ -132,8 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null);
         }
-        authStateChecked = true;
-        finalizeLoading();
+        setLoading(false);
       }
     });
 
