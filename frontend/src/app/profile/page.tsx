@@ -14,7 +14,10 @@ import AddressModal from '@/components/AddressModal';
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const router = useRouter();
@@ -31,22 +34,50 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    const loadOrders = async () => {
+    const loadUserData = async () => {
+      if (!user) {
+        setLoadingOrders(false);
+        setLoadingData(false);
+        return;
+      }
+
       try {
-        const ordersData = await fetchUserOrders(user?.email || undefined);
-        setOrders(ordersData);
+        const [ordersData, activitiesData, projectsData] = await Promise.all([
+          fetchUserOrders(user.email || undefined).catch(() => []),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/activities/${user.uid}`).then(res => res.ok ? res.json() : []).catch(() => []),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/projects/${user.uid}`).then(res => res.ok ? res.json() : []).catch(() => [])
+        ]);
+        
+        setOrders(Array.isArray(ordersData) ? ordersData : []);
+        setActivities(Array.isArray(activitiesData) ? activitiesData : []);
+        setProjects(Array.isArray(projectsData) ? projectsData : []);
       } catch (err) {
-        console.error('Failed to fetch orders:', err);
+        console.error('Failed to fetch user data:', err);
       } finally {
         setLoadingOrders(false);
+        setLoadingData(false);
       }
     };
-    if (user) {
-      loadOrders();
-    } else {
-      setLoadingOrders(false);
-    }
+    
+    loadUserData();
   }, [user]);
+
+  const handleLogActivity = async () => {
+    if (!user) return;
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firebaseUid: user.uid, activity: 'Logged in and checked profile' }),
+      });
+      if (response.ok) {
+        const newActivity = await response.json();
+        setActivities(prev => [newActivity, ...prev]);
+      }
+    } catch (err) {
+      console.error('Failed to log activity:', err);
+    }
+  };
 
   const handleAddAddress = async (addressData: any) => {
     if (!user?.email) return;
