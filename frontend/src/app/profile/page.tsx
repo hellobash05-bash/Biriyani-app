@@ -319,9 +319,9 @@ export default function ProfilePage() {
               Saved Addresses
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {profile?.addresses?.map((addr: any, idx: number) => (
-                <div key={idx} className="premium-card p-8 group flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5 shadow-xl">
-                  {addr.isDefault && (
+              {(profile?.addresses || []).map((addr: any, idx: number) => (
+                <div key={addr.id || idx} className="premium-card p-8 group flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5 shadow-xl">
+                  {(addr.isDefault || addr.is_default) && (
                     <div className="absolute top-0 right-0 bg-orange-600 text-[8px] font-black text-white px-4 py-2 uppercase tracking-[0.3em] rounded-bl-2xl shadow-xl z-10">
                       Default
                     </div>
