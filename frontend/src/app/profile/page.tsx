@@ -105,8 +105,12 @@ export default function ProfilePage() {
 
           {/* User Header */}
           <section className="flex flex-col md:flex-row items-center gap-8 premium-card p-10 rounded-[3rem] relative overflow-hidden border border-stone-200 dark:border-white/5 bg-white dark:bg-stone-900/40">
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20 shrink-0">
-              {profile?.name?.charAt(0) || user?.displayName?.charAt(0) || 'A'}
+            <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20 shrink-0 overflow-hidden">
+              {profile?.photo_url || user?.photoURL ? (
+                <img src={profile?.photo_url || user?.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                profile?.name?.charAt(0) || user?.displayName?.charAt(0) || 'A'
+              )}
             </div>
             <div className="flex flex-col items-center md:items-start gap-2 text-center md:text-left overflow-hidden w-full">
               <h1 className="text-3xl md:text-5xl font-black text-stone-900 dark:text-white uppercase tracking-tight leading-none truncate w-full">
@@ -116,8 +120,11 @@ export default function ProfilePage() {
                 {user?.phoneNumber || profile?.phone || '+91 00000 00000'} • {user?.email || profile?.email}
               </p>
               <div className="flex gap-4 mt-4">
-                <button className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 hover:text-orange-400 transition-colors bg-orange-500/5 px-6 py-2 rounded-full border border-orange-500/10">
-                  Edit Profile Settings
+                <button 
+                  onClick={handleLogActivity}
+                  className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 hover:text-orange-400 transition-colors bg-orange-500/5 px-6 py-2 rounded-full border border-orange-500/10"
+                >
+                  Log Activity
                 </button>
                 <button 
                   onClick={() => {
@@ -133,6 +140,53 @@ export default function ProfilePage() {
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Activities Section */}
+            <section className="flex flex-col gap-8">
+              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
+                <span className="w-8 h-1 bg-blue-500 rounded-full"></span>
+                Recent Activities
+              </h2>
+              <div className="flex flex-col gap-4">
+                {loadingData ? (
+                  <div className="p-8 text-center opacity-50 italic uppercase text-[10px] font-bold">Retrieving history...</div>
+                ) : activities.length > 0 ? activities.slice(0, 5).map((act: any) => (
+                  <div key={act.id} className="p-4 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/5 flex flex-col gap-1">
+                    <p className="text-sm font-bold text-stone-800 dark:text-stone-200">{act.activity}</p>
+                    <span className="text-[9px] text-stone-500 uppercase font-black tracking-widest">{new Date(act.created_at).toLocaleString()}</span>
+                  </div>
+                )) : (
+                  <div className="p-8 border border-dashed border-stone-200 dark:border-white/10 rounded-[2rem] text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                    No activities recorded yet.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Projects Section */}
+            <section className="flex flex-col gap-8">
+              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
+                <span className="w-8 h-1 bg-purple-500 rounded-full"></span>
+                My Projects
+              </h2>
+              <div className="flex flex-col gap-4">
+                {loadingData ? (
+                  <div className="p-8 text-center opacity-50 italic uppercase text-[10px] font-bold">Loading vault...</div>
+                ) : projects.length > 0 ? projects.map((project: any) => (
+                  <div key={project.id} className="p-4 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/5 flex justify-between items-center">
+                    <div>
+                      <h4 className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-tight">{project.name}</h4>
+                      <p className="text-xs text-stone-500">{project.description || 'No description'}</p>
+                    </div>
+                    <span className="text-[10px] font-bold text-stone-400">{new Date(project.created_at).toLocaleDateString()}</span>
+                  </div>
+                )) : (
+                  <div className="p-8 border border-dashed border-stone-200 dark:border-white/10 rounded-[2rem] text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                    Your project vault is empty.
+                  </div>
+                )}
+              </div>
+            </section>
+
             {/* Wishlist Section */}
             <section className="flex flex-col gap-8">
               <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">

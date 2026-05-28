@@ -87,6 +87,7 @@ export default function LoginPage() {
         uid: result.user.uid,
         name: result.user.displayName,
         email: result.user.email,
+        photoURL: result.user.photoURL,
         phone: result.user.phoneNumber
       });
       const target = (await fetchProfileByEmail(result.user.email!)).role === 'admin' ? '/admin' : '/menu';

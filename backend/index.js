@@ -405,7 +405,7 @@ app.get('/api/profile', async (req, res) => {
 });
 
 app.post('/api/users/sync', async (req, res) => {
-  const { uid, name, email, phone } = req.body;
+  const { uid, name, email, photoURL, phone } = req.body;
   if (!uid) {
     console.error('❌ Sync failed: No UID provided');
     return res.status(400).json({ message: 'UID is required for sync' });
@@ -417,28 +417,55 @@ app.post('/api/users/sync', async (req, res) => {
   const isAdminEmail = normalizedEmail === 'hellobash05@gmail.com';
   
   try {
-    // 1. Check if user exists to preserve their role
-    const { data: existingUser, error: fetchError } = await supabase
+    // 1. First, check if a user with this EMAIL already exists (but with a different UID)
+    if (normalizedEmail) {
+      const { data: emailUser, error: emailError } = await supabase
+        .from('users')
+        .select('uid, role')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (emailUser && emailUser.uid !== uid) {
+        console.log(`⚠️ Conflict: Email ${normalizedEmail} exists with different UID. Updating UID to ${uid}.`);
+        // If it's the same person but their UID changed (e.g. provider change), we update the UID.
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('users')
+          .update({ 
+            uid, 
+            last_login: new Date().toISOString(),
+            name: name || 'Royale Member',
+            photo_url: photoURL || ''
+          })
+          .eq('email', normalizedEmail)
+          .select()
+          .single();
+
+        if (!updateError) {
+          console.log(`✅ Fixed Conflict: Updated UID for ${normalizedEmail}`);
+          return res.json({ ...updatedUser, _id: updatedUser.id });
+        } else {
+          console.error('❌ Failed to resolve email conflict:', updateError);
+        }
+      }
+    }
+
+    // 2. Normal Upsert by UID
+    const { data: existingUser } = await supabase
       .from('users')
       .select('role')
       .eq('uid', uid)
       .maybeSingle();
 
-    if (fetchError) {
-      console.warn('⚠️ Note: Error fetching existing role (might be a new user):', fetchError.message);
-    }
-
     const upsertData = { 
       uid, 
       name: name || 'Royale Member', 
       email: normalizedEmail, 
+      photo_url: photoURL || '',
       phone: phone || '', 
       role: existingUser ? existingUser.role : (isAdminEmail ? 'admin' : 'customer'),
       last_login: new Date().toISOString()
     };
     
-    console.log('--- UPSERTING TO SUPABASE ---', JSON.stringify(upsertData, null, 2));
-
     const { data: user, error: upsertError } = await supabase
       .from('users')
       .upsert(upsertData, { 
@@ -450,10 +477,7 @@ app.post('/api/users/sync', async (req, res) => {
     
     if (upsertError) {
       console.error('❌ Supabase Upsert Error:', upsertError);
-      if (upsertError.code === '23505' && upsertError.message.includes('email')) {
-         return res.status(409).json({ message: 'A user with this email already exists with a different login method.' });
-      }
-      throw upsertError;
+      return res.status(400).json({ message: upsertError.message });
     }
 
     if (!user) {
@@ -464,7 +488,7 @@ app.post('/api/users/sync', async (req, res) => {
     res.json({ ...user, _id: user.id });
   } catch (error) {
     console.error('💥 Sync crash:', error);
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -553,6 +577,54 @@ app.get('/api/notifications/:userId', async (req, res) => {
 app.patch('/api/notifications/:id/read', async (req, res) => {
   await supabase.from('notifications').update({ is_read: true }).eq('id', req.params.id);
   res.json({ message: 'Notification marked as read' });
+});
+
+// --- ACTIVITIES ---
+app.post('/api/activities', async (req, res) => {
+  const { firebaseUid, activity } = req.body;
+  const { data, error } = await supabase.from('activities').insert([{
+    firebase_uid: firebaseUid,
+    activity
+  }]).select().single();
+
+  if (error) return res.status(400).json({ message: error.message });
+  res.status(201).json(data);
+});
+
+app.get('/api/activities/:firebaseUid', async (req, res) => {
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*')
+    .eq('firebase_uid', req.params.firebaseUid)
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ message: error.message });
+  res.json(data);
+});
+
+// --- PROJECTS ---
+app.post('/api/projects', async (req, res) => {
+  const { firebaseUid, name, description, data: projectData } = req.body;
+  const { data, error } = await supabase.from('projects').insert([{
+    firebase_uid: firebaseUid,
+    name,
+    description,
+    data: projectData
+  }]).select().single();
+
+  if (error) return res.status(400).json({ message: error.message });
+  res.status(201).json(data);
+});
+
+app.get('/api/projects/:firebaseUid', async (req, res) => {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('firebase_uid', req.params.firebaseUid)
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ message: error.message });
+  res.json(data);
 });
 
 // --- ADMIN ROUTES ---
@@ -655,8 +727,9 @@ app.delete('/api/admin/delivery-partners/:id', async (req, res) => {
 });
 
 app.get('/api/admin/customers', async (req, res) => {
-  const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('users').select('*').order('last_login', { ascending: false });
   if (error) return res.status(500).json({ message: error.message });
+
   res.json(data.map(u => ({
     ...u, 
     _id: u.id,
@@ -664,6 +737,7 @@ app.get('/api/admin/customers', async (req, res) => {
     lastLogin: u.last_login
   })));
 });
+
 
 app.get('/api/admin/reviews', async (req, res) => {
   const { data, error } = await supabase.from('reviews').select('*, menu_items(name)').order('created_at', { ascending: false });

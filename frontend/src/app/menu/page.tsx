@@ -7,8 +7,9 @@ import BottomNav from '@/components/BottomNav';
 import { fetchMenu, seedData, fetchReviews } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { toggleFavorite } from '@/lib/api';
+import { toggleFavorite, saveProject } from '@/lib/api';
 import toast from 'react-hot-toast';
+import SaveProjectModal from '@/components/SaveProjectModal';
 
 const CATEGORIES = ['All', 'Chicken', 'Mutton', 'Veg'];
 
@@ -17,8 +18,33 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [ratings, setRatings] = useState<Record<string, { average: number; total: number }>>({});
-  const { addToCart, itemCount, total, setIsCartOpen, isCartOpen } = useCart();
+  const { addToCart, itemCount, total, setIsCartOpen, isCartOpen, cart } = useCart();
+
+  const handleSaveProject = async (projectInfo: { name: string; description: string }) => {
+    if (!user) return;
+    if (cart.length === 0) {
+      toast.error('Add items to your selection before saving!');
+      return;
+    }
+
+    try {
+      await saveProject(user.uid, {
+        name: projectInfo.name,
+        description: projectInfo.description,
+        data: {
+          items: cart,
+          total,
+          itemCount,
+          category: activeCategory
+        }
+      });
+      toast.success('Project saved to your vault!');
+    } catch (err) {
+      toast.error('Failed to save project');
+    }
+  };
 
   const handleToggleFavorite = async (e: React.MouseEvent, foodId: string) => {
     e.preventDefault();
@@ -98,6 +124,17 @@ export default function MenuPage() {
              The Royale <br />
              <span className="text-orange-600 italic">Menu</span>
            </motion.h1>
+
+           {itemCount > 0 && (
+             <motion.button
+               initial={{ opacity: 0, scale: 0.8 }}
+               animate={{ opacity: 1, scale: 1 }}
+               onClick={() => setIsSaveModalOpen(true)}
+               className="mt-8 px-8 py-3 bg-purple-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-purple-600/20 hover:bg-purple-500 transition-all active:scale-95"
+             >
+               💾 Save This Selection
+             </motion.button>
+           )}
         </header>
 
         {/* Category Filter */}
@@ -242,6 +279,12 @@ export default function MenuPage() {
       </main>
 
       <BottomNav />
+      
+      <SaveProjectModal 
+        isOpen={isSaveModalOpen} 
+        onClose={() => setIsSaveModalOpen(false)} 
+        onSave={handleSaveProject} 
+      />
       
       {/* Floating Cart Indicator */}
       <AnimatePresence>

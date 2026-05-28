@@ -39,11 +39,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName,
         email: firebaseUser.email,
+        photoURL: firebaseUser.photoURL,
         phone: firebaseUser.phoneNumber || undefined
       });
       
       console.log('--- AUTH: SYNC SUCCESS ---', syncedProfile);
       setProfile(syncedProfile);
+
+      // Log a "Login" activity
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/activities`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            firebaseUid: firebaseUser.uid, 
+            activity: `User logged in: ${firebaseUser.email}` 
+          }),
+        });
+      } catch (actErr) {
+        console.warn('Failed to log login activity:', actErr);
+      }
+
     } catch (error: any) {
       console.error('--- AUTH: SYNC ERROR ---', error);
       toast.error('Sync error: ' + (error.message || 'Check console'));

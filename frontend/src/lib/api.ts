@@ -43,7 +43,7 @@ export async function fetchProfile() {
   return response.json();
 }
 
-export async function syncUser(userData: { uid: string; name: string | null; email: string | null; phone?: string | null }) {
+export async function syncUser(userData: { uid: string; name: string | null; email: string | null; photoURL?: string | null; phone?: string | null }) {
   console.log('--- SYNCING USER TO DATABASE ---', userData.email);
   const response = await fetch(`${API_BASE_URL}/users/sync`, {
     method: 'POST',
@@ -52,6 +52,7 @@ export async function syncUser(userData: { uid: string; name: string | null; ema
       uid: userData.uid,
       name: userData.name || 'Royale Member',
       email: userData.email,
+      photoURL: userData.photoURL || '',
       phone: userData.phone || '',
     }),
   });
@@ -330,5 +331,38 @@ export async function markNotificationAsRead(id: string) {
     method: 'PATCH',
   });
   if (!response.ok) throw new Error('Failed to mark notification as read');
+  return response.json();
+}
+
+// --- ACTIVITIES & PROJECTS ---
+export async function saveActivity(firebaseUid: string, activity: string) {
+  const response = await fetch(`${API_BASE_URL}/activities`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ firebaseUid, activity }),
+  });
+  if (!response.ok) throw new Error('Failed to save activity');
+  return response.json();
+}
+
+export async function fetchActivities(firebaseUid: string) {
+  const response = await fetch(`${API_BASE_URL}/activities/${firebaseUid}`);
+  if (!response.ok) throw new Error('Failed to fetch activities');
+  return response.json();
+}
+
+export async function saveProject(firebaseUid: string, projectData: { name: string, description?: string, data: any }) {
+  const response = await fetch(`${API_BASE_URL}/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ firebaseUid, ...projectData }),
+  });
+  if (!response.ok) throw new Error('Failed to save project');
+  return response.json();
+}
+
+export async function fetchProjects(firebaseUid: string) {
+  const response = await fetch(`${API_BASE_URL}/projects/${firebaseUid}`);
+  if (!response.ok) throw new Error('Failed to fetch projects');
   return response.json();
 }
