@@ -388,6 +388,12 @@ app.get('/api/profile', async (req, res) => {
     // Format favorites into a simple array of IDs
     const favorites = user.user_favorites ? user.user_favorites.map(f => f.menu_item_id) : [];
     
+    // Format addresses
+    const addresses = (user.addresses || []).map(addr => ({
+      ...addr,
+      isDefault: addr.is_default
+    }));
+    
     console.log(`✅ Profile fetched for ${user.email} with ${user.addresses?.length || 0} addresses`);
     
     res.json({ 
@@ -396,7 +402,7 @@ app.get('/api/profile', async (req, res) => {
       createdAt: user.created_at,
       lastLogin: user.last_login,
       favorites, 
-      addresses: user.addresses || [] 
+      addresses: addresses
     });
   } catch (err) {
     console.error('Profile endpoint crash:', err);
@@ -484,8 +490,31 @@ app.post('/api/users/sync', async (req, res) => {
       throw new Error('Failed to retrieve user after sync');
     }
 
-    console.log(`✅ Sync Success: ${user.email} (ID: ${user.id})`);
-    res.json({ ...user, _id: user.id });
+    // Fetch the full profile including addresses and favorites after upsert
+    const { data: fullUser, error: fetchError } = await supabase
+      .from('users')
+      .select('*, addresses(*), user_favorites(menu_item_id)')
+      .eq('id', user.id)
+      .single();
+
+    if (fetchError) {
+      console.warn('⚠️ Sync fetch error (returning partial user):', fetchError.message);
+      return res.json({ ...user, _id: user.id, addresses: [], favorites: [] });
+    }
+
+    const favorites = fullUser.user_favorites ? fullUser.user_favorites.map(f => f.menu_item_id) : [];
+    const formattedAddresses = (fullUser.addresses || []).map(addr => ({
+      ...addr,
+      isDefault: addr.is_default
+    }));
+
+    console.log(`✅ Sync Success: ${fullUser.email} (ID: ${fullUser.id})`);
+    res.json({ 
+      ...fullUser, 
+      _id: fullUser.id, 
+      favorites, 
+      addresses: formattedAddresses 
+    });
   } catch (error) {
     console.error('💥 Sync crash:', error);
     res.status(500).json({ message: error.message });
