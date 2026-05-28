@@ -448,7 +448,30 @@ app.post('/api/users/sync', async (req, res) => {
 
         if (!updateError) {
           console.log(`✅ Fixed Conflict: Updated UID for ${normalizedEmail}`);
-          return res.json({ ...updatedUser, _id: updatedUser.id });
+          
+          // Fetch the full profile to include addresses and favorites
+          const { data: fullUser, error: fetchError } = await supabase
+            .from('users')
+            .select('*, addresses(*), user_favorites(menu_item_id)')
+            .eq('id', updatedUser.id)
+            .single();
+
+          if (fetchError) {
+            return res.json({ ...updatedUser, _id: updatedUser.id, addresses: [], favorites: [] });
+          }
+
+          const favorites = fullUser.user_favorites ? fullUser.user_favorites.map(f => f.menu_item_id) : [];
+          const formattedAddresses = (fullUser.addresses || []).map(addr => ({
+            ...addr,
+            isDefault: addr.is_default
+          }));
+
+          return res.json({ 
+            ...fullUser, 
+            _id: fullUser.id, 
+            favorites, 
+            addresses: formattedAddresses 
+          });
         } else {
           console.error('❌ Failed to resolve email conflict:', updateError);
         }
