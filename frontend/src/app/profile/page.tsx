@@ -14,7 +14,6 @@ import AddressModal from '@/components/AddressModal';
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
@@ -42,14 +41,12 @@ export default function ProfilePage() {
       }
 
       try {
-        const [ordersData, activitiesData, projectsData] = await Promise.all([
+        const [ordersData, projectsData] = await Promise.all([
           fetchUserOrders(user.email || undefined).catch(() => []),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/activities/${user.uid}`).then(res => res.ok ? res.json() : []).catch(() => []),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/projects/${user.uid}`).then(res => res.ok ? res.json() : []).catch(() => [])
         ]);
         
         setOrders(Array.isArray(ordersData) ? ordersData : []);
-        setActivities(Array.isArray(activitiesData) ? activitiesData : []);
         setProjects(Array.isArray(projectsData) ? projectsData : []);
       } catch (err) {
         console.error('Failed to fetch user data:', err);
@@ -61,23 +58,6 @@ export default function ProfilePage() {
     
     loadUserData();
   }, [user]);
-
-  const handleLogActivity = async () => {
-    if (!user) return;
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/activities`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUid: user.uid, activity: 'Logged in and checked profile' }),
-      });
-      if (response.ok) {
-        const newActivity = await response.json();
-        setActivities(prev => [newActivity, ...prev]);
-      }
-    } catch (err) {
-      console.error('Failed to log activity:', err);
-    }
-  };
 
   const handleAddAddress = async (addressData: any) => {
     if (!user?.email) return;
@@ -159,12 +139,6 @@ export default function ProfilePage() {
               </p>
               <div className="flex gap-4 mt-4">
                 <button 
-                  onClick={handleLogActivity}
-                  className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 hover:text-orange-400 transition-colors bg-orange-500/5 px-6 py-2 rounded-full border border-orange-500/10"
-                >
-                  Log Activity
-                </button>
-                <button 
                   onClick={() => {
                     const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_5072705b4b.mp3');
                     audio.play().catch(e => alert('Audio blocked by browser. Click anywhere first!'));
@@ -178,28 +152,6 @@ export default function ProfilePage() {
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Activities Section */}
-            <section className="flex flex-col gap-8">
-              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
-                <span className="w-8 h-1 bg-blue-500 rounded-full"></span>
-                Recent Activities
-              </h2>
-              <div className="flex flex-col gap-4">
-                {loadingData ? (
-                  <div className="p-8 text-center opacity-50 italic uppercase text-[10px] font-bold">Retrieving history...</div>
-                ) : activities.length > 0 ? activities.slice(0, 5).map((act: any) => (
-                  <div key={act.id} className="p-4 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/5 flex flex-col gap-1">
-                    <p className="text-sm font-bold text-stone-800 dark:text-stone-200">{act.activity}</p>
-                    <span className="text-[9px] text-stone-500 uppercase font-black tracking-widest">{new Date(act.created_at).toLocaleString()}</span>
-                  </div>
-                )) : (
-                  <div className="p-8 border border-dashed border-stone-200 dark:border-white/10 rounded-[2rem] text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                    No activities recorded yet.
-                  </div>
-                )}
-              </div>
-            </section>
-
             {/* Projects Section */}
             <section className="flex flex-col gap-8">
               <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
