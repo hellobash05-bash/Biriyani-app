@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       console.log('--- AUTH: SYNC SUCCESS ---', syncedProfile);
+      console.log('--- AUTH: ADDRESSES IN PROFILE ---', syncedProfile?.addresses);
       setProfile(syncedProfile);
 
       // Log a "Login" activity
