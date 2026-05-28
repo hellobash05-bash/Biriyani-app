@@ -29,12 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
        return;
     }
     try {
-      console.log('--- AUTH: SYNCING USER ---', {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: firebaseUser.displayName
-      });
-      
       const syncedProfile = await syncUser({
         uid: firebaseUser.uid,
         name: firebaseUser.displayName,
@@ -43,8 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phone: firebaseUser.phoneNumber || undefined
       });
       
-      console.log('--- AUTH: SYNC SUCCESS ---', syncedProfile);
-      console.log('--- AUTH: ADDRESSES IN PROFILE ---', syncedProfile?.addresses);
       setProfile(syncedProfile);
 
       // Log a "Login" activity
@@ -63,10 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     } catch (error: any) {
       console.error('--- AUTH: SYNC ERROR ---', error);
-      toast.error('Sync error: ' + (error.message || 'Check console'));
       try {
         const profileData = await fetchProfileByEmail(firebaseUser.email);
-        console.log('--- AUTH: FALLBACK FETCH SUCCESS ---', profileData);
         setProfile(profileData);
       } catch (fetchError) {
         console.error('--- AUTH: FALLBACK FETCH FAILED ---', fetchError);

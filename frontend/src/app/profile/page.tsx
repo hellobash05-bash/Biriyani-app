@@ -98,12 +98,12 @@ export default function ProfilePage() {
     }
   };
 
+  // Add a dedicated refresh on mount to ensure fresh data if navigated from elsewhere
   useEffect(() => {
-    console.log('--- PROFILE PAGE DEBUG ---');
-    console.log('User:', user?.email);
-    console.log('Profile:', profile);
-    console.log('Addresses:', profile?.addresses);
-  }, [profile, user]);
+    if (user && !authLoading) {
+      refreshProfile();
+    }
+  }, []);
 
   if (authLoading) {
     return (
