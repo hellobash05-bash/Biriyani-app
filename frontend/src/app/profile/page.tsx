@@ -98,6 +98,13 @@ export default function ProfilePage() {
     }
   };
 
+  useEffect(() => {
+    console.log('--- PROFILE PAGE DEBUG ---');
+    console.log('User:', user?.email);
+    console.log('Profile:', profile);
+    console.log('Addresses:', profile?.addresses);
+  }, [profile, user]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
