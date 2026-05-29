@@ -21,8 +21,15 @@ export const API_BASE_URL = rawBaseUrl;
 // Helper to ensure path is lowercase and robust
 const getCleanUrl = (path: string) => {
   const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${cleanPath.toLowerCase()}`;
+  // Lowercase both the base and the path for absolute consistency
+  const normalizedBase = base.toLowerCase();
+  const cleanPath = (path.startsWith('/') ? path : `/${path}`).toLowerCase();
+  const finalUrl = `${normalizedBase}${cleanPath}`;
+  
+  if (typeof window !== 'undefined') {
+    console.log('>>> [API URL] Normalized:', finalUrl);
+  }
+  return finalUrl;
 };
 
 if (typeof window !== 'undefined') {

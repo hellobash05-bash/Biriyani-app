@@ -45,8 +45,16 @@ app.set('case sensitive routing', false);
 app.use(cors());
 app.use(express.json());
 
-// Path Normalization Middleware
+// Detailed logging and Path Normalization Middleware
 app.use((req, res, next) => {
+  const originalUrl = req.url;
+  const method = req.method;
+  
+  // Log EVERY /api request before any modification
+  if (originalUrl.toLowerCase().includes('/api')) {
+    console.log(`>>> [REQUEST] ${method} ${originalUrl} (Original)`);
+  }
+
   // Lowercase the path part of the URL only, leaving query params intact
   const urlParts = req.url.split('?');
   const path = urlParts[0].toLowerCase();
@@ -54,7 +62,7 @@ app.use((req, res, next) => {
   req.url = path + query;
   
   if (req.url.includes('address')) {
-    console.log(`--- [ROUTING] ${req.method} ${req.url} ---`);
+    console.log(`>>> [NORMALIZED] ${method} ${req.url}`);
   }
   next();
 });
@@ -613,7 +621,17 @@ app.post('/api/users/sync', async (req, res) => {
   }
 });
 
-app.post('/api/users/address', async (req, res) => {
+const ADDRESS_BASE_PATHS = ['/api/users/address', '/api/user/address', '/api/address'];
+const ADDRESS_ID_PATHS = ['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'];
+
+app.get(ADDRESS_BASE_PATHS, async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+  const addresses = await getFormattedAddresses(null, null, email);
+  res.json(addresses);
+});
+
+app.post(ADDRESS_BASE_PATHS, async (req, res) => {
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
   console.log(`--- ADDING ADDRESS FOR: ${normalizedEmail} ---`);
@@ -670,7 +688,7 @@ app.post('/api/users/address', async (req, res) => {
   }
 });
 
-app.put('/api/users/address/:id', async (req, res) => {
+app.put(ADDRESS_ID_PATHS, async (req, res) => {
   const { id } = req.params;
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
@@ -742,7 +760,7 @@ app.put('/api/users/address/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/users/address/:id', async (req, res) => {
+app.delete(ADDRESS_ID_PATHS, async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
@@ -788,12 +806,6 @@ app.delete('/api/users/address/:id', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-// Robust aliases for address routes
-app.get('/api/user/address', (req, res) => res.redirect(307, '/api/users/address'));
-app.post('/api/user/address', (req, res) => res.redirect(307, '/api/users/address'));
-app.put('/api/user/address/:id', (req, res) => res.redirect(307, `/api/users/address/${req.params.id}`));
-app.delete('/api/user/address/:id', (req, res) => res.redirect(307, `/api/users/address/${req.params.id}`));
 
 // --- FAVORITES ---
 app.post('/api/users/favorites/toggle', async (req, res) => {
