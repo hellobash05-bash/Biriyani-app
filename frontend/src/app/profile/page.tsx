@@ -17,13 +17,36 @@ export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
+
+  const fetchAddresses = async () => {
+    if (!user?.email) return;
+    setLoadingAddresses(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/profile?email=${user.email}`);
+      const data = await res.json();
+      setAddresses(data.addresses || []);
+      console.log('--- DIRECT ADDRESS FETCH SUCCESS ---', data.addresses?.length);
+    } catch (err) {
+      console.error('Failed to fetch addresses directly:', err);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchAddresses();
+    }
+  }, [user]);
 
   useEffect(() => {
     const checkDb = async () => {
@@ -76,6 +99,7 @@ export default function ProfilePage() {
       }
       
       // Force a thorough refresh
+      await fetchAddresses();
       await refreshProfile();
       setEditingAddress(null);
     } catch (err) {
@@ -92,6 +116,7 @@ export default function ProfilePage() {
     try {
       await deleteAddress(id, user.email);
       toast.success('Address deleted');
+      await fetchAddresses();
       await refreshProfile();
     } catch (err) {
       toast.error('Failed to delete address');
@@ -103,7 +128,7 @@ export default function ProfilePage() {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshProfile();
+      await Promise.all([refreshProfile(), fetchAddresses()]);
       toast.success('Records updated');
     } catch (err) {
       toast.error('Sync failed');
@@ -318,6 +343,7 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
                 <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
                 Saved Addresses
+                <span className="text-[8px] font-bold text-stone-400 bg-stone-100 dark:bg-white/5 px-2 py-1 rounded-md">V2.1</span>
               </h2>
               <button 
                 onClick={handleManualRefresh}
@@ -329,8 +355,13 @@ export default function ProfilePage() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {profile?.addresses?.length > 0 ? (
-                profile.addresses.map((addr: any, idx: number) => (
+              {loadingAddresses ? (
+                <div className="col-span-full p-12 text-center">
+                   <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                   <p className="text-[10px] font-bold text-stone-400 mt-4 uppercase tracking-widest">Searching records...</p>
+                </div>
+              ) : addresses.length > 0 ? (
+                addresses.map((addr: any, idx: number) => (
                   <AddressCard
                     key={addr.id || idx}
                     address={addr}

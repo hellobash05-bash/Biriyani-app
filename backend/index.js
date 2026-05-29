@@ -48,9 +48,11 @@ app.use((req, res, next) => {
 });
 
 // --- HELPERS ---
-const getFormattedAddresses = async (userId, firebaseUid) => {
-  console.log(`--- [HELPER] FETCHING ADDRESSES FOR: UserID=${userId}, FirebaseUID=${firebaseUid} ---`);
-  if (!userId && !firebaseUid) {
+const getFormattedAddresses = async (userId, firebaseUid, email = null) => {
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  console.log(`--- [HELPER] FETCHING ADDRESSES FOR: UserID=${userId}, FirebaseUID=${firebaseUid}, Email=${normalizedEmail} ---`);
+  
+  if (!userId && !firebaseUid && !normalizedEmail) {
     console.warn('--- [HELPER] No identifiers provided for address fetch ---');
     return [];
   }
@@ -58,13 +60,23 @@ const getFormattedAddresses = async (userId, firebaseUid) => {
   try {
     let query = supabase.from('addresses').select('*');
     
-    if (userId && firebaseUid) {
-      // Use a more explicit OR filter
-      query = query.or(`user_id.eq.${userId},firebase_uid.eq.${firebaseUid}`);
-    } else if (userId) {
-      query = query.eq('user_id', userId);
+    const filters = [];
+    if (userId) filters.push(`user_id.eq.${userId}`);
+    if (firebaseUid) filters.push(`firebase_uid.eq.${firebaseUid}`);
+    
+    // Fallback: If we have an email, find the user ID first
+    if (normalizedEmail && !userId) {
+       const { data: u } = await supabase.from('users').select('id, uid').ilike('email', normalizedEmail).maybeSingle();
+       if (u) {
+         if (u.id) filters.push(`user_id.eq.${u.id}`);
+         if (u.uid) filters.push(`firebase_uid.eq.${u.uid}`);
+       }
+    }
+
+    if (filters.length > 0) {
+      query = query.or(filters.join(','));
     } else {
-      query = query.eq('firebase_uid', firebaseUid);
+      return [];
     }
     
     const { data, error } = await query
@@ -434,8 +446,8 @@ app.get('/api/profile', async (req, res) => {
 
     const user = users[0];
     
-    // Fetch addresses robustly using helper
-    const addresses = await getFormattedAddresses(user.id, user.uid);
+    // Fetch addresses robustly using helper with email fallback
+    const addresses = await getFormattedAddresses(user.id, user.uid, user.email);
     
     // Format favorites into a simple array of IDs
     const favorites = user.user_favorites ? user.user_favorites.map(f => f.menu_item_id) : [];
@@ -505,8 +517,8 @@ app.post('/api/users/sync', async (req, res) => {
             return res.json({ ...updatedUser, _id: updatedUser.id, addresses: [], favorites: [] });
           }
 
-          // Fetch addresses robustly using helper
-          const formattedAddresses = await getFormattedAddresses(fullUser.id, fullUser.uid);
+          // Fetch addresses robustly using helper with email fallback
+          const formattedAddresses = await getFormattedAddresses(fullUser.id, fullUser.uid, fullUser.email);
 
           const favorites = fullUser.user_favorites ? fullUser.user_favorites.map(f => f.menu_item_id) : [];
 
@@ -564,8 +576,8 @@ app.post('/api/users/sync', async (req, res) => {
       return res.json({ ...user, _id: user.id, addresses: [], favorites: [] });
     }
 
-    // Fetch addresses robustly using helper
-    const formattedAddresses = await getFormattedAddresses(fullUser.id, fullUser.uid);
+    // Fetch addresses robustly using helper with email fallback
+    const formattedAddresses = await getFormattedAddresses(fullUser.id, fullUser.uid, fullUser.email);
 
     const favorites = fullUser.user_favorites ? fullUser.user_favorites.map(f => f.menu_item_id) : [];
 
