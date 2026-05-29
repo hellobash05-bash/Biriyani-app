@@ -12,35 +12,26 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import toast from 'react-hot-toast';
 
+import CheckoutAddressSelector from '@/components/CheckoutAddressSelector';
+
 export default function CheckoutPage() {
   const { cart, total, clearCart, setIsCartOpen } = useCart();
   const { user, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const router = useRouter();
 
   const playNotificationSound = () => {
     // A celebratory chime/register sound
     const ORDER_SUCCESS_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3';
-    console.log('Playing order success sound...');
     const audio = new Audio(ORDER_SUCCESS_SOUND);
     audio.volume = 0.5;
     audio.play().catch(err => {
       console.warn('Audio play blocked or failed:', err);
     });
   };
-
-  const [addressForm, setAddressForm] = useState({
-    name: '',
-    phone: '',
-    house: '',
-    street: '',
-    city: '',
-    pincode: '',
-    landmark: ''
-  });
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsCartOpen(false);
@@ -49,84 +40,35 @@ export default function CheckoutPage() {
     }
   }, [user, authLoading, router, setIsCartOpen]);
 
-  const populateAddressForm = (addr: any) => {
-    let house = '', street = '', city = '', pincode = '', landmark = '';
-    
-    // Use granular fields if they exist
-    if (addr.house || addr.street || addr.city) {
-      house = addr.house || '';
-      street = addr.street || '';
-      city = addr.city || '';
-      pincode = addr.pincode || '';
-      landmark = addr.landmark || '';
-    } 
-    // Fallback to legacy parsing if granular fields are empty but detail exists
-    else if (addr.detail) {
-      const parts = addr.detail.split(',').map((p: string) => p.trim());
-      if (parts.length >= 3) {
-        house = parts[0];
-        street = parts[1];
-        const lastPart = parts[parts.length - 1];
-        const pincodeMatch = lastPart.match(/(\d{6})/);
-        const landmarkMatch = lastPart.match(/Landmark:\s*(.*)/i);
-        
-        city = lastPart.split('-')[0].trim();
-        if (pincodeMatch) pincode = pincodeMatch[0];
-        if (landmarkMatch) landmark = landmarkMatch[1];
-      } else {
-        house = addr.detail;
-      }
-    }
-
-    setAddressForm({
-      name: addr.name || profile?.name || user?.displayName || '',
-      phone: addr.phone || profile?.phone || '',
-      house,
-      street,
-      city,
-      pincode,
-      landmark
-    });
-    setSelectedAddressId(addr._id || addr.label);
-  };
-
-  useEffect(() => {
-    if (profile && profile.addresses?.length > 0 && !selectedAddressId) {
-      // Find default address or use the first one available
-      const defaultAddr = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
-      if (defaultAddr) {
-        populateAddressForm(defaultAddr);
-      }
-    }
-  }, [profile, user]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddressForm({ ...addressForm, [e.target.name]: e.target.value });
-    setSelectedAddressId(null); // Clear selection when manual edit occurs
-  };
-
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedAddress) {
+      toast.error('Please select a delivery address');
+      return;
+    }
+
     setLoading(true);
     try {
-      const fullAddressString = `${addressForm.house}, ${addressForm.street}, ${addressForm.city} - ${addressForm.pincode}. Landmark: ${addressForm.landmark}`;
+      const fullAddressString = `${selectedAddress.address_line1}, ${selectedAddress.address_line2 ? selectedAddress.address_line2 + ', ' : ''}${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}`;
 
       const orderData = {
         userEmail: user?.email,
         customer: {
-          name: addressForm.name,
-          phone: addressForm.phone,
+          name: selectedAddress.full_name,
+          phone: selectedAddress.phone,
           address: {
-            house: addressForm.house,
-            street: addressForm.street,
-            city: addressForm.city,
-            pincode: addressForm.pincode,
-            landmark: addressForm.landmark,
+            house: selectedAddress.address_line1,
+            street: selectedAddress.address_line2 || '',
+            city: selectedAddress.city,
+            pincode: selectedAddress.pincode,
+            landmark: '',
             fullAddress: fullAddressString
           }
         },
+        delivery_address: selectedAddress, // Snapshot of selected address
         items: cart.map(i => ({ 
-          foodId: i._id, // Pass the foodId
+          foodId: i._id,
           name: i.name, 
           price: i.price, 
           quantity: i.quantity, 
@@ -142,7 +84,6 @@ export default function CheckoutPage() {
       setOrderSuccess(true);
       clearCart();
       
-      // Give them a moment to read the success message, then route to tracking
       setTimeout(() => {
         router.push(`/order?id=${result._id}`);
       }, 3000);
@@ -179,72 +120,17 @@ export default function CheckoutPage() {
           </header>
 
           <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-5 gap-12">
-            {/* Delivery Details Form */}
+            {/* Delivery Details Section */}
             <section className="lg:col-span-3 flex flex-col gap-8">
                <h2 className="text-xl font-black text-foreground uppercase tracking-widest flex items-center gap-4">
                  <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
-                 DELIVERY ADDRESS
+                 DELIVERY DETAILS
                </h2>
 
-               {/* Saved Address Selection */}
-               {profile?.addresses?.length > 0 && (
-                 <div className="flex flex-col gap-3">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">Select Saved Address</label>
-                   <div className="flex flex-wrap gap-2">
-                     {profile.addresses.map((addr: any, idx: number) => (
-                       <button
-                         key={idx}
-                         type="button"
-                         onClick={() => populateAddressForm(addr)}
-                         className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                           selectedAddressId === (addr._id || addr.label)
-                             ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
-                             : 'bg-input-bg text-stone-400 border border-input-border'
-                         }`}
-                       >
-                         {addr.label}
-                       </button>
-                     ))}
-                   </div>
-                 </div>
-               )}
-               
-               <div className="flex flex-col gap-8">
-                 <div className="flex flex-col gap-2">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">FULL NAME</label>
-                   <input type="text" name="name" value={addressForm.name} onChange={handleInputChange} required placeholder="Enter your full name" className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                 </div>
-
-                 <div className="flex flex-col gap-2">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">PHONE NUMBER</label>
-                   <input type="tel" name="phone" value={addressForm.phone} onChange={handleInputChange} required placeholder="Enter phone number" className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                 </div>
-
-                 <div className="flex flex-col gap-2">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">HOUSE / FLAT NAME</label>
-                   <input type="text" name="house" value={addressForm.house} onChange={handleInputChange} required placeholder="House/Flat name" className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                 </div>
-
-                 <div className="flex flex-col gap-2">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">STREET / AREA</label>
-                   <input type="text" name="street" value={addressForm.street} onChange={handleInputChange} required placeholder="Street or Area" className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                 </div>
-
-                 <div className="flex flex-col gap-2">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">CITY</label>
-                   <input type="text" name="city" value={addressForm.city} onChange={handleInputChange} required placeholder="City" className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                 </div>
-
-                 <div className="flex flex-col gap-2">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">PINCODE</label>
-                   <input type="text" name="pincode" value={addressForm.pincode} onChange={handleInputChange} required placeholder="Pincode" className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                 </div>
-
-                 <div className="flex flex-col gap-2">
-                   <label className="text-[10px] font-black text-stone-400 uppercase tracking-[0.2em] ml-4">LANDMARK (OPTIONAL)</label>
-                   <input type="text" name="landmark" value={addressForm.landmark} onChange={handleInputChange} placeholder="Nearby landmark" className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all" />
-                 </div>
-               </div>
+               <CheckoutAddressSelector 
+                 onAddressSelect={(addr) => setSelectedAddress(addr)}
+                 selectedAddressId={selectedAddress?.id}
+               />
             </section>
 
             {/* Order Summary */}

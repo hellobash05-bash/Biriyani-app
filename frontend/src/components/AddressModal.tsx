@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AddressModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (address: { 
+    id?: string;
     label: string; 
     name: string;
     phone: string;
@@ -18,9 +19,10 @@ interface AddressModalProps {
     detail: string; 
     isDefault: boolean 
   }) => Promise<void>;
+  initialData?: any;
 }
 
-export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModalProps) {
+export default function AddressModal({ isOpen, onClose, onSubmit, initialData }: AddressModalProps) {
   const [label, setLabel] = useState('Home');
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +36,54 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
   const [isDefault, setIsDefault] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Sync initialData when modal opens or initialData changes
+  useState(() => {
+    if (initialData) {
+      setLabel(initialData.label || 'Home');
+      setFormData({
+        name: initialData.name || '',
+        phone: initialData.phone || '',
+        house: initialData.house || '',
+        street: initialData.street || '',
+        city: initialData.city || '',
+        pincode: initialData.pincode || '',
+        landmark: initialData.landmark || ''
+      });
+      setIsDefault(!!(initialData.isDefault || initialData.is_default));
+    }
+  }, [initialData, isOpen]);
+
+  // Use useEffect to handle initialData updates reliably
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setLabel(initialData.label || 'Home');
+        setFormData({
+          name: initialData.name || '',
+          phone: initialData.phone || '',
+          house: initialData.house || '',
+          street: initialData.street || '',
+          city: initialData.city || '',
+          pincode: initialData.pincode || '',
+          landmark: initialData.landmark || ''
+        });
+        setIsDefault(!!(initialData.isDefault || initialData.is_default));
+      } else {
+        setLabel('Home');
+        setFormData({
+          name: '',
+          phone: '',
+          house: '',
+          street: '',
+          city: '',
+          pincode: '',
+          landmark: ''
+        });
+        setIsDefault(false);
+      }
+    }
+  }, [initialData, isOpen]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -44,19 +94,11 @@ export default function AddressModal({ isOpen, onClose, onSubmit }: AddressModal
     try {
       const detail = `${formData.house}, ${formData.street}, ${formData.city} - ${formData.pincode}. Landmark: ${formData.landmark}`;
       await onSubmit({ 
+        id: initialData?.id,
         label, 
         ...formData,
         detail, 
         isDefault 
-      });
-      setFormData({
-        name: '',
-        phone: '',
-        house: '',
-        street: '',
-        city: '',
-        pincode: '',
-        landmark: ''
       });
       onClose();
     } catch (err) {

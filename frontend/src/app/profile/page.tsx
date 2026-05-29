@@ -5,11 +5,12 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUserOrders, addAddress } from '@/lib/api';
+import { fetchUserOrders, addAddress, updateAddress, deleteAddress } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import AddressModal from '@/components/AddressModal';
+import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const router = useRouter();
 
@@ -59,14 +61,41 @@ export default function ProfilePage() {
     loadUserData();
   }, [user]);
 
-  const handleAddAddress = async (addressData: any) => {
+  const handleAddOrUpdateAddress = async (addressData: any) => {
     if (!user?.email) return;
     try {
-      await addAddress(user.email, addressData);
+      if (addressData.id) {
+        await updateAddress(addressData.id, user.email, addressData);
+        toast.success('Address updated successfully');
+      } else {
+        await addAddress(user.email, addressData);
+        toast.success('Address added successfully');
+      }
+      
+      // Force a thorough refresh
+      console.log('--- REFRESHING PROFILE AFTER ADDRESS CHANGE ---');
+      await refreshProfile();
+      setEditingAddress(null);
+    } catch (err) {
+      console.error('Failed to save address:', err);
+      toast.error('Failed to save address');
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!user?.email || !confirm('Are you sure you want to delete this address?')) return;
+    try {
+      await deleteAddress(id, user.email);
+      toast.success('Address deleted');
       await refreshProfile();
     } catch (err) {
-      alert('Failed to add address');
+      toast.error('Failed to delete address');
     }
+  };
+
+  const handleEditClick = (addr: any) => {
+    setEditingAddress(addr);
+    setIsAddressModalOpen(true);
   };
 
   const handleLogout = async () => {
@@ -78,12 +107,12 @@ export default function ProfilePage() {
     }
   };
 
-  // Add a dedicated refresh on mount to ensure fresh data if navigated from elsewhere
+  // Ensure profile is refreshed whenever user state is finalized
   useEffect(() => {
     if (user && !authLoading) {
       refreshProfile();
     }
-  }, []);
+  }, [user, authLoading]);
 
   if (authLoading) {
     return (
@@ -272,17 +301,37 @@ export default function ProfilePage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(profile?.addresses || []).map((addr: any, idx: number) => (
-                <div key={addr.id || idx} className="premium-card p-8 group flex flex-col gap-3 relative overflow-hidden bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5 shadow-xl">
+                <div key={addr.id || idx} className="premium-card p-8 group flex flex-col gap-4 relative overflow-hidden bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5 shadow-xl transition-all hover:border-orange-500/30">
                   {(addr.isDefault || addr.is_default) && (
                     <div className="absolute top-0 right-0 bg-orange-600 text-[8px] font-black text-white px-4 py-2 uppercase tracking-[0.3em] rounded-bl-2xl shadow-xl z-10">
                       Default
                     </div>
                   )}
-                  <h3 className="text-lg font-black text-stone-900 dark:text-white uppercase tracking-tighter">{addr.label}</h3>
-                  <p className="text-stone-500 dark:text-stone-400 font-medium leading-relaxed italic text-sm group-hover:text-stone-600 dark:group-hover:text-stone-300 transition-colors">"{addr.detail}"</p>
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-lg font-black text-stone-900 dark:text-white uppercase tracking-tighter">{addr.label}</h3>
+                    <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{addr.name}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{addr.phone}</p>
+                  </div>
+                  <p className="text-stone-500 dark:text-stone-400 font-medium leading-relaxed italic text-sm transition-colors border-l-2 border-orange-500/20 pl-4 py-1">
+                    {addr.detail}
+                  </p>
+                  <div className="flex gap-4 mt-2">
+                    <button 
+                      onClick={() => handleEditClick(addr)}
+                      className="text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-orange-600 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteAddress(addr.id)}
+                      className="text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-red-600 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
-              <button onClick={() => setIsAddressModalOpen(true)} className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2">
+              <button onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2">
                 <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
                 Add New Destination
               </button>
@@ -299,7 +348,12 @@ export default function ProfilePage() {
         </motion.div>
       </main>
       <BottomNav />
-      <AddressModal isOpen={isAddressModalOpen} onClose={() => setIsAddressModalOpen(false)} onSubmit={handleAddAddress} />
+      <AddressModal 
+        isOpen={isAddressModalOpen} 
+        onClose={() => { setIsAddressModalOpen(false); setEditingAddress(null); }} 
+        onSubmit={handleAddOrUpdateAddress} 
+        initialData={editingAddress}
+      />
     </div>
   );
 }
