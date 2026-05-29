@@ -7,6 +7,13 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (isProd
   ? 'https://biriyani-backend.onrender.com/api' 
   : 'http://localhost:5000/api');
 
+// Helper to ensure path is lowercase and robust
+const getCleanUrl = (path: string) => {
+  const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${cleanPath.toLowerCase()}`;
+};
+
 if (typeof window !== 'undefined') {
   console.log('--- ROYALE API CONFIG ---');
   console.log('Base URL:', API_BASE_URL);
@@ -241,7 +248,8 @@ export async function fetchAnalytics() {
 }
 
 export async function addAddress(email: string, addressData: any) {
-  const response = await fetch(`${API_BASE_URL}/users/address`, {
+  const url = getCleanUrl('/users/address');
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, ...addressData }),
@@ -254,7 +262,8 @@ export async function addAddress(email: string, addressData: any) {
 }
 
 export async function updateAddress(id: string, email: string, addressData: any) {
-  const response = await fetch(`${API_BASE_URL}/users/address/${id}`, {
+  const url = getCleanUrl(`/users/address/${id}`);
+  const response = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, ...addressData }),
@@ -267,7 +276,7 @@ export async function updateAddress(id: string, email: string, addressData: any)
 }
 
 export async function deleteAddress(id: string, email: string) {
-  const url = `${API_BASE_URL}/users/address/${id}?email=${encodeURIComponent(email)}`;
+  const url = `${getCleanUrl(`/users/address/${id}`)}?email=${encodeURIComponent(email)}`;
   console.log('--- API: ATTEMPTING DELETE ---', { id, email, url });
   
   try {

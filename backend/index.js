@@ -39,8 +39,19 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 const app = express();
 const httpServer = createServer(app);
 
+// Enable case-insensitive routing
+app.set('case sensitive routing', false);
+
 app.use(cors());
 app.use(express.json());
+
+// Request Logger Middleware
+app.use((req, res, next) => {
+  if (req.url.toLowerCase().includes('address')) {
+    console.log(`--- [ROUTING DEBUG] ${req.method} ${req.url} ---`);
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   req.supabase = supabase;
@@ -770,6 +781,18 @@ app.delete('/api/users/address/:id', async (req, res) => {
     console.error('💥 Delete endpoint crash:', err);
     res.status(500).json({ message: err.message });
   }
+});
+
+// Alias for singular path
+app.delete('/api/user/address/:id', (req, res) => {
+  console.log('--- REDIRECTING SINGULAR DELETE TO PLURAL ---');
+  req.url = req.url.replace('/api/user/address', '/api/users/address');
+  app.handle(req, res);
+});
+app.delete('/api/address/:id', (req, res) => {
+  console.log('--- REDIRECTING SHORT DELETE TO PLURAL ---');
+  req.url = req.url.replace('/api/address', '/api/users/address');
+  app.handle(req, res);
 });
 
 // --- FAVORITES ---
