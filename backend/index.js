@@ -72,6 +72,109 @@ app.use((req, res, next) => {
   next();
 });
 
+// --- CASE-INSENSITIVE ADDRESS ROUTES (TOP PRIORITY) ---
+
+// Helper to handle address deletion logic
+const handleDeleteLogic = async (req, res) => {
+  const id = req.params[0] || req.params.id;
+  const { email } = req.query;
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+  console.log(`>>> [NUCLEAR DELETE] ID=${id}, Email=${normalizedEmail}`);
+
+  try {
+    const { data: user, error: userError } = await req.supabase
+      .from('users')
+      .select('id, uid')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
+
+    if (userError || !user) {
+      console.error('❌ User not found for delete:', userError);
+      return res.status(404).json({ message: 'User not found in Royale records.' });
+    }
+
+    // Attempt deletion with both identifiers
+    const { error } = await req.supabase
+      .from('addresses')
+      .delete()
+      .eq('id', id)
+      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
+
+    if (error) {
+      console.error('❌ Address delete error:', error.message);
+      return res.status(400).json({ message: error.message });
+    }
+
+    console.log(`✅ Address ${id} deleted successfully`);
+    res.json({ message: 'Address deleted successfully', id });
+  } catch (err) {
+    console.error('💥 Nuclear Delete crash:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET Addresses
+app.get(/^\/api\/users?\/address\/?$/i, async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ message: 'Email required' });
+  const addresses = await getFormattedAddresses(null, null, email);
+  res.json(addresses);
+});
+
+// POST Address
+app.post(/^\/api\/users?\/address\/?$/i, async (req, res) => {
+  const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  
+  try {
+    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', normalizedEmail).single();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (isDefault) {
+      await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+    }
+
+    const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
+      user_id: user.id, firebase_uid: user.uid, label, name, full_name: name,
+      phone, house, address_line1: house, street, address_line2: street,
+      city, pincode, landmark, detail, is_default: !!isDefault 
+    }]).select().maybeSingle();
+
+    if (error) return res.status(400).json({ message: error.message });
+    res.json(newAddress);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE Address (The main culprit)
+app.delete(/^\/api\/users?\/address\/([^\/]+)\/?$/i, handleDeleteLogic);
+
+// PUT Address
+app.put(/^\/api\/users?\/address\/([^\/]+)\/?$/i, async (req, res) => {
+  const id = req.params[0];
+  const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
+  
+  try {
+    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).single();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+
+    const { data: updated, error } = await req.supabase.from('addresses').update({
+      label, name, full_name: name, phone, house, address_line1: house,
+      street, address_line2: street, city, pincode, landmark, detail, 
+      is_default: !!isDefault, firebase_uid: user.uid, user_id: user.id
+    }).eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`).select().maybeSingle();
+
+    if (error) return res.status(400).json({ message: error.message });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // --- HELPERS ---
 const getFormattedAddresses = async (userId, firebaseUid, email = null) => {
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
@@ -618,192 +721,6 @@ app.post('/api/users/sync', async (req, res) => {
   } catch (error) {
     console.error('💥 Sync crash:', error);
     res.status(500).json({ message: error.message });
-  }
-});
-
-const ADDRESS_BASE_PATHS = ['/api/users/address', '/api/user/address', '/api/address'];
-const ADDRESS_ID_PATHS = ['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'];
-
-app.get(ADDRESS_BASE_PATHS, async (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ message: 'Email is required' });
-  const addresses = await getFormattedAddresses(null, null, email);
-  res.json(addresses);
-});
-
-app.post(ADDRESS_BASE_PATHS, async (req, res) => {
-  const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  const normalizedEmail = email ? email.toLowerCase().trim() : null;
-  console.log(`--- ADDING ADDRESS FOR: ${normalizedEmail} ---`);
-  
-  try {
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, uid')
-      .ilike('email', normalizedEmail)
-      .single();
-    
-    if (userError || !user) {
-      console.error('User search error:', userError);
-      return res.status(404).json({ message: 'User not found in database.' });
-    }
-
-    if (isDefault) {
-      await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
-    }
-
-    const addressData = { 
-      user_id: user.id, 
-      firebase_uid: user.uid,
-      label, 
-      name, 
-      full_name: name,
-      phone, 
-      house, 
-      address_line1: house,
-      street, 
-      address_line2: street,
-      city, 
-      pincode, 
-      landmark, 
-      detail, 
-      is_default: !!isDefault 
-    };
-
-    const { data: newAddress, error: insertError } = await supabase.from('addresses')
-      .insert([addressData])
-      .select()
-      .maybeSingle();
-
-    if (insertError) {
-      console.error('❌ Address insert error:', insertError.message);
-      return res.status(400).json({ message: insertError.message });
-    }
-
-    console.log('✅ Address saved successfully');
-    res.json(newAddress);
-  } catch (err) {
-    console.error('💥 Address endpoint crash:', err);
-    res.status(500).json({ message: 'Server error saving address' });
-  }
-});
-
-app.put(ADDRESS_ID_PATHS, async (req, res) => {
-  const { id } = req.params;
-  const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  const normalizedEmail = email ? email.toLowerCase().trim() : null;
-
-  console.log(`--- UPDATE ADDRESS REQUEST: ID=${id}, Email=${normalizedEmail} ---`);
-
-  try {
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, uid')
-      .ilike('email', normalizedEmail)
-      .maybeSingle();
-
-    if (userError || !user) {
-      console.error('❌ User not found for update:', userError);
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (isDefault) {
-      await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
-    }
-
-    // Populate both Legacy and Modern fields for cross-compatibility
-    const updateData = {
-      label, 
-      name, 
-      full_name: name,
-      phone, 
-      house, 
-      address_line1: house,
-      street, 
-      address_line2: street,
-      city, 
-      pincode, 
-      landmark, 
-      detail, 
-      is_default: !!isDefault,
-      firebase_uid: user.uid,
-      user_id: user.id
-    };
-
-    let query = supabase.from('addresses').update(updateData).eq('id', id);
-    
-    // Defensive OR filter
-    const orFilters = [];
-    if (user.id) orFilters.push(`user_id.eq.${user.id}`);
-    if (user.uid) orFilters.push(`firebase_uid.eq.${user.uid}`);
-    
-    if (orFilters.length > 0) {
-      query = query.or(orFilters.join(','));
-    }
-
-    const { data: updatedAddress, error } = await query.select().maybeSingle();
-
-    if (error) {
-      console.error('❌ Address update error:', error.message);
-      return res.status(400).json({ message: error.message });
-    }
-
-    if (!updatedAddress) {
-      return res.status(404).json({ message: 'Address not found or unauthorized' });
-    }
-
-    console.log(`✅ Address ${id} updated successfully for user ${user.id}`);
-    res.json(updatedAddress);
-  } catch (err) {
-    console.error('💥 Update endpoint crash:', err);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-app.delete(ADDRESS_ID_PATHS, async (req, res) => {
-  const { id } = req.params;
-  const { email } = req.query;
-  const normalizedEmail = email ? email.toLowerCase().trim() : null;
-
-  console.log(`--- DELETE ADDRESS REQUEST: ID=${id}, Email=${normalizedEmail} ---`);
-
-  try {
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, uid')
-      .ilike('email', normalizedEmail)
-      .maybeSingle();
-
-    if (userError || !user) {
-      console.error('❌ User not found for delete:', userError);
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    let query = supabase.from('addresses').delete().eq('id', id);
-    
-    // Defensive OR filter
-    const orFilters = [];
-    if (user.id) orFilters.push(`user_id.eq.${user.id}`);
-    if (user.uid) orFilters.push(`firebase_uid.eq.${user.uid}`);
-    
-    if (orFilters.length > 0) {
-      query = query.or(orFilters.join(','));
-    } else {
-      return res.status(400).json({ message: 'Unable to identify user for deletion' });
-    }
-
-    const { error } = await query;
-
-    if (error) {
-      console.error('❌ Address delete error:', error.message);
-      return res.status(400).json({ message: error.message });
-    }
-
-    console.log(`✅ Address ${id} deleted successfully for user ${user.id}`);
-    res.json({ message: 'Address deleted successfully' });
-  } catch (err) {
-    console.error('💥 Delete endpoint crash:', err);
-    res.status(500).json({ message: err.message });
   }
 });
 
