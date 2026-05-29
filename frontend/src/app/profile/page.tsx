@@ -111,15 +111,24 @@ export default function ProfilePage() {
   };
 
   const handleDeleteAddress = async (id: string) => {
-    if (!user?.email || !confirm('Are you sure you want to delete this address?')) return;
+    if (!user?.email) {
+      toast.error('User email not found');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this address?')) return;
+    
+    console.log('--- ATTEMPTING DELETE ---', { id, email: user.email });
     setIsRefreshing(true);
     try {
-      await deleteAddress(id, user.email);
+      const result = await deleteAddress(id, user.email);
+      console.log('--- DELETE SUCCESS ---', result);
       toast.success('Address deleted');
       await fetchAddresses();
       await refreshProfile();
-    } catch (err) {
-      toast.error('Failed to delete address');
+    } catch (err: any) {
+      console.error('--- DELETE FAILED ---', err);
+      toast.error(`Failed to delete: ${err.message || 'Unknown error'}`);
     } finally {
       setIsRefreshing(false);
     }
