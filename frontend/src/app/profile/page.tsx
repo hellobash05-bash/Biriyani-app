@@ -10,6 +10,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import AddressModal from '@/components/AddressModal';
+import AddressCard from '@/components/AddressCard';
 import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
@@ -301,35 +302,12 @@ export default function ProfilePage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(profile?.addresses || []).map((addr: any, idx: number) => (
-                <div key={addr.id || idx} className="premium-card p-8 group flex flex-col gap-4 relative overflow-hidden bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5 shadow-xl transition-all hover:border-orange-500/30">
-                  {(addr.isDefault || addr.is_default) && (
-                    <div className="absolute top-0 right-0 bg-orange-600 text-[8px] font-black text-white px-4 py-2 uppercase tracking-[0.3em] rounded-bl-2xl shadow-xl z-10">
-                      Default
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-1">
-                    <h3 className="text-lg font-black text-stone-900 dark:text-white uppercase tracking-tighter">{addr.label}</h3>
-                    <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{addr.name}</p>
-                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{addr.phone}</p>
-                  </div>
-                  <p className="text-stone-500 dark:text-stone-400 font-medium leading-relaxed italic text-sm transition-colors border-l-2 border-orange-500/20 pl-4 py-1">
-                    {addr.detail}
-                  </p>
-                  <div className="flex gap-4 mt-2">
-                    <button 
-                      onClick={() => handleEditClick(addr)}
-                      className="text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-orange-600 transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteAddress(addr.id)}
-                      className="text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-red-600 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
+                <AddressCard
+                  key={addr.id || idx}
+                  address={addr}
+                  onEdit={handleEditClick}
+                  onDelete={handleDeleteAddress}
+                />
               ))}
               <button onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2">
                 <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 

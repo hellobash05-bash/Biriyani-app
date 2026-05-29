@@ -225,6 +225,28 @@ export default function AddressModal({ isOpen, onClose, onSubmit, initialData }:
                  <span className="text-[10px] font-black text-stone-500 group-hover:text-orange-600 transition-colors uppercase tracking-[0.2em]">Set as default address</span>
               </label>
 
+              {/* Live Preview Section */}
+              <div className="p-6 bg-input-bg rounded-[2rem] border border-dashed border-input-border">
+                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-4">Live Preview</p>
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-2xl bg-orange-600/10 text-orange-600">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-orange-600">{label}</span>
+                    </div>
+                    <p className="font-black text-foreground text-base leading-none mb-1">{formData.name || 'Full Name'}</p>
+                    <p className="text-stone-500 text-xs font-bold uppercase tracking-widest mb-3">{formData.phone || 'Phone Number'}</p>
+                    <div className="text-xs text-stone-500 font-medium leading-relaxed italic border-l-2 border-orange-500/20 pl-4 py-1">
+                      {formData.house || 'House/Flat'}, {formData.street || 'Street/Area'}<br />
+                      {formData.city || 'City'} - {formData.pincode || 'Pincode'}
+                      {formData.landmark && <><br />Landmark: {formData.landmark}</>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-4 mt-4 sticky bottom-0 bg-background py-4 border-t border-input-border">
                  <button 
                   type="button" 
