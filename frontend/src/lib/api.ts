@@ -246,7 +246,10 @@ export async function addAddress(email: string, addressData: any) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, ...addressData }),
   });
-  if (!response.ok) throw new Error('Failed to add address');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to add address');
+  }
   return response.json();
 }
 
@@ -256,7 +259,10 @@ export async function updateAddress(id: string, email: string, addressData: any)
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, ...addressData }),
   });
-  if (!response.ok) throw new Error('Failed to update address');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to update address');
+  }
   return response.json();
 }
 
@@ -264,7 +270,10 @@ export async function deleteAddress(id: string, email: string) {
   const response = await fetch(`${API_BASE_URL}/users/address/${id}?email=${encodeURIComponent(email)}`, {
     method: 'DELETE',
   });
-  if (!response.ok) throw new Error('Failed to delete address');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to delete address');
+  }
   return response.json();
 }
 

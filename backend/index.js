@@ -635,17 +635,18 @@ app.post('/api/users/address', async (req, res) => {
 
     const { data: newAddress, error: insertError } = await supabase.from('addresses')
       .insert([addressData])
-      .select();
+      .select()
+      .maybeSingle();
 
     if (insertError) {
-      console.error('Address insert error:', insertError);
+      console.error('❌ Address insert error:', insertError.message);
       return res.status(400).json({ message: insertError.message });
     }
 
     console.log('✅ Address saved successfully');
     res.json(newAddress);
   } catch (err) {
-    console.error('Address endpoint crash:', err);
+    console.error('💥 Address endpoint crash:', err);
     res.status(500).json({ message: 'Server error saving address' });
   }
 });
@@ -692,15 +693,26 @@ app.put('/api/users/address/:id', async (req, res) => {
       user_id: user.id
     };
 
-    const { data: updatedAddress, error } = await supabase.from('addresses')
-      .update(updateData)
-      .eq('id', id)
-      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`)
-      .select();
+    let query = supabase.from('addresses').update(updateData).eq('id', id);
+    
+    // Defensive OR filter
+    const orFilters = [];
+    if (user.id) orFilters.push(`user_id.eq.${user.id}`);
+    if (user.uid) orFilters.push(`firebase_uid.eq.${user.uid}`);
+    
+    if (orFilters.length > 0) {
+      query = query.or(orFilters.join(','));
+    }
+
+    const { data: updatedAddress, error } = await query.select().maybeSingle();
 
     if (error) {
       console.error('❌ Address update error:', error.message);
       return res.status(400).json({ message: error.message });
+    }
+
+    if (!updatedAddress) {
+      return res.status(404).json({ message: 'Address not found or unauthorized' });
     }
 
     console.log(`✅ Address ${id} updated successfully for user ${user.id}`);
@@ -730,12 +742,20 @@ app.delete('/api/users/address/:id', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Use a robust OR filter to delete
-    const { error } = await supabase
-      .from('addresses')
-      .delete()
-      .eq('id', id)
-      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
+    let query = supabase.from('addresses').delete().eq('id', id);
+    
+    // Defensive OR filter
+    const orFilters = [];
+    if (user.id) orFilters.push(`user_id.eq.${user.id}`);
+    if (user.uid) orFilters.push(`firebase_uid.eq.${user.uid}`);
+    
+    if (orFilters.length > 0) {
+      query = query.or(orFilters.join(','));
+    } else {
+      return res.status(400).json({ message: 'Unable to identify user for deletion' });
+    }
+
+    const { error } = await query;
 
     if (error) {
       console.error('❌ Address delete error:', error.message);
