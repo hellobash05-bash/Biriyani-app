@@ -287,12 +287,17 @@ export async function updateAddress(id: string, email: string, addressData: any)
 }
 
 export async function deleteAddress(id: string, email: string) {
-  const url = `${getCleanUrl(`/users/address/${id}`)}?email=${encodeURIComponent(email)}`;
+  // Add cache busting timestamp
+  const url = `${getCleanUrl(`/users/address/${id}`)}?email=${encodeURIComponent(email)}&t=${Date.now()}`;
   console.log('--- API: ATTEMPTING DELETE ---', { id, email, url });
   
   try {
     const response = await fetch(url, {
       method: 'DELETE',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     });
     
     console.log('--- API: DELETE RESPONSE STATUS ---', response.status);
