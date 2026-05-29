@@ -361,14 +361,15 @@ app.get('/api/orders/:id', async (req, res) => {
 // --- USER ROUTES ---
 app.get('/api/profile', async (req, res) => {
   const { email, uid } = req.query;
-  console.log(`--- FETCHING PROFILE FOR: ${email || uid} ---`);
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  console.log(`--- FETCHING PROFILE FOR: ${normalizedEmail || uid} ---`);
   
   try {
     let query = supabase
       .from('users')
       .select('*, user_favorites(menu_item_id)');
     
-    if (email) query = query.eq('email', email);
+    if (normalizedEmail) query = query.ilike('email', normalizedEmail);
     if (uid) query = query.eq('uid', uid);
     
     const { data: users, error } = await query;
@@ -379,13 +380,14 @@ app.get('/api/profile', async (req, res) => {
     }
 
     if (!users || users.length === 0) {
-      console.warn(`Profile not found for: ${email || uid}`);
+      console.warn(`Profile not found for: ${normalizedEmail || uid}`);
       return res.status(404).json({ message: 'User profile not found.' });
     }
 
     const user = users[0];
     
-    // Fetch addresses separately to ensure we get all of them (by user_id OR firebase_uid)
+    // Fetch addresses robustly
+    console.log(`--- FETCHING ADDRESSES FOR USER ID: ${user.id}, UID: ${user.uid} ---`);
     const { data: addressesData, error: addrError } = await supabase
       .from('addresses')
       .select('*')
@@ -404,13 +406,10 @@ app.get('/api/profile', async (req, res) => {
     const addresses = (addressesData || []).map(addr => ({
       ...addr,
       isDefault: addr.is_default || false,
-      // Ensure name and full_name are synced for the frontend
       name: addr.name || addr.full_name,
       full_name: addr.full_name || addr.name,
-      // Ensure house and address_line1 are synced
       house: addr.house || addr.address_line1,
       address_line1: addr.address_line1 || addr.house,
-      // Ensure street and address_line2 are synced
       street: addr.street || addr.address_line2,
       address_line2: addr.address_line2 || addr.street
     }));
@@ -441,20 +440,19 @@ app.post('/api/users/sync', async (req, res) => {
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
   console.log(`--- SYNC REQUEST: UID=${uid}, Name=${name}, Email=${normalizedEmail} ---`);
   
-  const isAdminEmail = normalizedEmail === 'hellobash05@gmail.com';
+  const isAdminEmail = normalizedEmail === 'hellobash05@gmail.com' || normalizedEmail === 'arunsuresh667@gmail.com';
   
   try {
-    // 1. First, check if a user with this EMAIL already exists (but with a different UID)
+    // 1. First, check if a user with this EMAIL already exists (using case-insensitive lookup)
     if (normalizedEmail) {
       const { data: emailUser, error: emailError } = await supabase
         .from('users')
-        .select('uid, role')
-        .eq('email', normalizedEmail)
+        .select('id, uid, role')
+        .ilike('email', normalizedEmail)
         .maybeSingle();
 
       if (emailUser && emailUser.uid !== uid) {
         console.log(`⚠️ Conflict: Email ${normalizedEmail} exists with different UID. Updating UID to ${uid}.`);
-        // If it's the same person but their UID changed (e.g. provider change), we update the UID.
         const { data: updatedUser, error: updateError } = await supabase
           .from('users')
           .update({ 
@@ -463,14 +461,14 @@ app.post('/api/users/sync', async (req, res) => {
             name: name || 'Royale Member',
             photo_url: photoURL || ''
           })
-          .eq('email', normalizedEmail)
+          .ilike('email', normalizedEmail)
           .select()
           .single();
 
         if (!updateError) {
           console.log(`✅ Fixed Conflict: Updated UID for ${normalizedEmail}`);
           
-          // Fetch the full profile to include addresses and favorites
+          // Fetch the full profile robustly
           const { data: fullUser, error: fetchError } = await supabase
             .from('users')
             .select('*, user_favorites(menu_item_id)')
@@ -481,7 +479,6 @@ app.post('/api/users/sync', async (req, res) => {
             return res.json({ ...updatedUser, _id: updatedUser.id, addresses: [], favorites: [] });
           }
 
-          // Fetch addresses robustly
           const { data: addressesData } = await supabase
             .from('addresses')
             .select('*')
@@ -506,8 +503,6 @@ app.post('/api/users/sync', async (req, res) => {
             favorites, 
             addresses: formattedAddresses 
           });
-        } else {
-          console.error('❌ Failed to resolve email conflict:', updateError);
         }
       }
     }
@@ -515,7 +510,7 @@ app.post('/api/users/sync', async (req, res) => {
     // 2. Normal Upsert by UID
     const { data: existingUser } = await supabase
       .from('users')
-      .select('role')
+      .select('id, role')
       .eq('uid', uid)
       .maybeSingle();
 
@@ -543,11 +538,8 @@ app.post('/api/users/sync', async (req, res) => {
       return res.status(400).json({ message: upsertError.message });
     }
 
-    if (!user) {
-      throw new Error('Failed to retrieve user after sync');
-    }
+    if (!user) throw new Error('Failed to retrieve user after sync');
 
-    // Fetch the full profile including addresses and favorites after upsert
     const { data: fullUser, error: fetchError } = await supabase
       .from('users')
       .select('*, user_favorites(menu_item_id)')
@@ -555,11 +547,10 @@ app.post('/api/users/sync', async (req, res) => {
       .single();
 
     if (fetchError) {
-      console.warn('⚠️ Sync fetch error (returning partial user):', fetchError.message);
+      console.warn('⚠️ Sync fetch error:', fetchError.message);
       return res.json({ ...user, _id: user.id, addresses: [], favorites: [] });
     }
 
-    // Fetch addresses robustly
     const { data: addressesData } = await supabase
       .from('addresses')
       .select('*')
@@ -578,7 +569,7 @@ app.post('/api/users/sync', async (req, res) => {
       address_line2: addr.address_line2 || addr.street
     }));
 
-    console.log(`✅ Sync Success: ${fullUser.email} (ID: ${fullUser.id})`);
+    console.log(`✅ Sync Success: ${fullUser.email} (ID: ${fullUser.id}) with ${formattedAddresses.length} addresses`);
     res.json({ 
       ...fullUser, 
       _id: fullUser.id, 
@@ -593,23 +584,25 @@ app.post('/api/users/sync', async (req, res) => {
 
 app.post('/api/users/address', async (req, res) => {
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  console.log(`--- ADDING ADDRESS FOR: ${email} ---`);
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  console.log(`--- ADDING ADDRESS FOR: ${normalizedEmail} ---`);
   
   try {
-    // Find user by email
-    const { data: user, error: userError } = await supabase.from('users').select('id, uid').eq('email', email).single();
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, uid')
+      .ilike('email', normalizedEmail)
+      .single();
     
     if (userError || !user) {
       console.error('User search error:', userError);
-      return res.status(404).json({ message: 'User not found in database. Please ensure you are logged in correctly.' });
+      return res.status(404).json({ message: 'User not found in database.' });
     }
 
     if (isDefault) {
-      const { error: updateError } = await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
-      if (updateError) console.error('Error clearing old defaults:', updateError);
+      await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
     }
 
-    // Populate both Legacy and Modern fields for cross-compatibility
     const addressData = { 
       user_id: user.id, 
       firebase_uid: user.uid,
@@ -641,16 +634,17 @@ app.post('/api/users/address', async (req, res) => {
     res.json(newAddress);
   } catch (err) {
     console.error('Address endpoint crash:', err);
-    res.status(500).json({ message: 'Server error saving address', error: err.message });
+    res.status(500).json({ message: 'Server error saving address' });
   }
 });
 
 app.put('/api/users/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
   try {
-    const { data: user, error: userError } = await supabase.from('users').select('id, uid').eq('email', email).single();
+    const { data: user, error: userError } = await supabase.from('users').select('id, uid').ilike('email', normalizedEmail).single();
     if (userError || !user) return res.status(404).json({ message: 'User not found' });
 
     if (isDefault) {
@@ -691,9 +685,10 @@ app.put('/api/users/address/:id', async (req, res) => {
 app.delete('/api/users/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
   try {
-    const { data: user, error: userError } = await supabase.from('users').select('id').eq('email', email).single();
+    const { data: user, error: userError } = await supabase.from('users').select('id').ilike('email', normalizedEmail).single();
     if (userError || !user) return res.status(404).json({ message: 'User not found' });
 
     const { error } = await supabase.from('addresses').delete().eq('id', id).eq('user_id', user.id);
