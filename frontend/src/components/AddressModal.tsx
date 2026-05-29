@@ -36,23 +36,6 @@ export default function AddressModal({ isOpen, onClose, onSubmit, initialData }:
   const [isDefault, setIsDefault] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Sync initialData when modal opens or initialData changes
-  useState(() => {
-    if (initialData) {
-      setLabel(initialData.label || 'Home');
-      setFormData({
-        name: initialData.name || '',
-        phone: initialData.phone || '',
-        house: initialData.house || '',
-        street: initialData.street || '',
-        city: initialData.city || '',
-        pincode: initialData.pincode || '',
-        landmark: initialData.landmark || ''
-      });
-      setIsDefault(!!(initialData.isDefault || initialData.is_default));
-    }
-  }, [initialData, isOpen]);
-
   // Use useEffect to handle initialData updates reliably
   useEffect(() => {
     if (isOpen) {

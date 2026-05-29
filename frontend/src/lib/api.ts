@@ -267,8 +267,6 @@ export async function deleteAddress(id: string, email: string) {
   if (!response.ok) throw new Error('Failed to delete address');
   return response.json();
 }
-  return response.json();
-}
 
 export async function updateOrderStatus(orderId: string, status: string) {
   const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {

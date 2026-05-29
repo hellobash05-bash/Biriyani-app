@@ -335,66 +335,63 @@ export default function ProfilePage() {
                 )}
               </div>
             </section>
+
+            {/* Saved Addresses Section */}
+            <section className="flex flex-col gap-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
+                  <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
+                  My Addresses
+                </h2>
+                <button 
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="text-[9px] font-black uppercase tracking-widest text-orange-600/50 hover:text-orange-600 transition-all flex items-center gap-2 group disabled:opacity-30"
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full bg-orange-600 ${isRefreshing ? 'animate-ping' : ''}`}></span>
+                  {isRefreshing ? 'Syncing...' : 'Sync'}
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                {loadingAddresses ? (
+                  <div className="p-12 text-center">
+                    <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : addresses.length > 0 ? (
+                  addresses.map((addr: any, idx: number) => (
+                    <AddressCard
+                      key={addr.id || idx}
+                      address={addr}
+                      onEdit={handleEditClick}
+                      onDelete={handleDeleteAddress}
+                    />
+                  ))
+                ) : (
+                  <div className="bg-foreground/5 p-16 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center gap-4">
+                    <span className="text-4xl opacity-20">📍</span>
+                    <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">No addresses saved yet.</p>
+                  </div>
+                )}
+                
+                <button 
+                  onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} 
+                  disabled={isRefreshing}
+                  className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2 disabled:opacity-30"
+                >
+                  <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
+                  Add New Destination
+                </button>
+              </div>
+            </section>
           </div>
 
-          {/* Addresses Section - Full Width Below */}
-          <section className="flex flex-col gap-8 pt-12 border-t border-stone-200 dark:border-white/10">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
-                <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
-                Saved Addresses
-                <span className="text-[8px] font-bold text-stone-400 bg-stone-100 dark:bg-white/5 px-2 py-1 rounded-md">V2.1</span>
-              </h2>
-              <button 
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="text-[9px] font-black uppercase tracking-widest text-orange-600/50 hover:text-orange-600 transition-all flex items-center gap-2 group disabled:opacity-30"
-              >
-                <span className={`w-1.5 h-1.5 rounded-full bg-orange-600 ${isRefreshing ? 'animate-ping' : ''}`}></span>
-                {isRefreshing ? 'Syncing...' : 'Reload Records'}
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loadingAddresses ? (
-                <div className="col-span-full p-12 text-center">
-                   <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                   <p className="text-[10px] font-bold text-stone-400 mt-4 uppercase tracking-widest">Searching records...</p>
-                </div>
-              ) : addresses.length > 0 ? (
-                addresses.map((addr: any, idx: number) => (
-                  <AddressCard
-                    key={addr.id || idx}
-                    address={addr}
-                    onEdit={handleEditClick}
-                    onDelete={handleDeleteAddress}
-                  />
-                ))
-              ) : (
-                <div className="col-span-full bg-foreground/[0.02] border-2 border-dashed border-stone-200 dark:border-white/5 rounded-[3rem] p-12 text-center flex flex-col items-center gap-4">
-                  <span className={`text-4xl ${isRefreshing ? 'animate-bounce' : 'opacity-20'}`}>📍</span>
-                  <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">
-                    {isRefreshing ? 'Consulting the royale records...' : 'No destinations saved in your royale records.'}
-                  </p>
-                </div>
-              )}
-              
-              <button 
-                onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} 
-                disabled={isRefreshing}
-                className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2 disabled:opacity-30"
-              >
-                <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
-                Add New Destination
-              </button>
-            </div>
-
-            {/* Account Actions */}
-            <div className="mt-8">
-               <button onClick={handleLogout} className="flex justify-between items-center p-8 rounded-[2.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group w-full text-left">
-                  <span className="font-black uppercase tracking-widest text-xs text-red-500/80 group-hover:text-red-500">Secure Logout</span>
-                  <svg className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-               </button>
-            </div>
+          {/* Account Actions - Below Grid */}
+          <section className="pt-12 border-t border-stone-200 dark:border-white/10">
+             <button onClick={handleLogout} className="flex justify-between items-center p-8 rounded-[2.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group w-full text-left">
+                <span className="font-black uppercase tracking-widest text-xs text-red-500/80 group-hover:text-red-500">Secure Logout</span>
+                <svg className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+             </button>
           </section>
         </motion.div>
       </main>
