@@ -267,14 +267,34 @@ export async function updateAddress(id: string, email: string, addressData: any)
 }
 
 export async function deleteAddress(id: string, email: string) {
-  const response = await fetch(`${API_BASE_URL}/users/address/${id}?email=${encodeURIComponent(email)}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to delete address');
+  const url = `${API_BASE_URL}/users/address/${id}?email=${encodeURIComponent(email)}`;
+  console.log('--- API: ATTEMPTING DELETE ---', { id, email, url });
+  
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+    });
+    
+    console.log('--- API: DELETE RESPONSE STATUS ---', response.status);
+    
+    const text = await response.text();
+    console.log('--- API: DELETE RESPONSE TEXT ---', text);
+    
+    let errorData;
+    try {
+      errorData = JSON.parse(text);
+    } catch (e) {
+      errorData = { message: text || `Server returned ${response.status}` };
+    }
+    
+    if (!response.ok) {
+      throw new Error(errorData.message || 'Failed to delete address');
+    }
+    return errorData;
+  } catch (err: any) {
+    console.error('--- API: DELETE CRASH ---', err);
+    throw err;
   }
-  return response.json();
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {

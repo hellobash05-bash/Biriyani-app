@@ -90,6 +90,8 @@ const getFormattedAddresses = async (userId, firebaseUid, email = null) => {
     
     const formatted = (data || []).map(addr => ({
       ...addr,
+      id: addr.id,
+      _id: addr.id, // For legacy compatibility
       isDefault: addr.is_default || false,
       name: addr.name || addr.full_name,
       full_name: addr.full_name || addr.name,
