@@ -301,14 +301,22 @@ export default function ProfilePage() {
               Saved Addresses
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(profile?.addresses || []).map((addr: any, idx: number) => (
-                <AddressCard
-                  key={addr.id || idx}
-                  address={addr}
-                  onEdit={handleEditClick}
-                  onDelete={handleDeleteAddress}
-                />
-              ))}
+              {profile?.addresses?.length > 0 ? (
+                profile.addresses.map((addr: any, idx: number) => (
+                  <AddressCard
+                    key={addr.id || idx}
+                    address={addr}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteAddress}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full bg-foreground/[0.02] border-2 border-dashed border-stone-200 dark:border-white/5 rounded-[3rem] p-12 text-center flex flex-col items-center gap-4">
+                  <span className="text-4xl opacity-20">📍</span>
+                  <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">No destinations saved in your royale records.</p>
+                </div>
+              )}
+              
               <button onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2">
                 <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
                 Add New Destination

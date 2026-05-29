@@ -47,6 +47,46 @@ app.use((req, res, next) => {
   next();
 });
 
+// --- HELPERS ---
+const getFormattedAddresses = async (userId, firebaseUid) => {
+  if (!userId && !firebaseUid) return [];
+  
+  try {
+    let query = supabase.from('addresses').select('*');
+    
+    if (userId && firebaseUid) {
+      query = query.or(`user_id.eq.${userId},firebase_uid.eq.${firebaseUid}`);
+    } else if (userId) {
+      query = query.eq('user_id', userId);
+    } else {
+      query = query.eq('firebase_uid', firebaseUid);
+    }
+    
+    const { data, error } = await query
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('❌ Error fetching addresses helper:', error.message);
+      return [];
+    }
+    
+    return (data || []).map(addr => ({
+      ...addr,
+      isDefault: addr.is_default || false,
+      name: addr.name || addr.full_name,
+      full_name: addr.full_name || addr.name,
+      house: addr.house || addr.address_line1,
+      address_line1: addr.address_line1 || addr.house,
+      street: addr.street || addr.address_line2,
+      address_line2: addr.address_line2 || addr.street
+    }));
+  } catch (err) {
+    console.error('💥 Crash in addresses helper:', err.message);
+    return [];
+  }
+};
+
 app.get('/api', (req, res) => {
   res.json({
     message: 'Welcome to the Royale Biriyani API',
@@ -386,33 +426,11 @@ app.get('/api/profile', async (req, res) => {
 
     const user = users[0];
     
-    // Fetch addresses robustly
-    console.log(`--- FETCHING ADDRESSES FOR USER ID: ${user.id}, UID: ${user.uid} ---`);
-    const { data: addressesData, error: addrError } = await supabase
-      .from('addresses')
-      .select('*')
-      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    if (addrError) {
-      console.warn('⚠️ Address fetch error for profile:', addrError.message);
-    }
+    // Fetch addresses robustly using helper
+    const addresses = await getFormattedAddresses(user.id, user.uid);
     
     // Format favorites into a simple array of IDs
     const favorites = user.user_favorites ? user.user_favorites.map(f => f.menu_item_id) : [];
-    
-    // Format addresses
-    const addresses = (addressesData || []).map(addr => ({
-      ...addr,
-      isDefault: addr.is_default || false,
-      name: addr.name || addr.full_name,
-      full_name: addr.full_name || addr.name,
-      house: addr.house || addr.address_line1,
-      address_line1: addr.address_line1 || addr.house,
-      street: addr.street || addr.address_line2,
-      address_line2: addr.address_line2 || addr.street
-    }));
     
     console.log(`✅ Profile fetched for ${user.email} with ${addresses.length} addresses`);
     
@@ -479,23 +497,10 @@ app.post('/api/users/sync', async (req, res) => {
             return res.json({ ...updatedUser, _id: updatedUser.id, addresses: [], favorites: [] });
           }
 
-          const { data: addressesData } = await supabase
-            .from('addresses')
-            .select('*')
-            .or(`user_id.eq.${fullUser.id},firebase_uid.eq.${fullUser.uid}`)
-            .order('is_default', { ascending: false });
+          // Fetch addresses robustly using helper
+          const formattedAddresses = await getFormattedAddresses(fullUser.id, fullUser.uid);
 
           const favorites = fullUser.user_favorites ? fullUser.user_favorites.map(f => f.menu_item_id) : [];
-          const formattedAddresses = (addressesData || []).map(addr => ({
-            ...addr,
-            isDefault: addr.is_default || false,
-            name: addr.name || addr.full_name,
-            full_name: addr.full_name || addr.name,
-            house: addr.house || addr.address_line1,
-            address_line1: addr.address_line1 || addr.house,
-            street: addr.street || addr.address_line2,
-            address_line2: addr.address_line2 || addr.street
-          }));
 
           return res.json({ 
             ...fullUser, 
@@ -551,23 +556,10 @@ app.post('/api/users/sync', async (req, res) => {
       return res.json({ ...user, _id: user.id, addresses: [], favorites: [] });
     }
 
-    const { data: addressesData } = await supabase
-      .from('addresses')
-      .select('*')
-      .or(`user_id.eq.${fullUser.id},firebase_uid.eq.${fullUser.uid}`)
-      .order('is_default', { ascending: false });
+    // Fetch addresses robustly using helper
+    const formattedAddresses = await getFormattedAddresses(fullUser.id, fullUser.uid);
 
     const favorites = fullUser.user_favorites ? fullUser.user_favorites.map(f => f.menu_item_id) : [];
-    const formattedAddresses = (addressesData || []).map(addr => ({
-      ...addr,
-      isDefault: addr.is_default || false,
-      name: addr.name || addr.full_name,
-      full_name: addr.full_name || addr.name,
-      house: addr.house || addr.address_line1,
-      address_line1: addr.address_line1 || addr.house,
-      street: addr.street || addr.address_line2,
-      address_line2: addr.address_line2 || addr.street
-    }));
 
     console.log(`✅ Sync Success: ${fullUser.email} (ID: ${fullUser.id}) with ${formattedAddresses.length} addresses`);
     res.json({ 
