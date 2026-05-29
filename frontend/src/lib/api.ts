@@ -3,9 +3,20 @@ const isProd = typeof window !== 'undefined' && (
   window.location.hostname.includes('onrender.com') ||
   window.location.hostname.includes('vercel.app')
 );
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (isProd 
-  ? 'https://biriyani-backend.onrender.com/api' 
+// Force absolute URL in production to bypass Vercel proxy issues
+const DEFAULT_PROD_URL = 'https://biriyani-backend.onrender.com/api';
+
+let rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || (isProd 
+  ? DEFAULT_PROD_URL 
   : 'http://localhost:5000/api');
+
+// If it's a relative URL in production, it's wrong - force the external backend
+if (isProd && rawBaseUrl.startsWith('/')) {
+  console.warn('--- API: RELATIVE URL DETECTED IN PROD, FORCING ABSOLUTE ---', rawBaseUrl);
+  rawBaseUrl = DEFAULT_PROD_URL;
+}
+
+export const API_BASE_URL = rawBaseUrl;
 
 // Helper to ensure path is lowercase and robust
 const getCleanUrl = (path: string) => {
@@ -297,12 +308,13 @@ export async function deleteAddress(id: string, email: string) {
     }
     
     if (!response.ok) {
-      throw new Error(errorData.message || 'Failed to delete address');
+      const msg = errorData.message || `Server returned ${response.status}`;
+      throw new Error(`[${url}] ${msg}`);
     }
     return errorData;
   } catch (err: any) {
     console.error('--- API: DELETE CRASH ---', err);
-    throw err;
+    throw new Error(`FAILED TO DELETE: ${err.message}`);
   }
 }
 
