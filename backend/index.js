@@ -114,6 +114,47 @@ const handleDeleteLogic = async (req, res) => {
   }
 };
 
+// DELETE Address - Multiple explicit routes for robustness
+app.delete('/api/users/address/:id', handleDeleteLogic);
+app.delete('/api/user/address/:id', handleDeleteLogic);
+app.delete('/api/address/:id', handleDeleteLogic);
+
+// PUT Address - Multiple explicit routes
+const handleUpdateLogic = async (req, res) => {
+  const { id } = req.params;
+  const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
+  
+  try {
+    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).single();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+
+    const { data: updated, error } = await req.supabase.from('addresses').update({
+      label, name, full_name: name, phone, house, address_line1: house,
+      street, address_line2: street, city, pincode, landmark, detail, 
+      is_default: !!isDefault, firebase_uid: user.uid, user_id: user.id
+    }).eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`).select().maybeSingle();
+
+    if (error) return res.status(400).json({ message: error.message });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+app.put('/api/users/address/:id', handleUpdateLogic);
+app.put('/api/user/address/:id', handleUpdateLogic);
+app.put('/api/address/:id', handleUpdateLogic);
+
+// GET Addresses
+app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ message: 'Email required' });
+  const addresses = await getFormattedAddresses(null, null, email);
+  res.json(addresses);
+});
+
 // POST Address
 app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
@@ -138,41 +179,6 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-});
-
-// DELETE Address
-app.delete(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'], handleDeleteLogic);
-
-// PUT Address
-app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'], async (req, res) => {
-  const { id } = req.params;
-  const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  
-  try {
-    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).single();
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
-
-    const { data: updated, error } = await req.supabase.from('addresses').update({
-      label, name, full_name: name, phone, house, address_line1: house,
-      street, address_line2: street, city, pincode, landmark, detail, 
-      is_default: !!isDefault, firebase_uid: user.uid, user_id: user.id
-    }).eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`).select().maybeSingle();
-
-    if (error) return res.status(400).json({ message: error.message });
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET Addresses
-app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ message: 'Email required' });
-  const addresses = await getFormattedAddresses(null, null, email);
-  res.json(addresses);
 });
 
 // --- HELPERS ---
