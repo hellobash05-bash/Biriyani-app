@@ -49,12 +49,17 @@ app.use((req, res, next) => {
 
 // --- HELPERS ---
 const getFormattedAddresses = async (userId, firebaseUid) => {
-  if (!userId && !firebaseUid) return [];
+  console.log(`--- [HELPER] FETCHING ADDRESSES FOR: UserID=${userId}, FirebaseUID=${firebaseUid} ---`);
+  if (!userId && !firebaseUid) {
+    console.warn('--- [HELPER] No identifiers provided for address fetch ---');
+    return [];
+  }
   
   try {
     let query = supabase.from('addresses').select('*');
     
     if (userId && firebaseUid) {
+      // Use a more explicit OR filter
       query = query.or(`user_id.eq.${userId},firebase_uid.eq.${firebaseUid}`);
     } else if (userId) {
       query = query.eq('user_id', userId);
@@ -67,11 +72,11 @@ const getFormattedAddresses = async (userId, firebaseUid) => {
       .order('created_at', { ascending: false });
       
     if (error) {
-      console.error('❌ Error fetching addresses helper:', error.message);
+      console.error('❌ [HELPER] Supabase error:', error.message);
       return [];
     }
     
-    return (data || []).map(addr => ({
+    const formatted = (data || []).map(addr => ({
       ...addr,
       isDefault: addr.is_default || false,
       name: addr.name || addr.full_name,
@@ -81,8 +86,11 @@ const getFormattedAddresses = async (userId, firebaseUid) => {
       street: addr.street || addr.address_line2,
       address_line2: addr.address_line2 || addr.street
     }));
+
+    console.log(`✅ [HELPER] Found ${formatted.length} addresses`);
+    return formatted;
   } catch (err) {
-    console.error('💥 Crash in addresses helper:', err.message);
+    console.error('💥 [HELPER] Crash:', err.message);
     return [];
   }
 };
@@ -481,9 +489,9 @@ app.post('/api/users/sync', async (req, res) => {
           })
           .ilike('email', normalizedEmail)
           .select()
-          .single();
+          .maybeSingle(); // Changed from single() to maybeSingle() for robustness
 
-        if (!updateError) {
+        if (!updateError && updatedUser) {
           console.log(`✅ Fixed Conflict: Updated UID for ${normalizedEmail}`);
           
           // Fetch the full profile robustly

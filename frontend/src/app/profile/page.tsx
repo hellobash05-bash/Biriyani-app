@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function ProfilePage() {
 
   const handleAddOrUpdateAddress = async (addressData: any) => {
     if (!user?.email) return;
+    setIsRefreshing(true);
     try {
       if (addressData.id) {
         await updateAddress(addressData.id, user.email, addressData);
@@ -74,23 +76,39 @@ export default function ProfilePage() {
       }
       
       // Force a thorough refresh
-      console.log('--- REFRESHING PROFILE AFTER ADDRESS CHANGE ---');
       await refreshProfile();
       setEditingAddress(null);
     } catch (err) {
       console.error('Failed to save address:', err);
       toast.error('Failed to save address');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
   const handleDeleteAddress = async (id: string) => {
     if (!user?.email || !confirm('Are you sure you want to delete this address?')) return;
+    setIsRefreshing(true);
     try {
       await deleteAddress(id, user.email);
       toast.success('Address deleted');
       await refreshProfile();
     } catch (err) {
       toast.error('Failed to delete address');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshProfile();
+      toast.success('Records updated');
+    } catch (err) {
+      toast.error('Sync failed');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -296,10 +314,20 @@ export default function ProfilePage() {
 
           {/* Addresses Section - Full Width Below */}
           <section className="flex flex-col gap-8 pt-12 border-t border-stone-200 dark:border-white/10">
-            <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
-              <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
-              Saved Addresses
-            </h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
+                <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
+                Saved Addresses
+              </h2>
+              <button 
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="text-[9px] font-black uppercase tracking-widest text-orange-600/50 hover:text-orange-600 transition-all flex items-center gap-2 group disabled:opacity-30"
+              >
+                <span className={`w-1.5 h-1.5 rounded-full bg-orange-600 ${isRefreshing ? 'animate-ping' : ''}`}></span>
+                {isRefreshing ? 'Syncing...' : 'Reload Records'}
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {profile?.addresses?.length > 0 ? (
                 profile.addresses.map((addr: any, idx: number) => (
@@ -312,12 +340,18 @@ export default function ProfilePage() {
                 ))
               ) : (
                 <div className="col-span-full bg-foreground/[0.02] border-2 border-dashed border-stone-200 dark:border-white/5 rounded-[3rem] p-12 text-center flex flex-col items-center gap-4">
-                  <span className="text-4xl opacity-20">📍</span>
-                  <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">No destinations saved in your royale records.</p>
+                  <span className={`text-4xl ${isRefreshing ? 'animate-bounce' : 'opacity-20'}`}>📍</span>
+                  <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">
+                    {isRefreshing ? 'Consulting the royale records...' : 'No destinations saved in your royale records.'}
+                  </p>
                 </div>
               )}
               
-              <button onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2">
+              <button 
+                onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} 
+                disabled={isRefreshing}
+                className="w-full border-2 border-dashed border-stone-200 dark:border-white/10 p-8 rounded-[3rem] text-stone-500 font-black uppercase tracking-widest text-xs flex flex-col items-center justify-center gap-4 hover:border-orange-500/40 hover:text-orange-500 transition-all active:scale-95 group bg-foreground/2 disabled:opacity-30"
+              >
                 <span className="text-3xl group-hover:scale-125 transition-transform opacity-40">+</span> 
                 Add New Destination
               </button>
