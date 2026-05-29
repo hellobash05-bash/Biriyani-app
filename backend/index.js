@@ -76,11 +76,17 @@ app.use((req, res, next) => {
 
 // Helper to handle address deletion logic
 const handleDeleteLogic = async (req, res) => {
-  const id = req.params[0] || req.params.id;
+  const { id } = req.params;
+  const idFallback = req.params[0];
+  const finalId = id || idFallback;
   const { email } = req.query;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
-  console.log(`>>> [NUCLEAR DELETE] ID=${id}, Email=${normalizedEmail}`);
+  console.log(`>>> [NUCLEAR DELETE] ParamsID=${id}, RegexID=${idFallback}, FinalID=${finalId}, Email=${normalizedEmail}`);
+
+  if (!finalId) {
+    return res.status(400).json({ message: 'Address ID is missing from request' });
+  }
 
   try {
     const { data: user, error: userError } = await req.supabase
@@ -98,7 +104,7 @@ const handleDeleteLogic = async (req, res) => {
     const { error } = await req.supabase
       .from('addresses')
       .delete()
-      .eq('id', id)
+      .eq('id', finalId)
       .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
 
     if (error) {
@@ -106,8 +112,8 @@ const handleDeleteLogic = async (req, res) => {
       return res.status(400).json({ message: error.message });
     }
 
-    console.log(`✅ Address ${id} deleted successfully`);
-    res.json({ message: 'Address deleted successfully', id });
+    console.log(`✅ Address ${finalId} deleted successfully`);
+    res.json({ message: 'Address deleted successfully', id: finalId });
   } catch (err) {
     console.error('💥 Nuclear Delete crash:', err);
     res.status(500).json({ message: err.message });
@@ -261,11 +267,16 @@ app.get('/api', (req, res) => {
 
 app.get('/api/version', (req, res) => {
   res.json({ 
-    version: '2.0.0', 
-    status: 'Royale Backend Online (Supabase Realtime Ready)',
-    sync_id: 'ROYALE-SYNC-SUPABASE',
-    timestamp: new Date().toISOString()
+    version: '2.0.2', 
+    deployment_id: 'ROYALE-V2-NUCLEAR-VERIFIED',
+    status: 'Royale Backend Online',
+    timestamp: new Date().toISOString(),
+    supported_methods: ['GET', 'POST', 'PUT', 'DELETE']
   });
+});
+
+app.delete('/api/delete-test', (req, res) => {
+  res.json({ success: true, message: 'Royale DELETE method is working!' });
 });
 
 app.get('/ping', (req, res) => {
