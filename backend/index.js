@@ -114,16 +114,8 @@ const handleDeleteLogic = async (req, res) => {
   }
 };
 
-// GET Addresses
-app.get(/^\/api\/users?\/address\/?$/i, async (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ message: 'Email required' });
-  const addresses = await getFormattedAddresses(null, null, email);
-  res.json(addresses);
-});
-
 // POST Address
-app.post(/^\/api\/users?\/address\/?$/i, async (req, res) => {
+app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
   
@@ -148,12 +140,12 @@ app.post(/^\/api\/users?\/address\/?$/i, async (req, res) => {
   }
 });
 
-// DELETE Address (The main culprit)
-app.delete(/^\/api\/users?\/address\/([^\/]+)\/?$/i, handleDeleteLogic);
+// DELETE Address
+app.delete(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'], handleDeleteLogic);
 
 // PUT Address
-app.put(/^\/api\/users?\/address\/([^\/]+)\/?$/i, async (req, res) => {
-  const id = req.params[0];
+app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'], async (req, res) => {
+  const { id } = req.params;
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
@@ -173,6 +165,14 @@ app.put(/^\/api\/users?\/address\/([^\/]+)\/?$/i, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+});
+
+// GET Addresses
+app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ message: 'Email required' });
+  const addresses = await getFormattedAddresses(null, null, email);
+  res.json(addresses);
 });
 
 // --- HELPERS ---
@@ -1040,6 +1040,17 @@ app.get('/api/seed', async (req, res) => {
     console.error('Seed catch block error:', error);
     res.status(500).json({ message: error.message });
   }
+});
+
+// Fallthrough 404 Logger
+app.use((req, res, next) => {
+  console.error(`❌ [404] NO ROUTE MATCHED: ${req.method} ${req.url}`);
+  res.status(404).json({ 
+    message: `Route not found on Royale Backend: ${req.method} ${req.url}`,
+    method: req.method,
+    url: req.url,
+    originalUrl: req.originalUrl
+  });
 });
 
 app.use((err, req, res, next) => {
