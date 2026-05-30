@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUserOrders, addAddress, updateAddress, deleteAddress } from '@/lib/api';
+import { fetchUserOrders, addAddress, updateAddress, deleteAddress, fetchAddresses as apiFetchAddresses } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -27,16 +27,15 @@ export default function ProfilePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
 
-  const fetchAddresses = async () => {
+  const loadAddresses = async () => {
     if (!user?.email) return;
     setLoadingAddresses(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/profile?email=${user.email}`);
-      const data = await res.json();
-      setAddresses(data.addresses || []);
-      console.log('--- DIRECT ADDRESS FETCH SUCCESS ---', data.addresses?.length);
+      const data = await apiFetchAddresses(user.email);
+      setAddresses(data || []);
+      console.log('--- PROFILE: ADDRESS FETCH SUCCESS ---', data.length);
     } catch (err) {
-      console.error('Failed to fetch addresses directly:', err);
+      console.error('Failed to fetch addresses:', err);
     } finally {
       setLoadingAddresses(false);
     }
@@ -44,7 +43,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      fetchAddresses();
+      loadAddresses();
     }
   }, [user]);
 
@@ -99,7 +98,7 @@ export default function ProfilePage() {
       }
       
       // Force a thorough refresh
-      await fetchAddresses();
+      await loadAddresses();
       await refreshProfile();
       setEditingAddress(null);
     } catch (err) {
@@ -124,7 +123,7 @@ export default function ProfilePage() {
       const result = await deleteAddress(id, user.email);
       console.log('--- DELETE SUCCESS ---', result);
       toast.success('Address deleted');
-      await fetchAddresses();
+      await loadAddresses();
       await refreshProfile();
     } catch (err: any) {
       console.error('--- DELETE FAILED ---', err);
@@ -137,7 +136,7 @@ export default function ProfilePage() {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([refreshProfile(), fetchAddresses()]);
+      await Promise.all([refreshProfile(), loadAddresses()]);
       toast.success('Records updated');
     } catch (err) {
       toast.error('Sync failed');

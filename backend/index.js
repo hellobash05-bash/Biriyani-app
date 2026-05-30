@@ -45,6 +45,12 @@ app.set('case sensitive routing', false);
 app.use(cors());
 app.use(express.json());
 
+// Deployment Signature (Forces redeploy on Render)
+app.use((req, res, next) => {
+  res.setHeader('X-Royale-Signature', '2026-05-30-T16-00-ADDRESS-FIX');
+  next();
+});
+
 // Detailed logging and Path Normalization Middleware
 app.use((req, res, next) => {
   const originalUrl = req.url;
