@@ -266,13 +266,17 @@ export async function fetchAnalytics() {
 }
 
 export async function fetchAddresses(email: string) {
-  const url = `${getCleanUrl('/users/address')}?email=${encodeURIComponent(email)}`;
+  // Use /profile endpoint which is proven to return addresses correctly
+  const url = `${getCleanUrl('/profile')}?email=${encodeURIComponent(email)}`;
+  console.log('--- API: FETCHING ADDRESSES VIA PROFILE ---', url);
+  
   const response = await fetch(url);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to fetch addresses');
+    throw new Error(errorData.message || 'Failed to fetch addresses via profile');
   }
-  return response.json();
+  const data = await response.json();
+  return data.addresses || [];
 }
 
 export async function addAddress(email: string, addressData: any) {
