@@ -39,6 +39,15 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 const app = express();
 const httpServer = createServer(app);
 
+// ABSOLUTE TOP PRIORITY HEALTH CHECK
+app.get('/api/version', (req, res) => {
+  res.status(200).send({ 
+    version: '6.0.0-ABSOLUTE-FINAL', 
+    timestamp: new Date().toISOString(),
+    msg: 'If you see this, the server IS UPDATED.'
+  });
+});
+
 // Enable case-insensitive routing (Express setting)
 app.set('case sensitive routing', false);
 
@@ -280,15 +289,7 @@ app.get('/api', (req, res) => {
   });
 });
 
-// FINAL STABLE DEPLOYMENT - 2026-05-30-T17-40
-app.get('/api/version', (req, res) => {
-  res.json({ 
-    version: '5.0.0-STABLE', 
-    deployment_id: 'ROYALE-V5-FINAL',
-    status: 'Royale Backend Online',
-    timestamp: new Date().toISOString()
-  });
-});
+// --- END OF ROUTES ---
 
 app.delete('/api/users/address/:id', handleDeleteLogic);
 app.delete('/api/user/address/:id', handleDeleteLogic);
