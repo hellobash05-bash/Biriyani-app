@@ -310,7 +310,6 @@ app.get('/api/diag/routes', (req, res) => {
 app.delete('/api/users/address/:id', handleDeleteLogic);
 app.delete('/api/user/address/:id', handleDeleteLogic);
 app.delete('/api/address/:id', handleDeleteLogic);
-app.delete('/api/users/address/*', handleDeleteLogic);
 
 app.delete('/api/delete-test', (req, res) => {
   res.json({ success: true, message: 'Royale DELETE method is working!' });
