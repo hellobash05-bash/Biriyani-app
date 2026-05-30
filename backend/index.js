@@ -45,12 +45,6 @@ app.set('case sensitive routing', false);
 app.use(cors());
 app.use(express.json());
 
-// Deployment Signature (Forces redeploy on Render)
-app.use((req, res, next) => {
-  res.setHeader('X-Royale-Signature', '2026-05-30-T16-15-REGEX-ADDRESS-FIX');
-  next();
-});
-
 // Detailed logging and Path Normalization Middleware
 app.use((req, res, next) => {
   const originalUrl = req.url;
@@ -283,28 +277,11 @@ app.get('/api', (req, res) => {
 
 app.get('/api/version', (req, res) => {
   res.json({ 
-    version: '3.0.0-BOOT-NUCLEAR', 
-    deployment_id: 'ROYALE-V3-DIAGNOSTIC-LIVE',
+    version: '4.0.0-FINAL-FIX', 
+    deployment_id: 'ROYALE-V4-STABLE',
     status: 'Royale Backend Online',
     timestamp: new Date().toISOString()
   });
-});
-
-// Diagnostic Route to list all registered routes
-app.get('/api/diag/routes', (req, res) => {
-  const routes = [];
-  app._router.stack.forEach((middleware) => {
-    if (middleware.route) {
-      routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
-    } else if (middleware.name === 'router') {
-      middleware.handle.stack.forEach((handler) => {
-        if (handler.route) {
-          routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${handler.route.path}`);
-        }
-      });
-    }
-  });
-  res.json({ routes });
 });
 
 app.delete('/api/users/address/:id', handleDeleteLogic);
@@ -319,10 +296,10 @@ app.get('/ping', (req, res) => {
   res.send('pong-supabase');
 });
 
-console.log('--- ROYALE BACKEND BOOTING V2.0.0 (SUPABASE) ---');
+console.log('--- ROYALE BACKEND BOOTING V4.0.0 (FINAL) ---');
 
 app.get('/', (req, res) => {
-  res.send('<h1>Biriyani Backend V2.0.0 (Supabase)</h1>');
+  res.send('<h1>Biriyani Backend V4.0.0 (Stable)</h1>');
 });
 
 const PORT = process.env.PORT || 5000;
