@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { fetchAddresses, deleteAddress } from '@/lib/api';
 import AddressCard from './AddressCard';
 import AddressForm from './AddressForm';
 import { Plus, ChevronRight, MapPin } from 'lucide-react';
@@ -22,23 +22,16 @@ export default function CheckoutAddressSelector({
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
-  const fetchAddresses = useCallback(async () => {
-    if (!user) return;
+  const loadAddresses = useCallback(async () => {
+    if (!user?.email) return;
     
     try {
-      const { data, error } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('firebase_uid', user.uid)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchAddresses(user.email);
       setAddresses(data || []);
       
       // Auto-select default address if none selected yet
       if (!selectedAddressId && data && data.length > 0) {
-        const defaultAddr = data.find((a: any) => a.is_default) || data[0];
+        const defaultAddr = data.find((a: any) => a.is_default || a.isDefault) || data[0];
         onAddressSelect(defaultAddr);
       }
     } catch (error: any) {
@@ -50,15 +43,15 @@ export default function CheckoutAddressSelector({
   }, [user, selectedAddressId, onAddressSelect]);
 
   useEffect(() => {
-    fetchAddresses();
-  }, [fetchAddresses]);
+    loadAddresses();
+  }, [loadAddresses]);
 
   const handleDelete = async (id: string) => {
+    if (!user?.email) return;
     try {
-      const { error } = await supabase.from('addresses').delete().eq('id', id);
-      if (error) throw error;
+      await deleteAddress(id, user.email);
       toast.success('Address deleted');
-      fetchAddresses();
+      loadAddresses();
     } catch (error: any) {
       toast.error('Failed to delete address');
     }
@@ -91,7 +84,7 @@ export default function CheckoutAddressSelector({
         <AddressForm
           onSuccess={() => {
             setShowForm(false);
-            fetchAddresses();
+            loadAddresses();
           }}
           onCancel={() => setShowForm(false)}
         />

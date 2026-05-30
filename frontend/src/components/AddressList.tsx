@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { fetchAddresses, deleteAddress } from '@/lib/api';
 import AddressCard from './AddressCard';
 import AddressForm from './AddressForm';
 import { Plus, MapPin } from 'lucide-react';
@@ -15,18 +15,11 @@ export default function AddressList() {
   const [showForm, setShowForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
 
-  const fetchAddresses = useCallback(async () => {
-    if (!user) return;
+  const loadAddresses = useCallback(async () => {
+    if (!user?.email) return;
     
     try {
-      const { data, error } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('firebase_uid', user.uid)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchAddresses(user.email);
       setAddresses(data || []);
     } catch (error: any) {
       console.error('Error fetching addresses:', error);
@@ -37,21 +30,17 @@ export default function AddressList() {
   }, [user]);
 
   useEffect(() => {
-    fetchAddresses();
-  }, [fetchAddresses]);
+    loadAddresses();
+  }, [loadAddresses]);
 
   const handleDelete = async (id: string) => {
+    if (!user?.email) return;
     if (!confirm('Are you sure you want to delete this address?')) return;
 
     try {
-      const { error } = await supabase
-        .from('addresses')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await deleteAddress(id, user.email);
       toast.success('Address deleted');
-      fetchAddresses();
+      loadAddresses();
     } catch (error: any) {
       toast.error('Failed to delete address');
     }
@@ -95,7 +84,7 @@ export default function AddressList() {
           onSuccess={() => {
             setShowForm(false);
             setEditingAddress(null);
-            fetchAddresses();
+            loadAddresses();
           }}
           onCancel={() => {
             setShowForm(false);

@@ -265,6 +265,16 @@ export async function fetchAnalytics() {
   return await response.json();
 }
 
+export async function fetchAddresses(email: string) {
+  const url = `${getCleanUrl('/users/address')}?email=${encodeURIComponent(email)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to fetch addresses');
+  }
+  return response.json();
+}
+
 export async function addAddress(email: string, addressData: any) {
   const url = getCleanUrl('/users/address');
   const response = await fetch(url, {

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { addAddress, updateAddress } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface AddressFormProps {
@@ -39,7 +39,7 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
         pincode: initialData.pincode || '',
         country: initialData.country || 'India',
         label: initialData.label || 'Home',
-        is_default: initialData.is_default || false
+        is_default: initialData.is_default || initialData.isDefault || false
       });
     }
   }, [initialData]);
@@ -52,30 +52,31 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      toast.error('You must be logged in');
+    if (!user?.email) {
+      toast.error('You must be logged in with an email');
       return;
     }
 
     setLoading(true);
     try {
       const addressData = {
-        ...formData,
-        firebase_uid: user.uid
+        label: formData.label,
+        name: formData.full_name,
+        phone: formData.phone,
+        house: formData.address_line1,
+        street: formData.address_line2,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        country: formData.country,
+        isDefault: formData.is_default
       };
 
       if (initialData?.id) {
-        const { error } = await supabase
-          .from('addresses')
-          .update(addressData)
-          .eq('id', initialData.id);
-        if (error) throw error;
+        await updateAddress(initialData.id, user.email, addressData);
         toast.success('Address updated successfully');
       } else {
-        const { error } = await supabase
-          .from('addresses')
-          .insert([addressData]);
-        if (error) throw error;
+        await addAddress(user.email, addressData);
         toast.success('Address added successfully');
       }
       onSuccess();
