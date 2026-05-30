@@ -283,13 +283,34 @@ app.get('/api', (req, res) => {
 
 app.get('/api/version', (req, res) => {
   res.json({ 
-    version: '2.0.2', 
-    deployment_id: 'ROYALE-V2-NUCLEAR-VERIFIED',
+    version: '3.0.0-BOOT-NUCLEAR', 
+    deployment_id: 'ROYALE-V3-DIAGNOSTIC-LIVE',
     status: 'Royale Backend Online',
-    timestamp: new Date().toISOString(),
-    supported_methods: ['GET', 'POST', 'PUT', 'DELETE']
+    timestamp: new Date().toISOString()
   });
 });
+
+// Diagnostic Route to list all registered routes
+app.get('/api/diag/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${handler.route.path}`);
+        }
+      });
+    }
+  });
+  res.json({ routes });
+});
+
+app.delete('/api/users/address/:id', handleDeleteLogic);
+app.delete('/api/user/address/:id', handleDeleteLogic);
+app.delete('/api/address/:id', handleDeleteLogic);
+app.delete('/api/users/address/*', handleDeleteLogic);
 
 app.delete('/api/delete-test', (req, res) => {
   res.json({ success: true, message: 'Royale DELETE method is working!' });
