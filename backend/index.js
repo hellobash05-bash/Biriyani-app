@@ -5,8 +5,15 @@ import { createServer } from 'http';
 import { createClient } from '@supabase/supabase-js';
 import ws from 'ws';
 import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Try loading .env from both local and root
 dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Configure Multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
@@ -303,10 +310,10 @@ app.get('/ping', (req, res) => {
   res.send('pong-supabase');
 });
 
-console.log('--- ROYALE BACKEND BOOTING V4.0.0 (FINAL) ---');
+console.log('--- ROYALE BACKEND BOOTING V6.0.0 (STABLE) ---');
 
 app.get('/', (req, res) => {
-  res.send('<h1>Biriyani Backend V4.0.0 (Stable)</h1>');
+  res.send('<h1>Biriyani Backend V6.0.0 (Stable)</h1>');
 });
 
 const PORT = process.env.PORT || 5000;

@@ -3,7 +3,7 @@ services:
     name: biriyani-backend
     env: node
     plan: free
-    buildCommand: cd backend && npm install --production
+    buildCommand: npm install --production
     startCommand: node backend/index.js
     envVars:
       - key: NODE_VERSION
