@@ -275,6 +275,7 @@ app.get('/api', (req, res) => {
   });
 });
 
+// FINAL STABLE DEPLOYMENT - 2026-05-30-T17-40
 app.get('/api/version', (req, res) => {
   res.json({ 
     version: '5.0.0-STABLE', 
