@@ -308,8 +308,10 @@ export async function updateAddress(id: string, email: string, addressData: any)
 }
 
 export async function deleteAddress(id: string, email: string) {
-  // Add cache busting timestamp
-  const url = `${getCleanUrl(`/users/address/${id}`)}?email=${encodeURIComponent(email)}&t=${Date.now()}`;
+  // Use lowercase path but preserve ID casing if it matters (usually doesn't for UUIDs)
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const url = `${baseUrl}/api/users/address/${id}?email=${encodeURIComponent(email)}&t=${Date.now()}`;
+  
   console.log('--- API: ATTEMPTING DELETE ---', { id, email, url });
   
   try {

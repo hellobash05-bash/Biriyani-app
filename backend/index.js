@@ -47,7 +47,7 @@ app.use(express.json());
 
 // Deployment Signature (Forces redeploy on Render)
 app.use((req, res, next) => {
-  res.setHeader('X-Royale-Signature', '2026-05-30-T16-00-ADDRESS-FIX');
+  res.setHeader('X-Royale-Signature', '2026-05-30-T16-15-REGEX-ADDRESS-FIX');
   next();
 });
 
@@ -82,16 +82,15 @@ app.use((req, res, next) => {
 
 // Helper to handle address deletion logic
 const handleDeleteLogic = async (req, res) => {
-  const { id } = req.params;
-  const idFallback = req.params[0];
-  const finalId = id || idFallback;
+  const urlParts = req.originalUrl.split('/');
+  const finalId = urlParts[urlParts.length - 1].split('?')[0];
   const { email } = req.query;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
-  console.log(`>>> [NUCLEAR DELETE] ParamsID=${id}, RegexID=${idFallback}, FinalID=${finalId}, Email=${normalizedEmail}`);
+  console.log(`>>> [NUCLEAR DELETE] FinalID=${finalId}, Email=${normalizedEmail}, URL=${req.originalUrl}`);
 
-  if (!finalId) {
-    return res.status(400).json({ message: 'Address ID is missing from request' });
+  if (!finalId || finalId === 'address') {
+    return res.status(400).json({ message: 'Address ID is missing or invalid in request' });
   }
 
   try {
@@ -126,14 +125,20 @@ const handleDeleteLogic = async (req, res) => {
   }
 };
 
-// DELETE Address - Multiple explicit routes for robustness
-app.delete('/api/users/address/:id', handleDeleteLogic);
-app.delete('/api/user/address/:id', handleDeleteLogic);
-app.delete('/api/address/:id', handleDeleteLogic);
+// Catch-all DELETE for addresses using regex to ensure match
+app.delete([
+  '/api/users/address/:id', 
+  '/api/user/address/:id', 
+  '/api/address/:id',
+  /^\/api\/users\/address\/.+/i,
+  /^\/api\/user\/address\/.+/i,
+  /^\/api\/address\/.+/i
+], handleDeleteLogic);
 
 // PUT Address - Multiple explicit routes
 const handleUpdateLogic = async (req, res) => {
-  const { id } = req.params;
+  const urlParts = req.originalUrl.split('/');
+  const id = urlParts[urlParts.length - 1].split('?')[0];
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
@@ -155,9 +160,14 @@ const handleUpdateLogic = async (req, res) => {
   }
 };
 
-app.put('/api/users/address/:id', handleUpdateLogic);
-app.put('/api/user/address/:id', handleUpdateLogic);
-app.put('/api/address/:id', handleUpdateLogic);
+app.put([
+  '/api/users/address/:id', 
+  '/api/user/address/:id', 
+  '/api/address/:id',
+  /^\/api\/users\/address\/.+/i,
+  /^\/api\/user\/address\/.+/i,
+  /^\/api\/address\/.+/i
+], handleUpdateLogic);
 
 // GET Addresses
 app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
