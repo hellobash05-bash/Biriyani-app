@@ -72,6 +72,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// ULTIMATE DEPLOYMENT VERIFIER
+app.get('/api/ultimate-test', (req, res) => {
+  res.send('<h1>ROYALE-ULTIMATE-V6-SUCCESS</h1>');
+});
+
 // --- CASE-INSENSITIVE ADDRESS ROUTES (TOP PRIORITY) ---
 
 // Helper to handle address deletion logic
