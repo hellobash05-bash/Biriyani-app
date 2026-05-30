@@ -277,8 +277,8 @@ app.get('/api', (req, res) => {
 
 app.get('/api/version', (req, res) => {
   res.json({ 
-    version: '4.0.0-FINAL-FIX', 
-    deployment_id: 'ROYALE-V4-STABLE',
+    version: '5.0.0-STABLE', 
+    deployment_id: 'ROYALE-V5-FINAL',
     status: 'Royale Backend Online',
     timestamp: new Date().toISOString()
   });
