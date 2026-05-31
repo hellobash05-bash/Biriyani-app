@@ -82,17 +82,14 @@ app.get('/api/ultimate-test', (req, res) => {
   res.send('<h1>ROYALE-ULTIMATE-V6-SUCCESS</h1>');
 });
 
-// --- ROBUST ADDRESS DELETE (SINGLE TRUTH) ---
-app.delete('/api/address/:id', async (req, res) => {
+const handleAddressDelete = async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
   console.log(`>>> [Surgical Delete] TargetID=${id}, UserEmail=${normalizedEmail}`);
 
-  if (!id) {
-    return res.status(400).json({ message: 'Address ID is required' });
-  }
+  if (!id) return res.status(400).json({ message: 'Address ID is required' });
 
   try {
     const { data: user, error: userError } = await req.supabase
@@ -106,7 +103,6 @@ app.delete('/api/address/:id', async (req, res) => {
       return res.status(404).json({ message: 'Authentication verification failed.' });
     }
 
-    // Surgical deletion restricted to the specific user and ID
     const { error } = await req.supabase
       .from('addresses')
       .delete()
@@ -122,14 +118,11 @@ app.delete('/api/address/:id', async (req, res) => {
     res.json({ success: true, message: 'Address removed successfully', id });
   } catch (err) {
     console.error('💥 Delete Crash:', err.message);
-    res.status(500).json({ message: 'Internal Server Error during deletion' });
+    res.status(500).json({ message: 'Internal Server Error' });
   }
-});
+};
 
-// Legacy aliases for backward compatibility if any
-app.delete(['/api/users/address/:id', '/api/user/address/:id'], (req, res) => {
-  res.redirect(307, `/api/address/${req.params.id}?email=${req.query.email}`);
-});
+app.delete(['/api/address/:id', '/api/users/address/:id', '/api/user/address/:id'], handleAddressDelete);
 
 // PUT Address - Multiple explicit routes
 const handleUpdateLogic = async (req, res) => {
@@ -278,10 +271,6 @@ app.get('/api', (req, res) => {
 });
 
 // --- END OF ROUTES ---
-
-app.delete('/api/users/address/:id', handleDeleteLogic);
-app.delete('/api/user/address/:id', handleDeleteLogic);
-app.delete('/api/address/:id', handleDeleteLogic);
 
 app.delete('/api/delete-test', (req, res) => {
   res.json({ success: true, message: 'Royale DELETE method is working!' });
