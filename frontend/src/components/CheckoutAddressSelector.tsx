@@ -25,48 +25,59 @@ export default function CheckoutAddressSelector({
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
-  const loadAddresses = useCallback(async () => {
+  const loadAddresses = useCallback(async (isSilent = false) => {
     if (!user?.email || !user?.uid) {
       console.warn('>>> [CHECKOUT] Cannot load addresses: User not authenticated');
       setLoading(false);
       return;
     }
     
-    console.log(`>>> [CHECKOUT] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid}`);
+    if (!isSilent) setLoading(true);
+    console.log(`>>> [CHECKOUT] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid} (Silent: ${isSilent})`);
     try {
       const data = await fetchAddresses(user.email, user.uid);
       console.log('>>> [CHECKOUT] ADDRESS DATA RECEIVED:', data);
       
       const addrList = Array.isArray(data) ? data : [];
-      setAddresses(addrList);
       
-      // Prompt 3.1: Automatically select default address
-      if (!selectedAddressId && addrList.length > 0) {
-        const defaultAddr = addrList.find((a: any) => a.is_default || a.isDefault) || addrList[0];
-        console.log('>>> [CHECKOUT] AUTO-SELECTING ADDRESS:', defaultAddr.id);
-        onAddressSelect(defaultAddr);
+      // Protect optimistic state from race conditions if server returns empty temporarily
+      if (addrList.length === 0 && addresses.length > 0 && isSilent) {
+        console.warn('>>> [CHECKOUT] Server returned empty, but we have local data. Keeping local state.');
+      } else {
+        setAddresses(addrList);
+        
+        // Prompt 3.1: Automatically select default address
+        if (!selectedAddressId && addrList.length > 0) {
+          const defaultAddr = addrList.find((a: any) => a.is_default || a.isDefault) || addrList[0];
+          console.log('>>> [CHECKOUT] AUTO-SELECTING ADDRESS:', defaultAddr.id);
+          onAddressSelect(defaultAddr);
+        }
       }
     } catch (error: any) {
       console.error('>>> [CHECKOUT] FETCH FAILED:', error.message);
-      toast.error('Failed to load saved destinations');
+      if (!isSilent) toast.error('Failed to load saved destinations');
     } finally {
       setLoading(false);
     }
-  }, [user, selectedAddressId, onAddressSelect]);
+  }, [user, selectedAddressId, onAddressSelect, addresses.length]);
 
   useEffect(() => {
     loadAddresses();
-  }, [loadAddresses]);
+  }, []); // Only run once on mount
 
   const handleDelete = async (id: string) => {
     if (!user?.email || !user?.uid) return;
     if (!confirm('Remove this destination?')) return;
     try {
-      await deleteAddress(id, user.email, user.uid);
+      // Optimistic delete
+      setAddresses(prev => prev.filter(a => (a.id || a._id) !== id));
       toast.success('Destination removed');
-      loadAddresses();
+      
+      await deleteAddress(id, user.email, user.uid);
+      loadAddresses(true); // Silent refresh
     } catch (error: any) {
       toast.error('Failed to remove');
+      loadAddresses(false); // Restore state
     }
   };
 
@@ -78,10 +89,18 @@ export default function CheckoutAddressSelector({
   const handleFormSuccess = (newAddress?: any) => {
     setShowForm(false);
     setEditingAddress(null);
-    loadAddresses();
+    
     if (newAddress) {
+      // Optimistic add/update
+      if (editingAddress) {
+        setAddresses(prev => prev.map(a => (a.id === newAddress.id || a._id === newAddress._id) ? newAddress : a));
+      } else {
+        setAddresses(prev => [newAddress, ...prev]);
+      }
       onAddressSelect(newAddress);
     }
+    
+    loadAddresses(true); // Silent refresh
   };
 
   const handleFormCancel = () => {

@@ -77,15 +77,15 @@ export default function ProfilePage() {
     }
   };
 
-  const loadAddresses = async () => {
+  const loadAddresses = async (isSilent = false) => {
     if (!user?.email && !user?.uid) {
       console.warn('>>> [PROFILE] Cannot load addresses: Missing email and UID');
       setLoadingAddresses(false);
       return;
     }
 
-    setLoadingAddresses(true);
-    console.log(`>>> [PROFILE] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid}`);
+    if (!isSilent) setLoadingAddresses(true);
+    console.log(`>>> [PROFILE] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid} (Silent: ${isSilent})`);
 
     try {
       const data = await apiFetchAddresses(user.email || '', user.uid || undefined);
@@ -93,17 +93,24 @@ export default function ProfilePage() {
       console.log('>>> [PROFILE] ADDRESS DATA RECEIVED:', data);
 
       if (Array.isArray(data)) {
-        setAddresses(data);
+        // If we just saved an address optimistically, and the fetch returns empty,
+        // it might be a race condition. Let's keep the optimistic data if it's there.
+        if (data.length === 0 && addresses.length > 0 && isSilent) {
+          console.warn('>>> [PROFILE] Server returned empty, but we have optimistic data. Keeping optimistic state.');
+        } else {
+          setAddresses(data);
+        }
+        
         if (data.length === 0) {
           console.log('>>> [PROFILE] NO ADDRESSES FOUND IN VAULT');
         }
       } else {
         console.error('>>> [PROFILE] RECEIVED INVALID DATA FORMAT:', data);
-        setAddresses([]);
+        if (!isSilent) setAddresses([]);
       }
     } catch (err: any) {
       console.error('>>> [PROFILE] FETCH FAILED:', err.message);
-      toast.error('Failed to sync addresses');
+      if (!isSilent) toast.error('Failed to sync addresses');
     } finally {
       setLoadingAddresses(false);
     }
@@ -161,6 +168,33 @@ export default function ProfilePage() {
     loadUserData();
   }, [user]);
 
+  const handleDeleteAddress = async (id: string) => {
+    if (!user?.email || !user?.uid) return;
+    
+    const addressToDelete = addresses.find(a => (a.id || a._id) === id);
+    const label = addressToDelete?.label || 'this address';
+    
+    if (!confirm(`Are you sure you want to remove your "${label}" destination?`)) return;
+    
+    setIsRefreshing(true);
+    try {
+      // Optimistic delete
+      setAddresses(prev => prev.filter(a => (a.id || a._id) !== id));
+      toast.success(`"${label}" removed from vault`);
+      
+      await deleteAddress(id, user.email, user.uid);
+      // Silent refresh to confirm server state
+      loadAddresses(true);
+    } catch (err: any) {
+      console.error('Delete failed:', err);
+      toast.error(err.message || 'Failed to remove destination');
+      // Full refresh to restore state if delete failed
+      loadAddresses(false);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleManualRefresh = async () => {
     if (!user) return;
     setIsRefreshing(true);
@@ -183,7 +217,7 @@ export default function ProfilePage() {
       // 2. Clear local cache and re-fetch
       setAddresses([]);
       await refreshProfile();
-      await loadAddresses();
+      await loadAddresses(false); // Full refresh
       
       toast.success('Vault System Reset & Synced');
     } catch (err) {
@@ -197,29 +231,6 @@ export default function ProfilePage() {
   const handleEditClick = (addr: any) => {
     setEditingAddress(addr);
     setIsAddressModalOpen(true);
-  };
-
-  const handleDeleteAddress = async (id: string) => {
-    if (!user?.email || !user?.uid) return;
-    
-    const addressToDelete = addresses.find(a => (a.id || a._id) === id);
-    const label = addressToDelete?.label || 'this address';
-    
-    if (!confirm(`Are you sure you want to remove your "${label}" destination?`)) return;
-    
-    setIsRefreshing(true);
-    try {
-      await deleteAddress(id, user.email, user.uid);
-      toast.success(`"${label}" removed from vault`);
-      setAddresses(prev => prev.filter(a => (a.id || a._id) !== id));
-      loadAddresses();
-    } catch (err: any) {
-      console.error('Delete failed:', err);
-      toast.error(err.message || 'Failed to remove destination');
-      loadAddresses();
-    } finally {
-      setIsRefreshing(false);
-    }
   };
 
   const handleLogout = async () => {
@@ -472,8 +483,8 @@ export default function ProfilePage() {
             setAddresses((prev) => [savedAddress, ...prev]);
             toast.success('Address saved');
           }
-          // Then refresh from server to ensure everything is in sync
-          loadAddresses();
+          // Then refresh from server silently to ensure everything is in sync
+          loadAddresses(true);
         }}
         initialData={editingAddress}
       />
