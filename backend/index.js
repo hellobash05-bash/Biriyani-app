@@ -60,10 +60,10 @@ app.use((req, res, next) => {
 // ABSOLUTE TOP PRIORITY HEALTH CHECK (V11.0)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '11.0.0-BRIDGE', 
+    version: '11.1.0-ADDRESS-SCHEMA-SAFE', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'UNIVERSAL IDENTITY BRIDGE ONLINE.'
+    msg: 'ADDRESS SCHEMA SAFE BUILD ONLINE.'
   });
 });
 
@@ -146,16 +146,6 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
         data.forEach(a => uniqueMap.set(a.id, a));
       }
     } catch (e) { console.warn('>>> [BRIDGE] Email Fetch skipped:', e.message); }
-  }
-
-  // 4. SAFE FETCH BY LEGACY USER_EMAIL
-  if (searchEmails.length > 0) {
-    try {
-      const { data, error } = await sb.from('addresses').select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('user_email', searchEmails);
-      if (!error && data) {
-        data.forEach(a => uniqueMap.set(a.id, a));
-      }
-    } catch (e) { console.warn('>>> [BRIDGE] Legacy email fetch skipped:', e.message); }
   }
 
   const allResults = Array.from(uniqueMap.values());
