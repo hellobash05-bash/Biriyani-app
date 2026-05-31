@@ -79,10 +79,10 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
       };
 
       if (initialData?.id || initialData?._id) {
-        await updateAddress(initialData.id || initialData._id, user.email, addressData);
+        await updateAddress(initialData.id || initialData._id, user.email, addressData, user.uid);
         toast.success('Address updated successfully');
       } else {
-        await addAddress(user.email, addressData);
+        await addAddress(user.email, addressData, user.uid);
         toast.success('Address added successfully');
       }
       onSuccess();

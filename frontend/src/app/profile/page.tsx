@@ -28,16 +28,16 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const loadAddresses = async () => {
-    if (!user?.email) {
-      console.warn('>>> [PROFILE] Cannot load addresses: No user email');
+    if (!user?.email || !user?.uid) {
+      console.warn('>>> [PROFILE] Cannot load addresses: Missing email or UID');
       return;
     }
     
     setLoadingAddresses(true);
-    console.log('>>> [PROFILE] Fetching addresses for:', user.email);
+    console.log('>>> [PROFILE] Fetching addresses for:', user.email, user.uid);
     
     try {
-      const data = await apiFetchAddresses(user.email);
+      const data = await apiFetchAddresses(user.email, user.uid);
       console.log('>>> [PROFILE] Received addresses:', data);
       
       if (Array.isArray(data)) {
@@ -122,7 +122,7 @@ export default function ProfilePage() {
   };
 
   const handleDeleteAddress = async (id: string) => {
-    if (!user?.email) return;
+    if (!user?.email || !user?.uid) return;
     
     // Prompt: Delete the specific address only
     const addressToDelete = addresses.find(a => (a.id || a._id) === id);
@@ -132,7 +132,7 @@ export default function ProfilePage() {
     
     setIsRefreshing(true);
     try {
-      await deleteAddress(id, user.email);
+      await deleteAddress(id, user.email, user.uid);
       toast.success(`"${label}" removed from vault`);
       
       // Optimistic update for instant feedback

@@ -272,9 +272,12 @@ export async function fetchAnalytics() {
   return await response.json();
 }
 
-export async function fetchAddresses(email: string) {
-  // Use dedicated /address endpoint with cache busting
-  const url = `${API_BASE_URL.replace(/\/$/, '')}/address?email=${encodeURIComponent(email)}&t=${Date.now()}`;
+export async function fetchAddresses(email: string, uid?: string) {
+  // Use dedicated /address endpoint with cache busting and dual-key (Email + UID)
+  let url = `${API_BASE_URL.replace(/\/$/, '')}/address?email=${encodeURIComponent(email)}`;
+  if (uid) url += `&uid=${encodeURIComponent(uid)}`;
+  url += `&t=${Date.now()}`;
+  
   console.log('>>> [API] FETCHING ADDRESSES:', url);
   
   try {
@@ -292,12 +295,12 @@ export async function fetchAddresses(email: string) {
   }
 }
 
-export async function addAddress(email: string, addressData: any) {
-  const url = getCleanUrl('/users/address');
+export async function addAddress(email: string, addressData: any, uid?: string) {
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/address`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, ...addressData }),
+    body: JSON.stringify({ email, uid, ...addressData }),
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -306,12 +309,12 @@ export async function addAddress(email: string, addressData: any) {
   return response.json();
 }
 
-export async function updateAddress(id: string, email: string, addressData: any) {
-  const url = getCleanUrl(`/users/address/${id}`);
+export async function updateAddress(id: string, email: string, addressData: any, uid?: string) {
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/address/${id}`;
   const response = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, ...addressData }),
+    body: JSON.stringify({ email, uid, ...addressData }),
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -319,20 +322,21 @@ export async function updateAddress(id: string, email: string, addressData: any)
   }
   return response.json();
 }
-
-export async function deleteAddress(id: string, email: string) {
+export async function deleteAddress(id: string, email: string, uid?: string) {
   // Ensure we have a clean ID
   if (!id) throw new Error('Cannot delete: Missing address ID');
-  
+
   // Use a simple, absolute path construction
   const cleanId = id.trim();
-  const url = `${API_BASE_URL.replace(/\/$/, '')}/address/${cleanId}?email=${encodeURIComponent(email)}`;
-  
+  let url = `${API_BASE_URL.replace(/\/$/, '')}/address/${cleanId}?email=${encodeURIComponent(email)}`;
+  if (uid) url += `&uid=${encodeURIComponent(uid)}`;
+
   console.log('>>> [API DELETE] Target URL:', url);
-  
+
   try {
     const response = await fetch(url, {
       method: 'DELETE',
+...
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
