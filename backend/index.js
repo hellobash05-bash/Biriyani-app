@@ -51,13 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.6)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.7)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.6.0-PRECISION-ID', 
+    version: '9.7.0-FULL-SYNC', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'SEQUENTIAL USER LOOKUP ENABLED.'
+    msg: 'CROSS-VERIFICATION (EMAIL + UID JOIN) ENABLED.'
   });
 });
 
@@ -68,37 +68,38 @@ app.set('case sensitive routing', false);
 const getFormattedAddresses = async (sb, email, uid = null) => {
   if (!email && !uid) return [];
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
-  console.log(`>>> [HELPER] Fetching for: Email=${normalizedEmail}, UID=${uid}`);
+  console.log(`>>> [HELPER] Cross-Verification for: ${normalizedEmail} / ${uid}`);
 
   try {
-    // 1. Find user using sequential precision (UID first, then Email)
-    let user = null;
-    if (uid) {
-      const { data } = await sb.from('users').select('id, email').eq('uid', uid).maybeSingle();
-      user = data;
-    }
+    // 1. Find ALL user records that could possibly belong to this person
+    const filters = [];
+    if (uid) filters.push(`uid.eq.${uid}`);
+    if (normalizedEmail) filters.push(`email.ilike.${normalizedEmail}`);
     
-    if (!user && normalizedEmail) {
-      const { data } = await sb.from('users').select('id, email').ilike('email', normalizedEmail).maybeSingle();
-      user = data;
-    }
+    const { data: users } = await sb.from('users').select('id, uid, email').or(filters.join(','));
     
-    if (!user) {
-      console.warn('>>> [HELPER] User NOT FOUND in database');
+    if (!users || users.length === 0) {
+      console.warn('>>> [HELPER] No user records found matching these IDs');
       return [];
     }
-    console.log(`>>> [HELPER] Identified User UUID: ${user.id}`);
 
-    // 2. Fetch addresses strictly by user_id (UUID)
+    // Collect all unique internal IDs (UUIDs)
+    const userIds = Array.from(new Set(users.map(u => u.id)));
+    console.log(`>>> [HELPER] Linked to Internal IDs: ${userIds.join(', ')}`);
+
+    // 2. Fetch ALL addresses linked to ANY of these user IDs
     const { data, error } = await sb.from('addresses')
       .select('*')
-      .eq('user_id', user.id)
+      .in('user_id', userIds)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('>>> [HELPER] Database fetch error:', error.message);
+      throw error;
+    }
 
-    return (data || []).map(addr => ({
+    const result = (data || []).map(addr => ({
       ...addr,
       id: addr.id,
       _id: addr.id,
@@ -109,8 +110,11 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
       pincode: addr.pincode || '',
       detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`
     }));
+
+    console.log(`>>> [HELPER] Success: Found ${result.length} addresses across ${userIds.length} user records`);
+    return result;
   } catch (err) {
-    console.error('❌ [HELPER] Critical Error:', err.message);
+    console.error('❌ [HELPER] Crash in Cross-Verification:', err.message);
     return [];
   }
 };
@@ -124,19 +128,15 @@ app.delete('/api/address/:id', async (req, res) => {
   if (!id) return res.status(400).json({ message: 'ID required' });
 
   try {
-    let user = null;
-    if (uid) {
-      const { data } = await req.supabase.from('users').select('id').eq('uid', uid).maybeSingle();
-      user = data;
-    }
-    if (!user && email) {
-      const { data } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
-      user = data;
-    }
+    const filters = [];
+    if (uid) filters.push(`uid.eq.${uid}`);
+    if (email) filters.push(`email.ilike.${email.toLowerCase().trim()}`);
+    const { data: users } = await req.supabase.from('users').select('id').or(filters.join(','));
     
-    if (!user) return res.status(404).json({ message: 'User verification failed' });
+    if (!users || users.length === 0) return res.status(404).json({ message: 'User verification failed' });
+    const userIds = users.map(u => u.id);
 
-    const { error } = await req.supabase.from('addresses').delete().eq('id', id).eq('user_id', user.id);
+    const { error } = await req.supabase.from('addresses').delete().eq('id', id).in('user_id', userIds);
     if (error) throw error;
 
     res.json({ success: true, message: 'Destination removed' });
@@ -152,25 +152,21 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
-    let user = null;
-    if (uid) {
-      const { data } = await req.supabase.from('users').select('id').eq('uid', uid).maybeSingle();
-      user = data;
-    }
-    if (!user && email) {
-      const { data } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
-      user = data;
-    }
+    const filters = [];
+    if (uid) filters.push(`uid.eq.${uid}`);
+    if (email) filters.push(`email.ilike.${email.toLowerCase().trim()}`);
+    const { data: users } = await req.supabase.from('users').select('id').or(filters.join(','));
 
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!users || users.length === 0) return res.status(404).json({ message: 'User not found' });
+    const userIds = users.map(u => u.id);
 
-    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).in('user_id', userIds);
 
     const { data: updated, error } = await req.supabase.from('addresses').update({
       label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-      is_default: !!isDefault, user_id: user.id
-    }).eq('id', id).eq('user_id', user.id).select().maybeSingle();
+      is_default: !!isDefault, user_id: userIds[0] // Link to the first found record
+    }).eq('id', id).in('user_id', userIds).select().maybeSingle();
 
     if (error) throw error;
     res.json(updated);
@@ -192,22 +188,18 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
-    let user = null;
-    if (uid) {
-      const { data } = await req.supabase.from('users').select('id').eq('uid', uid).maybeSingle();
-      user = data;
-    }
-    if (!user && email) {
-      const { data } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
-      user = data;
-    }
+    const filters = [];
+    if (uid) filters.push(`uid.eq.${uid}`);
+    if (email) filters.push(`email.ilike.${email.toLowerCase().trim()}`);
+    const { data: users } = await req.supabase.from('users').select('id').or(filters.join(','));
     
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!users || users.length === 0) return res.status(404).json({ message: 'User not found' });
+    const primaryUserId = users[0].id;
 
-    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryUserId);
 
     const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
-      user_id: user.id, label, name,
+      user_id: primaryUserId, label, name,
       phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault 
