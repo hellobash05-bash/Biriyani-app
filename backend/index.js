@@ -51,13 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.2)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.3)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.2.0-VISIBILITY-FIX', 
+    version: '9.3.0-ID-FIX', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'RESTORED ROBUST HELPER AND DUAL-ID FILTERING.'
+    msg: 'FIXED MISSING firebase_uid COLUMN ERROR.'
   });
 });
 
@@ -71,12 +71,17 @@ const getFormattedAddresses = async (sb, email) => {
   console.log(`>>> [HELPER] Fetching addresses for: ${normalizedEmail}`);
 
   try {
-    const { data: user } = await sb.from('users').select('id, uid').ilike('email', normalizedEmail).maybeSingle();
-    if (!user) return [];
+    // CRITICAL: First find the REAL user id from the users table
+    const { data: user } = await sb.from('users').select('id').ilike('email', normalizedEmail).maybeSingle();
+    if (!user) {
+      console.warn('>>> [HELPER] No user found with email:', normalizedEmail);
+      return [];
+    }
 
+    // Filter ONLY by user_id as firebase_uid doesn't exist in addresses table
     const { data, error } = await sb.from('addresses')
       .select('*')
-      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`)
+      .eq('user_id', user.id)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -106,10 +111,11 @@ app.delete('/api/address/:id', async (req, res) => {
   if (!id) return res.status(400).json({ message: 'ID required' });
 
   try {
-    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).maybeSingle();
+    const { data: user } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { error } = await req.supabase.from('addresses').delete().eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
+    // Filter ONLY by user_id
+    const { error } = await req.supabase.from('addresses').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
 
     res.json({ success: true, message: 'Address removed' });
@@ -125,7 +131,7 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
-    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).single();
+    const { data: user } = await req.supabase.from('users').select('id').ilike('email', email).single();
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
@@ -133,8 +139,8 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
     const { data: updated, error } = await req.supabase.from('addresses').update({
       label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-      is_default: !!isDefault, user_id: user.id, firebase_uid: user.uid
-    }).eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`).select().maybeSingle();
+      is_default: !!isDefault, user_id: user.id
+    }).eq('id', id).eq('user_id', user.id).select().maybeSingle();
 
     if (error) return res.status(400).json({ message: error.message });
     res.json(updated);
@@ -156,13 +162,13 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
-    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).single();
+    const { data: user } = await req.supabase.from('users').select('id').ilike('email', email).single();
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
     const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
-      user_id: user.id, firebase_uid: user.uid, label, name,
+      user_id: user.id, label, name,
       phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault 
