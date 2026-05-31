@@ -103,14 +103,27 @@ export default function ProfilePage() {
 
   const handleDeleteAddress = async (id: string) => {
     if (!user?.email) return;
-    if (!confirm('Are you sure you want to delete this address?')) return;
+    
+    // Prompt: Delete the specific address only
+    const addressToDelete = addresses.find(a => (a.id || a._id) === id);
+    const label = addressToDelete?.label || 'this address';
+    
+    if (!confirm(`Are you sure you want to remove your "${label}" destination?`)) return;
+    
     setIsRefreshing(true);
     try {
       await deleteAddress(id, user.email);
-      toast.success('Address removed');
+      toast.success(`"${label}" removed from vault`);
+      
+      // Optimistic update for instant feedback
+      setAddresses(prev => prev.filter(a => (a.id || a._id) !== id));
+      
+      // Secondary background refresh to ensure sync
       loadAddresses();
     } catch (err) {
-      toast.error('Failed to remove');
+      console.error('Delete failed:', err);
+      toast.error('Failed to remove destination');
+      loadAddresses(); // Rollback/Sync
     } finally {
       setIsRefreshing(false);
     }
