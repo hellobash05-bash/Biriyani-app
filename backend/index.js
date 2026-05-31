@@ -331,6 +331,41 @@ app.get('/api/menu', async (req, res) => {
   })));
 });
 
+const formatOrderForClient = (order) => ({
+  _id: order.id,
+  id: order.id,
+  createdAt: order.created_at,
+  status: order.status,
+  totalAmount: order.total_amount,
+  paymentMethod: order.payment_method,
+  estimatedDeliveryTime: order.estimated_delivery_time,
+  customer: {
+    name: order.customer_name,
+    phone: order.customer_phone,
+    address: {
+      house: order.address_house,
+      street: order.address_street,
+      city: order.address_city,
+      pincode: order.address_pincode,
+      landmark: order.address_landmark,
+      fullAddress: [
+        order.address_house,
+        order.address_street,
+        order.address_city && order.address_pincode
+          ? `${order.address_city} - ${order.address_pincode}`
+          : order.address_city || order.address_pincode,
+        order.address_landmark ? `Landmark: ${order.address_landmark}` : null
+      ].filter(Boolean).join(', ')
+    }
+  },
+  deliveryPartner: order.delivery_partner_name ? {
+    name: order.delivery_partner_name,
+    phone: order.delivery_partner_phone,
+    vehicleNumber: order.delivery_partner_vehicle
+  } : null,
+  items: order.order_items || []
+});
+
 app.post('/api/orders', async (req, res) => {
   const { customer, items, totalAmount, paymentMethod, userEmail, delivery_address_snapshot } = req.body;
   try {
@@ -383,6 +418,29 @@ app.post('/api/orders', async (req, res) => {
     res.status(201).json({ ...orderData, _id: orderData.id, items });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+app.get('/api/orders/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data: order, error } = await req.supabase
+      .from('orders')
+      .select('*, order_items (*)')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+      throw error;
+    }
+
+    res.json(formatOrderForClient(order));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
