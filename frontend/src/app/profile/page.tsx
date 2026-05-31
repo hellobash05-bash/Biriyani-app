@@ -5,47 +5,21 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUserOrders, addAddress, updateAddress, deleteAddress, fetchAddresses as apiFetchAddresses } from '@/lib/api';
+import { fetchUserOrders } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import AddressModal from '@/components/AddressModal';
-import AddressCard from '@/components/AddressCard';
 import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
-  const [addresses, setAddresses] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
-  const [loadingAddresses, setLoadingAddresses] = useState(true);
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
-
-  const loadAddresses = async () => {
-    if (!user?.email) return;
-    setLoadingAddresses(true);
-    try {
-      const data = await apiFetchAddresses(user.email);
-      setAddresses(data || []);
-      console.log('--- PROFILE: ADDRESS FETCH SUCCESS ---', data.length);
-    } catch (err) {
-      console.error('Failed to fetch addresses:', err);
-    } finally {
-      setLoadingAddresses(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      loadAddresses();
-    }
-  }, [user]);
 
   useEffect(() => {
     const checkDb = async () => {
@@ -85,69 +59,16 @@ export default function ProfilePage() {
     loadUserData();
   }, [user]);
 
-  const handleAddOrUpdateAddress = async (addressData: any) => {
-    if (!user?.email) return;
-    setIsRefreshing(true);
-    try {
-      if (addressData.id) {
-        await updateAddress(addressData.id, user.email, addressData);
-        toast.success('Address updated successfully');
-      } else {
-        await addAddress(user.email, addressData);
-        toast.success('Address added successfully');
-      }
-      
-      // Force a thorough refresh
-      await loadAddresses();
-      await refreshProfile();
-      setEditingAddress(null);
-    } catch (err) {
-      console.error('Failed to save address:', err);
-      toast.error('Failed to save address');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleDeleteAddress = async (id: string) => {
-    if (!user?.email) {
-      toast.error('User email not found');
-      return;
-    }
-    
-    if (!confirm('Are you sure you want to delete this address?')) return;
-    
-    console.log('--- ATTEMPTING DELETE ---', { id, email: user.email });
-    setIsRefreshing(true);
-    try {
-      const result = await deleteAddress(id, user.email);
-      console.log('--- DELETE SUCCESS ---', result);
-      toast.success('Address deleted');
-      await loadAddresses();
-      await refreshProfile();
-    } catch (err: any) {
-      console.error('--- DELETE FAILED ---', err);
-      toast.error(`Failed to delete: ${err.message || 'Unknown error'}`);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([refreshProfile(), loadAddresses()]);
+      await refreshProfile();
       toast.success('Records updated');
     } catch (err) {
       toast.error('Sync failed');
     } finally {
       setIsRefreshing(false);
     }
-  };
-
-  const handleEditClick = (addr: any) => {
-    setEditingAddress(addr);
-    setIsAddressModalOpen(true);
   };
 
   const handleLogout = async () => {
