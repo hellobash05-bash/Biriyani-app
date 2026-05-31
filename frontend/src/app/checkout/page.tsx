@@ -12,15 +12,12 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import toast from 'react-hot-toast';
 
-import CheckoutAddressSelector from '@/components/CheckoutAddressSelector';
-
 export default function CheckoutPage() {
   const { cart, total, clearCart, setIsCartOpen } = useCart();
   const { user, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const router = useRouter();
 
   const playNotificationSound = () => {
@@ -43,30 +40,22 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedAddress) {
-      toast.error('Please select a delivery address');
-      return;
-    }
-
     setLoading(true);
     try {
-      const fullAddressString = `${selectedAddress.address_line1 || selectedAddress.house}, ${selectedAddress.address_line2 || selectedAddress.street ? (selectedAddress.address_line2 || selectedAddress.street) + ', ' : ''}${selectedAddress.city}, ${selectedAddress.state || ''} - ${selectedAddress.pincode}${selectedAddress.landmark ? ' (Landmark: ' + selectedAddress.landmark + ')' : ''}`;
-
       const orderData = {
         userEmail: user?.email,
         customer: {
-          name: selectedAddress.full_name || selectedAddress.name,
-          phone: selectedAddress.phone,
+          name: user?.displayName || profile?.name || 'Royale Member',
+          phone: user?.phoneNumber || profile?.phone || '0000000000',
           address: {
-            house: selectedAddress.address_line1 || selectedAddress.house,
-            street: selectedAddress.address_line2 || selectedAddress.street || '',
-            city: selectedAddress.city,
-            pincode: selectedAddress.pincode,
-            landmark: selectedAddress.landmark || '',
-            fullAddress: fullAddressString
+            house: 'N/A',
+            street: 'Updating System',
+            city: 'Chennai',
+            pincode: '600001',
+            landmark: '',
+            fullAddress: 'Delivery system is being updated. Contact support.'
           }
         },
-        delivery_address: selectedAddress, // Snapshot of selected address
         items: cart.map(i => ({ 
           foodId: i._id,
           name: i.name, 
@@ -129,6 +118,7 @@ export default function CheckoutPage() {
 
                <div className="bg-stone-50 dark:bg-white/5 p-12 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center">
                  <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">Delivery address system is being updated...</p>
+                 <p className="text-[9px] text-stone-400 mt-2 uppercase tracking-widest">Orders will use your profile defaults temporarily.</p>
                </div>
             </section>
 

@@ -277,12 +277,6 @@ export default function ProfilePage() {
         </motion.div>
       </main>
       <BottomNav />
-      <AddressModal 
-        isOpen={isAddressModalOpen} 
-        onClose={() => { setIsAddressModalOpen(false); setEditingAddress(null); }} 
-        onSubmit={handleAddOrUpdateAddress} 
-        initialData={editingAddress}
-      />
     </div>
   );
 }
