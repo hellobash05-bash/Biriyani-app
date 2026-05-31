@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
@@ -311,9 +311,9 @@ export default function ProfilePage() {
                     <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : orders.length > 0 ? orders.map((order) => (
-                  <motion.div key={order._id} whileHover={{ scale: 1.01 }} className="premium-card p-8 bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5">
+                  <motion.div key={order.id || order._id} whileHover={{ scale: 1.01 }} className="premium-card p-8 bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5">
                     <div className="flex justify-between items-start mb-6">
-                      <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Order ID: #{order._id.slice(-6)}</span>
+                      <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Order ID: #{(order.id || order._id || '').slice(-6)}</span>
                       <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
                         order.status === 'Delivered' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
                       }`}>
@@ -321,11 +321,11 @@ export default function ProfilePage() {
                       </span>
                     </div>
                     <p className="text-stone-800 dark:text-white font-bold mb-4 line-clamp-1">
-                      {order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
+                      {order.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ') || 'No items listed'}
                     </p>
                     <div className="flex justify-between items-center border-t border-stone-100 dark:border-white/5 pt-4">
                       <span className="text-xl font-black text-orange-500">₹{order.totalAmount}</span>
-                      <button onClick={() => router.push(`/order?id=${order._id}`)} className="text-stone-900 dark:text-white font-black uppercase tracking-widest text-[9px] hover:text-orange-600 transition-colors">
+                      <button onClick={() => router.push(`/order?id=${order.id || order._id}`)} className="text-stone-900 dark:text-white font-black uppercase tracking-widest text-[9px] hover:text-orange-600 transition-colors">
                         VIEW RECEIPT →
                       </button>
                     </div>
