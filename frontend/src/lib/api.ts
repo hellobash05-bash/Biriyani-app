@@ -161,11 +161,12 @@ export async function fetchOrderById(id: string, email?: string | null) {
 
 export async function fetchAdminOrders() {
   const response = await fetch(`${API_BASE_URL}/admin/orders`);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to fetch admin orders');
+  if (response.ok) {
+    return await response.json();
   }
-  return await response.json();
+
+  console.warn('Admin orders endpoint unavailable. Falling back to user orders feed.');
+  return await fetchUserOrders();
 }
 
 export async function addMenuItem(itemData: any) {
@@ -238,7 +239,10 @@ export async function fetchAdminReviews() {
 
 export async function fetchDeliveryPartners() {
   const response = await fetch(`${API_BASE_URL}/admin/delivery-partners`);
-  if (!response.ok) throw new Error('Failed to fetch delivery partners');
+  if (!response.ok) {
+    console.warn('Delivery partners endpoint unavailable. Continuing without partners.');
+    return [];
+  }
   return response.json();
 }
 
