@@ -61,24 +61,13 @@ app.set('case sensitive routing', false);
 app.use(cors());
 app.use(express.json());
 
-// Detailed logging and Path Normalization Middleware
+// Detailed logging Middleware
 app.use((req, res, next) => {
   const originalUrl = req.url;
   const method = req.method;
   
-  // Log EVERY /api request before any modification
   if (originalUrl.toLowerCase().includes('/api')) {
-    console.log(`>>> [REQUEST] ${method} ${originalUrl} (Original)`);
-  }
-
-  // Lowercase the path part of the URL only, leaving query params intact
-  const urlParts = req.url.split('?');
-  const path = urlParts[0].toLowerCase();
-  const query = urlParts[1] ? `?${urlParts[1]}` : '';
-  req.url = path + query;
-  
-  if (req.url.includes('address')) {
-    console.log(`>>> [NORMALIZED] ${method} ${req.url}`);
+    console.log(`>>> [REQUEST] ${method} ${originalUrl}`);
   }
   next();
 });
@@ -97,15 +86,15 @@ app.get('/api/ultimate-test', (req, res) => {
 
 // Helper to handle address deletion logic
 const handleDeleteLogic = async (req, res) => {
-  const urlParts = req.originalUrl.split('/');
-  const finalId = urlParts[urlParts.length - 1].split('?')[0];
+  // Use Express params for robust ID retrieval
+  const finalId = req.params.id || req.originalUrl.split('/').pop().split('?')[0];
   const { email } = req.query;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
-  console.log(`>>> [NUCLEAR DELETE] FinalID=${finalId}, Email=${normalizedEmail}, URL=${req.originalUrl}`);
+  console.log(`>>> [DELETE ATTEMPT] TargetID=${finalId}, Email=${normalizedEmail}`);
 
   if (!finalId || finalId === 'address') {
-    return res.status(400).json({ message: 'Address ID is missing or invalid in request' });
+    return res.status(400).json({ message: 'Address ID is missing or invalid' });
   }
 
   try {
@@ -117,10 +106,10 @@ const handleDeleteLogic = async (req, res) => {
 
     if (userError || !user) {
       console.error('❌ User not found for delete:', userError);
-      return res.status(404).json({ message: 'User not found in Royale records.' });
+      return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Attempt deletion with both identifiers
+    // Surgical deletion restricted to the specific user and ID
     const { error } = await req.supabase
       .from('addresses')
       .delete()
@@ -128,14 +117,14 @@ const handleDeleteLogic = async (req, res) => {
       .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
 
     if (error) {
-      console.error('❌ Address delete error:', error.message);
+      console.error('❌ Delete error:', error.message);
       return res.status(400).json({ message: error.message });
     }
 
-    console.log(`✅ Address ${finalId} deleted successfully`);
-    res.json({ message: 'Address deleted successfully', id: finalId });
+    console.log(`✅ Address ${finalId} removed successfully`);
+    res.json({ message: 'Address removed successfully', id: finalId });
   } catch (err) {
-    console.error('💥 Nuclear Delete crash:', err);
+    console.error('💥 Delete crash:', err);
     res.status(500).json({ message: err.message });
   }
 };
