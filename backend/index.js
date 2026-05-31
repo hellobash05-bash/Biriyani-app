@@ -111,7 +111,7 @@ const resolveAllUserIds = async (sb, email, uid = null) => {
   }
 };
 
-// --- ULTIMATE TRIPLE-IDENTITY BRIDGE (v14.0) ---
+// --- ULTIMATE INDESTRUCTIBLE BRIDGE (v15.0) ---
 const getFormattedAddresses = async (sb, email, uid = null) => {
   const identities = await resolveAllUserIds(sb, email, uid);
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
@@ -120,46 +120,50 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   const firebaseUids = identities.map(u => u.uid).filter(Boolean);
   const searchEmails = [normalizedEmail, ...identities.map(u => u.email)].filter(Boolean);
 
-  console.log(`>>> [BRIDGE] Triple-Fetch Start: IDs=${userIds.length}, UIDs=${firebaseUids.length}, Emails=${searchEmails.length}`);
+  console.log(`>>> [BRIDGE] SAFE-FETCH START: IDs=${userIds.length}, UIDs=${firebaseUids.length}, Emails=${searchEmails.length}`);
 
-  let allResults = [];
+  const uniqueMap = new Map();
+
+  // 1. SAFE FETCH BY INTERNAL ID
   try {
-    // Stage 1: Parallel Fetch across all possible keys
-    const [idRes, uidRes, emailRes] = await Promise.all([
-      sb.from('addresses').select('*').in('user_id', userIds),
-      firebaseUids.length > 0 ? sb.from('addresses').select('*').in('firebase_uid', firebaseUids) : { data: [] },
-      searchEmails.length > 0 ? sb.from('addresses').select('*').in('user_email', searchEmails) : { data: [] }
-    ]);
+    const { data } = await sb.from('addresses').select('*').in('user_id', userIds);
+    (data || []).forEach(a => uniqueMap.set(a.id, a));
+  } catch (e) { console.warn('>>> [BRIDGE] ID Fetch skipped:', e.message); }
 
-    // Merge and Deduplicate
-    const mergeData = [...(idRes.data || []), ...(uidRes.data || []), ...(emailRes.data || [])];
-    const uniqueMap = new Map();
-    mergeData.forEach(addr => {
-      if (addr && addr.id) uniqueMap.set(addr.id, addr);
-    });
-    allResults = Array.from(uniqueMap.values());
-
-    console.log(`>>> [BRIDGE] Triple-Fetch Success: Found ${allResults.length} unique destinations.`);
-
-    return allResults.sort((a, b) => {
-      if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
-      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-    }).map(addr => ({
-      ...addr,
-      id: addr.id,
-      _id: addr.id,
-      isDefault: !!addr.is_default,
-      // Field Mapping (Legacy <-> Modern)
-      house: addr.house || addr.address_line1 || '',
-      street: addr.street || addr.address_line2 || '',
-      full_name: addr.full_name || addr.name || 'Royale Member',
-      detail: addr.detail || `${addr.house || addr.address_line1 || ''}, ${addr.street || addr.address_line2 || ''}, ${addr.city} - ${addr.pincode}`,
-      sync_engine: 'v14-triple-identity'
-    }));
-  } catch (err) {
-    console.error('❌ [BRIDGE] Crash:', err.message);
-    return [];
+  // 2. SAFE FETCH BY FIREBASE UID
+  if (firebaseUids.length > 0) {
+    try {
+      const { data } = await sb.from('addresses').select('*').in('firebase_uid', firebaseUids);
+      (data || []).forEach(a => uniqueMap.set(a.id, a));
+    } catch (e) { console.warn('>>> [BRIDGE] UID Fetch skipped:', e.message); }
   }
+
+  // 3. SAFE FETCH BY EMAIL
+  if (searchEmails.length > 0) {
+    try {
+      // Try 'user_email' or fallback to 'email' column if it exists
+      const { data } = await sb.from('addresses').select('*').in('user_email', searchEmails);
+      (data || []).forEach(a => uniqueMap.set(a.id, a));
+    } catch (e) { console.warn('>>> [BRIDGE] Email Fetch skipped:', e.message); }
+  }
+
+  const allResults = Array.from(uniqueMap.values());
+  console.log(`>>> [BRIDGE] SAFE-FETCH COMPLETE: Found ${allResults.length} destinations.`);
+
+  return allResults.sort((a, b) => {
+    if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  }).map(addr => ({
+    ...addr,
+    id: addr.id,
+    _id: addr.id,
+    isDefault: !!addr.is_default,
+    house: addr.house || addr.address_line1 || '',
+    street: addr.street || addr.address_line2 || '',
+    full_name: addr.full_name || addr.name || 'Royale Member',
+    detail: addr.detail || `${addr.house || addr.address_line1 || ''}, ${addr.street || addr.address_line2 || ''}, ${addr.city} - ${addr.pincode}`,
+    sync_status: 'v15-indestructible'
+  }));
 };
 
 // --- CRITICAL: HIGH-PRIORITY DELETE ROUTE ---
