@@ -51,18 +51,51 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.1)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.2)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.1.0-SCHEMA-FIX', 
+    version: '9.2.0-VISIBILITY-FIX', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'DATABASE COLUMNS ALIGNED TO HOUSE/STREET.'
+    msg: 'RESTORED ROBUST HELPER AND DUAL-ID FILTERING.'
   });
 });
 
 // Enable case-insensitive routing
 app.set('case sensitive routing', false);
+
+// --- ROBUST HELPER ---
+const getFormattedAddresses = async (sb, email) => {
+  if (!email) return [];
+  const normalizedEmail = email.toLowerCase().trim();
+  console.log(`>>> [HELPER] Fetching addresses for: ${normalizedEmail}`);
+
+  try {
+    const { data: user } = await sb.from('users').select('id, uid').ilike('email', normalizedEmail).maybeSingle();
+    if (!user) return [];
+
+    const { data, error } = await sb.from('addresses')
+      .select('*')
+      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map(addr => ({
+      ...addr,
+      id: addr.id,
+      _id: addr.id,
+      isDefault: !!addr.is_default,
+      house: addr.house || addr.address_line1,
+      street: addr.street || addr.address_line2,
+      detail: addr.detail || `${addr.house || addr.address_line1}, ${addr.street || addr.address_line2}, ${addr.city} - ${addr.pincode}`
+    }));
+  } catch (err) {
+    console.error('❌ Helper error:', err.message);
+    return [];
+  }
+};
 
 // --- CRITICAL: HIGH-PRIORITY DELETE ROUTE ---
 app.delete('/api/address/:id', async (req, res) => {
@@ -87,11 +120,7 @@ app.delete('/api/address/:id', async (req, res) => {
 });
 
 // PUT Address
-app.put([
-  '/api/users/address/:id', 
-  '/api/user/address/:id', 
-  '/api/address/:id',
-], async (req, res) => {
+app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'], async (req, res) => {
   const { id } = req.params;
   const { email, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
@@ -102,18 +131,10 @@ app.put([
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
     const { data: updated, error } = await req.supabase.from('addresses').update({
-      label, 
-      name, 
-      phone, 
-      house, 
-      street, 
-      city, 
-      pincode, 
-      landmark, 
+      label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-      is_default: !!isDefault,
-      user_id: user.id
-    }).eq('id', id).or(`user_id.eq.${user.id}`).select().maybeSingle();
+      is_default: !!isDefault, user_id: user.id, firebase_uid: user.uid
+    }).eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`).select().maybeSingle();
 
     if (error) return res.status(400).json({ message: error.message });
     res.json(updated);
@@ -126,22 +147,8 @@ app.put([
 app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ message: 'Email required' });
-  
-  try {
-    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).maybeSingle();
-    if (!user) return res.json([]);
-
-    const { data, error } = await req.supabase.from('addresses')
-      .select('*')
-      .or(`user_id.eq.${user.id}`)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    res.json(data || []);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  const addresses = await getFormattedAddresses(req.supabase, email);
+  res.json(addresses);
 });
 
 // POST Address
@@ -155,15 +162,8 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
     const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
-      user_id: user.id, 
-      label, 
-      name,
-      phone, 
-      house, 
-      street,
-      city, 
-      pincode, 
-      landmark, 
+      user_id: user.id, firebase_uid: user.uid, label, name,
+      phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault 
     }]).select().maybeSingle();
@@ -261,7 +261,7 @@ app.get('/api/profile', async (req, res) => {
     if (error) throw error;
     if (!users || users.length === 0) return res.status(404).json({ message: 'Not found' });
     const user = users[0];
-    const { data: addresses } = await req.supabase.from('addresses').select('*').or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
+    const addresses = await getFormattedAddresses(req.supabase, user.email);
     res.json({ ...user, _id: user.id, addresses: addresses || [], favorites: user.user_favorites?.map(f => f.menu_item_id) || [] });
   } catch (err) {
     res.status(500).json({ message: err.message });
