@@ -120,16 +120,31 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   const firebaseUids = identities.map(u => u.uid).filter(Boolean);
 
   try {
-    // Query by both internal ID and Firebase UID for maximum compatibility
-    const { data, error } = await sb.from('addresses')
+    // Stage 1: Try querying by internal user_id (always exists)
+    let { data, error } = await sb.from('addresses')
       .select('*')
-      .or(`user_id.in.(${userIds.map(id => `"${id}"`).join(',')}),firebase_uid.in.(${firebaseUids.map(u => `"${u}"`).join(',')})`)
+      .in('user_id', userIds)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
+    // Stage 2: If no data found and we have firebase UIDs, try querying by firebase_uid
+    // We do this in a separate check to avoid crashing the whole query if the column is missing
+    if (!error && (!data || data.length === 0) && firebaseUids.length > 0) {
+      console.log('>>> [HELPER] No internal ID matches. Attempting Firebase UID fetch...');
+      const { data: fbData, error: fbError } = await sb.from('addresses')
+        .select('*')
+        .in('firebase_uid', firebaseUids)
+        .order('is_default', { ascending: false });
+      
+      if (!fbError && fbData && fbData.length > 0) {
+        data = fbData;
+      }
+    }
+
     if (error) {
       console.error('❌ [HELPER] Supabase Query Error:', error.message);
-      throw error;
+      // Fallback to empty if it really crashed
+      data = [];
     }
 
     return (data || []).map(addr => ({
@@ -142,7 +157,7 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
       street: addr.street || addr.address_line2 || '',
       full_name: addr.full_name || addr.name || 'User',
       detail: addr.detail || `${addr.house || addr.address_line1 || ''}, ${addr.street || addr.address_line2 || ''}, ${addr.city} - ${addr.pincode}`,
-      cluster_sync: `v11-count-${userIds.length}`
+      cluster_sync: `v12-robust-count-${userIds.length}`
     }));
   } catch (err) {
     console.error('❌ [HELPER] Crash:', err.message);
@@ -181,10 +196,10 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
   try {
     if (isDefault) {
        await req.supabase.from('addresses').update({ is_default: false })
-         .or(`user_id.eq.${primaryId},firebase_uid.eq.${primaryUid}`);
+         .or(`user_id.eq.${primaryId}`);
     }
 
-    const { data: updated, error } = await req.supabase.from('addresses').update({
+    let { data: updated, error } = await req.supabase.from('addresses').update({
       label, 
       name, 
       full_name: name,
@@ -204,9 +219,21 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
       firebase_uid: primaryUid
     }).eq('id', id).select().maybeSingle();
 
+    if (error && error.code === '42703') {
+      console.warn('>>> [PUT] Missing modern columns. Falling back to legacy update...');
+      const fallback = await req.supabase.from('addresses').update({
+        label, name, phone, house, street, city, pincode, landmark, 
+        detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
+        is_default: !!isDefault, user_id: primaryId
+      }).eq('id', id).select().maybeSingle();
+      updated = fallback.data;
+      error = fallback.error;
+    }
+
     if (error) throw error;
     res.json(updated);
   } catch (err) {
+    console.error('❌ [PUT] Address update failed:', err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -231,10 +258,11 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
   try {
     if (isDefault) {
        await req.supabase.from('addresses').update({ is_default: false })
-         .or(`user_id.eq.${primaryId},firebase_uid.eq.${primaryUid}`);
+         .or(`user_id.eq.${primaryId}`);
     }
 
-    const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
+    // Try full insert first
+    let { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
       user_id: primaryId,
       firebase_uid: primaryUid,
       label, 
@@ -254,9 +282,30 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
       is_default: !!isDefault 
     }]).select().maybeSingle();
 
+    // Fallback: If it failed, try basic insert (legacy columns only)
+    if (error && error.code === '42703') { // Undefined column
+      console.warn('>>> [POST] Missing modern columns. Falling back to legacy insert...');
+      const fallback = await req.supabase.from('addresses').insert([{ 
+        user_id: primaryId,
+        label, 
+        name,
+        phone, 
+        house, 
+        street, 
+        city, 
+        pincode, 
+        landmark, 
+        detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
+        is_default: !!isDefault 
+      }]).select().maybeSingle();
+      newAddress = fallback.data;
+      error = fallback.error;
+    }
+
     if (error) throw error;
     res.json(newAddress);
   } catch (err) {
+    console.error('❌ [POST] Address creation failed:', err.message);
     res.status(500).json({ message: err.message });
   }
 });

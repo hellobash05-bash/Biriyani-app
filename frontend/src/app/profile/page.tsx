@@ -305,36 +305,39 @@ export default function ProfilePage() {
                 <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
                 My Orders
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {loadingOrders ? (
-                  <div className="p-12 text-center col-span-full">
-                    <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : orders.length > 0 ? orders.map((order) => (
-                  <motion.div key={order.id || order._id} whileHover={{ scale: 1.01 }} className="premium-card p-8 bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5">
-                    <div className="flex justify-between items-start mb-6">
-                      <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Order ID: #{(order.id || order._id || '').slice(-6)}</span>
-                      <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                        order.status === 'Delivered' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
-                      }`}>
-                        {order.status}
-                      </span>
+              
+              <div className="bg-white/30 dark:bg-stone-900/20 backdrop-blur-md rounded-[4rem] p-10 border border-stone-100 dark:border-white/5 shadow-2xl shadow-stone-900/5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {loadingOrders ? (
+                    <div className="p-12 text-center col-span-full">
+                      <div className="inline-block w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                    <p className="text-stone-800 dark:text-white font-bold mb-4 line-clamp-1">
-                      {order.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ') || 'No items listed'}
-                    </p>
-                    <div className="flex justify-between items-center border-t border-stone-100 dark:border-white/5 pt-4">
-                      <span className="text-xl font-black text-orange-500">₹{order.totalAmount}</span>
-                      <button onClick={() => router.push(`/order?id=${order.id || order._id}`)} className="text-stone-900 dark:text-white font-black uppercase tracking-widest text-[9px] hover:text-orange-600 transition-colors">
-                        VIEW RECEIPT →
-                      </button>
+                  ) : orders.length > 0 ? orders.map((order) => (
+                    <motion.div key={order.id || order._id} whileHover={{ scale: 1.01 }} className="premium-card p-8 bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5">
+                      <div className="flex justify-between items-start mb-6">
+                        <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Order ID: #{(order.id || order._id || '').slice(-6)}</span>
+                        <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                          order.status === 'Delivered' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </div>
+                      <p className="text-stone-800 dark:text-white font-bold mb-4 line-clamp-1">
+                        {order.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ') || 'No items listed'}
+                      </p>
+                      <div className="flex justify-between items-center border-t border-stone-100 dark:border-white/5 pt-4">
+                        <span className="text-xl font-black text-orange-500">₹{order.totalAmount}</span>
+                        <button onClick={() => router.push(`/order?id=${order.id || order._id}`)} className="text-stone-900 dark:text-white font-black uppercase tracking-widest text-[9px] hover:text-orange-600 transition-colors">
+                          VIEW RECEIPT →
+                        </button>
+                      </div>
+                    </motion.div>
+                  )) : (
+                    <div className="col-span-full bg-stone-50/50 dark:bg-white/5 p-12 rounded-[3rem] text-center border border-dashed border-stone-200 dark:border-white/10">
+                      <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">No culinary journeys yet.</p>
                     </div>
-                  </motion.div>
-                )) : (
-                  <div className="col-span-full bg-stone-50 dark:bg-white/5 p-12 rounded-[3rem] text-center border border-dashed border-stone-200 dark:border-white/10">
-                    <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">No culinary journeys yet.</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </section>
 
@@ -372,13 +375,19 @@ export default function ProfilePage() {
               <div className="bg-white/30 dark:bg-stone-900/20 backdrop-blur-md rounded-[4rem] p-10 border border-stone-100 dark:border-white/5 shadow-2xl shadow-stone-900/5">
                 <div className="flex flex-col gap-8">
                   {showDebug && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-stone-950 p-6 rounded-3xl border border-orange-600/30 font-mono text-[10px] text-orange-500 overflow-x-auto mb-4">
-                      <p className="font-bold mb-2">{" >>> "} SYSTEM DIAGNOSTIC TERMINAL</p>
-                      <p>USER_EMAIL: {user?.email}</p>
-                      <p>USER_UID: {user?.uid}</p>
-                      <p>LOCAL_ADDR: {addresses.length}</p>
-                      <p>PROFILE_ADDR: {profile?.addresses?.length || 0}</p>
-                      <pre className="mt-2 text-stone-400">{JSON.stringify(lastFetchRaw, null, 2)}</pre>
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-stone-950 p-8 rounded-[2rem] border border-orange-600/30 font-mono text-[10px] text-orange-500 overflow-x-auto mb-8 shadow-2xl">
+                      <p className="font-bold mb-4 flex items-center gap-2 text-white bg-orange-600 px-3 py-1 rounded-full w-fit uppercase tracking-widest text-[8px]">
+                        {" >>> "} ULTIMATE DIAGNOSTIC TERMINAL (v12.0)
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 mb-6 text-stone-300">
+                        <p><span className="text-stone-500 uppercase font-black tracking-widest mr-2">Firebase Email:</span> {user?.email}</p>
+                        <p><span className="text-stone-500 uppercase font-black tracking-widest mr-2">Firebase UID:</span> {user?.uid}</p>
+                        <p><span className="text-stone-500 uppercase font-black tracking-widest mr-2">Supabase ID:</span> {profile?._id || profile?.id}</p>
+                        <p><span className="text-stone-500 uppercase font-black tracking-widest mr-2">Local State:</span> {addresses.length} entries</p>
+                        <p><span className="text-stone-500 uppercase font-black tracking-widest mr-2">Status:</span> {loadingAddresses ? 'ACCESSING VAULT...' : 'SYNCED'}</p>
+                      </div>
+                      <p className="text-stone-500 uppercase font-black tracking-widest mb-2 border-b border-stone-800 pb-2">Raw Vault Payload:</p>
+                      <pre className="text-orange-600/80 bg-stone-900/50 p-4 rounded-xl border border-stone-800">{JSON.stringify(lastFetchRaw, null, 2)}</pre>
                     </motion.div>
                   )}
 
