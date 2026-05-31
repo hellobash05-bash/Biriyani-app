@@ -111,55 +111,53 @@ const resolveAllUserIds = async (sb, email, uid = null) => {
   }
 };
 
-// --- ROBUST HELPER ---
+// --- ULTIMATE TRIPLE-IDENTITY BRIDGE (v14.0) ---
 const getFormattedAddresses = async (sb, email, uid = null) => {
   const identities = await resolveAllUserIds(sb, email, uid);
-  if (identities.length === 0) return [];
-
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  
   const userIds = identities.map(u => u.id);
   const firebaseUids = identities.map(u => u.uid).filter(Boolean);
+  const searchEmails = [normalizedEmail, ...identities.map(u => u.email)].filter(Boolean);
+
+  console.log(`>>> [BRIDGE] Triple-Fetch Start: IDs=${userIds.length}, UIDs=${firebaseUids.length}, Emails=${searchEmails.length}`);
 
   let allResults = [];
   try {
-    // Stage 1: Try querying by internal user_id (always exists)
-    const { data, error } = await sb.from('addresses')
-      .select('*')
-      .in('user_id', userIds)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: false });
+    // Stage 1: Parallel Fetch across all possible keys
+    const [idRes, uidRes, emailRes] = await Promise.all([
+      sb.from('addresses').select('*').in('user_id', userIds),
+      firebaseUids.length > 0 ? sb.from('addresses').select('*').in('firebase_uid', firebaseUids) : { data: [] },
+      searchEmails.length > 0 ? sb.from('addresses').select('*').in('user_email', searchEmails) : { data: [] }
+    ]);
 
-    if (!error && data) {
-      allResults = [...data];
-    }
+    // Merge and Deduplicate
+    const mergeData = [...(idRes.data || []), ...(uidRes.data || []), ...(emailRes.data || [])];
+    const uniqueMap = new Map();
+    mergeData.forEach(addr => {
+      if (addr && addr.id) uniqueMap.set(addr.id, addr);
+    });
+    allResults = Array.from(uniqueMap.values());
 
-    // Stage 2: If we have firebase UIDs, try querying by firebase_uid (optional check)
-    if (firebaseUids.length > 0) {
-      const { data: fbData, error: fbError } = await sb.from('addresses')
-        .select('*')
-        .in('firebase_uid', firebaseUids);
-      
-      if (!fbError && fbData && fbData.length > 0) {
-        const existingIds = new Set(allResults.map(a => a.id));
-        fbData.forEach(addr => {
-          if (!existingIds.has(addr.id)) allResults.push(addr);
-        });
-      }
-    }
+    console.log(`>>> [BRIDGE] Triple-Fetch Success: Found ${allResults.length} unique destinations.`);
 
-    return allResults.map(addr => ({
+    return allResults.sort((a, b) => {
+      if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    }).map(addr => ({
       ...addr,
       id: addr.id,
       _id: addr.id,
       isDefault: !!addr.is_default,
-      // Handle both legacy (house/street) and modern (address_line1/2) naming
+      // Field Mapping (Legacy <-> Modern)
       house: addr.house || addr.address_line1 || '',
       street: addr.street || addr.address_line2 || '',
       full_name: addr.full_name || addr.name || 'Royale Member',
       detail: addr.detail || `${addr.house || addr.address_line1 || ''}, ${addr.street || addr.address_line2 || ''}, ${addr.city} - ${addr.pincode}`,
-      cluster_sync: `v13-safe-count-${userIds.length}`
+      sync_engine: 'v14-triple-identity'
     }));
   } catch (err) {
-    console.error('❌ [HELPER] Crash:', err.message);
+    console.error('❌ [BRIDGE] Crash:', err.message);
     return [];
   }
 };
@@ -194,11 +192,10 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
 
   try {
     if (isDefault) {
-       await req.supabase.from('addresses').update({ is_default: false })
-         .or(`user_id.eq.${primaryId}`);
+       await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
     }
 
-    let { data: updated, error } = await req.supabase.from('addresses').update({
+    const payload = {
       label, 
       name, 
       full_name: name,
@@ -216,15 +213,15 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
       is_default: !!isDefault, 
       user_id: primaryId,
       firebase_uid: primaryUid
-    }).eq('id', id).select().maybeSingle();
+    };
+
+    let { data: updated, error } = await req.supabase.from('addresses').update(payload).eq('id', id).select().maybeSingle();
 
     if (error && error.code === '42703') {
-      console.warn('>>> [PUT] Missing modern columns. Falling back to legacy update...');
-      const fallback = await req.supabase.from('addresses').update({
-        label, name, phone, house, street, city, pincode, landmark, 
-        detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-        is_default: !!isDefault, user_id: primaryId
-      }).eq('id', id).select().maybeSingle();
+      const cleanPayload = { ...payload };
+      ['firebase_uid', 'full_name', 'address_line1', 'address_line2', 'district', 'latitude', 'longitude', 'delivery_instructions', 'state'].forEach(k => delete cleanPayload[k]);
+      
+      const fallback = await req.supabase.from('addresses').update(cleanPayload).eq('id', id).select().maybeSingle();
       updated = fallback.data;
       error = fallback.error;
     }
@@ -253,17 +250,17 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
   if (identities.length === 0) return res.status(404).json({ message: 'User lookup failed' });
   const primaryId = identities[0].id;
   const primaryUid = identities[0].uid || uid;
+  const primaryEmail = identities[0].email || email;
 
   try {
     if (isDefault) {
-       await req.supabase.from('addresses').update({ is_default: false })
-         .or(`user_id.eq.${primaryId}`);
+       await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
     }
 
-    // Try full insert first
-    let { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
+    const payload = { 
       user_id: primaryId,
       firebase_uid: primaryUid,
+      user_email: primaryEmail,
       label, 
       name,
       full_name: name,
@@ -279,24 +276,15 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
       district, latitude, longitude, delivery_instructions,
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault 
-    }]).select().maybeSingle();
+    };
 
-    // Fallback: If it failed, try basic insert (legacy columns only)
-    if (error && error.code === '42703') { // Undefined column
-      console.warn('>>> [POST] Missing modern columns. Falling back to legacy insert...');
-      const fallback = await req.supabase.from('addresses').insert([{ 
-        user_id: primaryId,
-        label, 
-        name,
-        phone, 
-        house, 
-        street, 
-        city, 
-        pincode, 
-        landmark, 
-        detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-        is_default: !!isDefault 
-      }]).select().maybeSingle();
+    let { data: newAddress, error } = await req.supabase.from('addresses').insert([payload]).select().maybeSingle();
+
+    if (error && error.code === '42703') { 
+      const cleanPayload = { ...payload };
+      ['firebase_uid', 'user_email', 'full_name', 'address_line1', 'address_line2', 'district', 'latitude', 'longitude', 'delivery_instructions', 'state'].forEach(k => delete cleanPayload[k]);
+      
+      const fallback = await req.supabase.from('addresses').insert([cleanPayload]).select().maybeSingle();
       newAddress = fallback.data;
       error = fallback.error;
     }
