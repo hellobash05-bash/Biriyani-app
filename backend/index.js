@@ -51,13 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.1)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.0.0-FIX', 
+    version: '9.1.0-SCHEMA-FIX', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'MIDDLEWARE AND ROUTING FIXED.'
+    msg: 'DATABASE COLUMNS ALIGNED TO HOUSE/STREET.'
   });
 });
 
@@ -102,10 +102,18 @@ app.put([
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
     const { data: updated, error } = await req.supabase.from('addresses').update({
-      label, name, full_name: name, phone, house, address_line1: house,
-      street, address_line2: street, city, pincode, landmark, detail, 
-      is_default: !!isDefault, firebase_uid: user.uid, user_id: user.id
-    }).eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`).select().maybeSingle();
+      label, 
+      name, 
+      phone, 
+      house, 
+      street, 
+      city, 
+      pincode, 
+      landmark, 
+      detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
+      is_default: !!isDefault,
+      user_id: user.id
+    }).eq('id', id).or(`user_id.eq.${user.id}`).select().maybeSingle();
 
     if (error) return res.status(400).json({ message: error.message });
     res.json(updated);
@@ -125,7 +133,7 @@ app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req,
 
     const { data, error } = await req.supabase.from('addresses')
       .select('*')
-      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`)
+      .or(`user_id.eq.${user.id}`)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -147,9 +155,17 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
     const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
-      user_id: user.id, firebase_uid: user.uid, label, name, full_name: name,
-      phone, house, address_line1: house, street, address_line2: street,
-      city, pincode, landmark, detail, is_default: !!isDefault 
+      user_id: user.id, 
+      label, 
+      name,
+      phone, 
+      house, 
+      street,
+      city, 
+      pincode, 
+      landmark, 
+      detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
+      is_default: !!isDefault 
     }]).select().maybeSingle();
 
     if (error) return res.status(400).json({ message: error.message });
