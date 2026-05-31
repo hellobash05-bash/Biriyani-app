@@ -368,53 +368,59 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              <div className="flex flex-col gap-8">
-                {showDebug && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-stone-950 p-6 rounded-3xl border border-orange-600/30 font-mono text-[10px] text-orange-500 overflow-x-auto">
-                    <p className="font-bold mb-2">{" >>> "} SYSTEM DIAGNOSTIC TERMINAL</p>
-                    <p>USER_EMAIL: {user?.email}</p>
-                    <p>USER_UID: {user?.uid}</p>
-                    <p>LOCAL_ADDR: {addresses.length}</p>
-                    <p>PROFILE_ADDR: {profile?.addresses?.length || 0}</p>
-                    <pre className="mt-2 text-stone-400">{JSON.stringify(lastFetchRaw, null, 2)}</pre>
-                  </motion.div>
-                )}
+              {/* Management Box Container */}
+              <div className="bg-white/30 dark:bg-stone-900/20 backdrop-blur-md rounded-[4rem] p-10 border border-stone-100 dark:border-white/5 shadow-2xl shadow-stone-900/5">
+                <div className="flex flex-col gap-8">
+                  {showDebug && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-stone-950 p-6 rounded-3xl border border-orange-600/30 font-mono text-[10px] text-orange-500 overflow-x-auto mb-4">
+                      <p className="font-bold mb-2">{" >>> "} SYSTEM DIAGNOSTIC TERMINAL</p>
+                      <p>USER_EMAIL: {user?.email}</p>
+                      <p>USER_UID: {user?.uid}</p>
+                      <p>LOCAL_ADDR: {addresses.length}</p>
+                      <p>PROFILE_ADDR: {profile?.addresses?.length || 0}</p>
+                      <pre className="mt-2 text-stone-400">{JSON.stringify(lastFetchRaw, null, 2)}</pre>
+                    </motion.div>
+                  )}
 
-                {loadingAddresses ? (
-                  <div className="p-12 text-center bg-stone-50 dark:bg-white/5 rounded-[3rem] border border-stone-100 dark:border-white/5">
-                    <div className="inline-block w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-4">Accessing Vault...</p>
-                  </div>
-                ) : addresses.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {addresses.map((addr: any, idx: number) => (
-                      <AddressCard
-                        key={addr.id || addr._id || idx}
-                        address={addr}
-                        onEdit={handleEditClick}
-                        onDelete={handleDeleteAddress}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-stone-50 dark:bg-white/5 p-20 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center gap-6">
-                    <div className="w-20 h-20 bg-orange-600/10 rounded-full flex items-center justify-center text-orange-600/30">
-                      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  {loadingAddresses ? (
+                    <div className="p-20 text-center bg-stone-50/50 dark:bg-white/5 rounded-[3rem] border border-stone-100/50 dark:border-white/5">
+                      <div className="inline-block w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-6">Accessing Vault...</p>
                     </div>
-                    <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">Your address vault is currently empty.</p>
-                  </div>
-                )}
-                
-                <motion.button 
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} 
-                  disabled={isRefreshing}
-                  className="w-full border-4 border-dashed border-stone-100 dark:border-white/5 p-10 rounded-[3rem] text-stone-400 font-black uppercase tracking-[0.3em] text-[10px] flex flex-col items-center justify-center gap-6 hover:border-orange-500/30 hover:text-orange-600 transition-all group bg-white/50 dark:bg-stone-900/20 disabled:opacity-30"
-                >
-                  <div className="w-14 h-14 bg-stone-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl shadow-stone-900/5 group-hover:shadow-orange-600/20">+</div> 
-                  ADD NEW DESTINATION
-                </motion.button>
+                  ) : addresses.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {addresses.map((addr: any, idx: number) => (
+                        <AddressCard
+                          key={addr.id || addr._id || idx}
+                          address={addr}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteAddress}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-stone-50/50 dark:bg-white/5 p-24 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center gap-8">
+                      <div className="w-24 h-24 bg-orange-600/5 rounded-full flex items-center justify-center text-orange-600/20">
+                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <p className="text-stone-900 dark:text-white font-black uppercase tracking-[0.2em] text-xs">Your Vault is Empty</p>
+                        <p className="text-stone-500 font-bold uppercase tracking-widest text-[9px] italic">Add a destination below to begin your journey.</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <motion.button 
+                    whileHover={{ scale: 1.01, backgroundColor: 'rgba(234, 88, 12, 0.05)' }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} 
+                    disabled={isRefreshing}
+                    className="w-full border-4 border-dashed border-stone-100 dark:border-white/5 p-12 rounded-[3rem] text-stone-400 font-black uppercase tracking-[0.3em] text-[10px] flex flex-col items-center justify-center gap-6 hover:border-orange-500/30 hover:text-orange-600 transition-all group bg-stone-50/50 dark:bg-stone-950/20 disabled:opacity-30 mt-4"
+                  >
+                    <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-3xl flex items-center justify-center text-3xl group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl shadow-stone-900/5 group-hover:shadow-orange-600/30">+</div> 
+                    ADD NEW DESTINATION TO VAULT
+                  </motion.button>
+                </div>
               </div>
             </section>
           </div>
