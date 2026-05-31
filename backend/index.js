@@ -51,53 +51,67 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V10.0)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V11.0)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '10.0.0-ULTIMATE', 
+    version: '11.0.0-BRIDGE', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'ULTIMATE VISIBILITY SYSTEM ONLINE.'
+    msg: 'UNIVERSAL IDENTITY BRIDGE ONLINE.'
   });
 });
 
 // Enable case-insensitive routing
 app.set('case sensitive routing', false);
 
-// --- RESILIENT IDENTITY RESOLVER ---
-const resolvePrimaryUser = async (sb, email, uid = null) => {
-  if (!email && !uid) return null;
+// --- UNIVERSAL IDENTITY BRIDGE ---
+const resolveAllUserIds = async (sb, email, uid = null) => {
+  if (!email && !uid) return [];
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
-  
-  // 1. Try to find existing
-  let { data: users } = await sb.from('users').select('id, email, uid').or(`uid.eq.${uid},email.ilike.${normalizedEmail}`);
-  
-  // 2. If not found, AUTO-SYNC
-  if (!users || users.length === 0) {
-    console.log(`>>> [IDENTITY] Auto-syncing: ${normalizedEmail}`);
-    const { data: newUser } = await sb.from('users').upsert({
-      uid: uid || `shadow-${Date.now()}`,
-      email: normalizedEmail,
-      name: 'Royale Member',
-      last_login: new Date().toISOString()
-    }, { onConflict: 'email' }).select('id, email, uid').single();
-    return newUser;
+  console.log(`>>> [BRIDGE] Resolving Cluster: Email=${normalizedEmail}, UID=${uid}`);
+
+  try {
+    // 1. Find every user record that matches either key
+    const filters = [];
+    if (uid) filters.push(`uid.eq.${uid}`);
+    if (normalizedEmail) filters.push(`email.ilike.${normalizedEmail}`);
+    
+    const { data: users } = await sb.from('users').select('id, uid, email').or(filters.join(','));
+    
+    if (!users || users.length === 0) {
+      console.log(`>>> [BRIDGE] Cluster not found. Creating anchor user.`);
+      const { data: anchor } = await sb.from('users').upsert({
+        uid: uid || `anchor-${Date.now()}`,
+        email: normalizedEmail,
+        name: 'Royale Member',
+        last_login: new Date().toISOString()
+      }, { onConflict: 'email' }).select('id').single();
+      return [anchor.id];
+    }
+
+    const allInternalIds = Array.from(new Set(users.map(u => u.id)));
+    console.log(`>>> [BRIDGE] Resolved Cluster IDs: ${allInternalIds.join(', ')}`);
+
+    if (uid && normalizedEmail) {
+       await sb.from('users').update({ uid }).ilike('email', normalizedEmail);
+    }
+
+    return allInternalIds;
+  } catch (err) {
+    console.error('❌ [BRIDGE] Crash:', err.message);
+    return [];
   }
-  
-  return users[0];
 };
 
 // --- ROBUST HELPER ---
 const getFormattedAddresses = async (sb, email, uid = null) => {
-  const user = await resolvePrimaryUser(sb, email, uid);
-  if (!user) return [];
-
-  console.log(`>>> [HELPER] Fetching for User UUID: ${user.id} (${user.email})`);
+  const userIds = await resolveAllUserIds(sb, email, uid);
+  if (userIds.length === 0) return [];
 
   try {
     const { data, error } = await sb.from('addresses')
       .select('*')
-      .eq('user_id', user.id)
+      .in('user_id', userIds)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -109,7 +123,7 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
       _id: addr.id,
       isDefault: !!addr.is_default,
       detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`,
-      system_signature: `V10-${user.id.slice(0,4)}` 
+      cluster_sync: `v11-count-${userIds.length}`
     }));
   } catch (err) {
     console.error('❌ [HELPER] Crash:', err.message);
@@ -121,12 +135,12 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
 app.delete('/api/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email, uid } = req.query;
-  const user = await resolvePrimaryUser(req.supabase, email, uid);
+  const userIds = await resolveAllUserIds(req.supabase, email, uid);
   
-  if (!user) return res.status(404).json({ message: 'User verification failed' });
+  if (userIds.length === 0) return res.status(404).json({ message: 'User verification failed' });
 
   try {
-    const { error } = await req.supabase.from('addresses').delete().eq('id', id).eq('user_id', user.id);
+    const { error } = await req.supabase.from('addresses').delete().eq('id', id).in('user_id', userIds);
     if (error) throw error;
     res.json({ success: true, message: 'Destination removed' });
   } catch (err) {
@@ -138,18 +152,18 @@ app.delete('/api/address/:id', async (req, res) => {
 app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'], async (req, res) => {
   const { id } = req.params;
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  const user = await resolvePrimaryUser(req.supabase, email, uid);
+  const userIds = await resolveAllUserIds(req.supabase, email, uid);
 
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (userIds.length === 0) return res.status(404).json({ message: 'User not found' });
 
   try {
-    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).in('user_id', userIds);
 
     const { data: updated, error } = await req.supabase.from('addresses').update({
       label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-      is_default: !!isDefault, user_id: user.id
-    }).eq('id', id).eq('user_id', user.id).select().maybeSingle();
+      is_default: !!isDefault, user_id: userIds[0]
+    }).eq('id', id).in('user_id', userIds).select().maybeSingle();
 
     if (error) throw error;
     res.json(updated);
@@ -169,20 +183,20 @@ app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req,
 // POST Address
 app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  const user = await resolvePrimaryUser(req.supabase, email, uid);
+  const userIds = await resolveAllUserIds(req.supabase, email, uid);
   
-  if (!user) return res.status(404).json({ message: 'User lookup failed' });
+  if (userIds.length === 0) return res.status(404).json({ message: 'User lookup failed' });
+  const primaryUserId = userIds[0];
 
   try {
-    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryUserId);
 
-    const insertData = { 
-      user_id: user.id, label, name, phone, house, street, city, pincode, landmark, 
+    const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
+      user_id: primaryUserId, label, name,
+      phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault 
-    };
-
-    const { data: newAddress, error } = await req.supabase.from('addresses').insert([insertData]).select().maybeSingle();
+    }]).select().maybeSingle();
 
     if (error) throw error;
     res.json(newAddress);
