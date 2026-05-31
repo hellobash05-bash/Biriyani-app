@@ -51,13 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.3.1)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.4)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.3.1-ROBUST-FETCH', 
+    version: '9.4.0-DEEP-DEBUG', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'ROBUST ADDRESS FORMATTING AND FETCHING ENABLED.'
+    msg: 'TRIPLE-ID LINKAGE AND DEEP LOGGING ENABLED.'
   });
 });
 
@@ -68,15 +68,18 @@ app.set('case sensitive routing', false);
 const getFormattedAddresses = async (sb, email) => {
   if (!email) return [];
   const normalizedEmail = email.toLowerCase().trim();
-  console.log(`>>> [HELPER] Robust fetch for: ${normalizedEmail}`);
+  console.log(`>>> [HELPER] Deep fetch for: ${normalizedEmail}`);
 
   try {
-    const { data: user } = await sb.from('users').select('id').ilike('email', normalizedEmail).maybeSingle();
+    // 1. Find the REAL user id and firebase UID
+    const { data: user } = await sb.from('users').select('id, uid').ilike('email', normalizedEmail).maybeSingle();
     if (!user) {
-      console.warn('>>> [HELPER] No user profile found for:', normalizedEmail);
+      console.warn('>>> [HELPER] User NOT FOUND in DB for email:', normalizedEmail);
       return [];
     }
+    console.log(`>>> [HELPER] Found User: id=${user.id}, uid=${user.uid}`);
 
+    // 2. Fetch addresses
     const { data, error } = await sb.from('addresses')
       .select('*')
       .eq('user_id', user.id)
@@ -84,15 +87,14 @@ const getFormattedAddresses = async (sb, email) => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('>>> [HELPER] DB Error:', error.message);
+      console.error('>>> [HELPER] Database Error during fetch:', error.message);
       throw error;
     }
 
     const result = (data || []).map(addr => ({
       ...addr,
       id: addr.id,
-      _id: addr.id, // Legacy compatibility
-      is_default: !!addr.is_default,
+      _id: addr.id,
       isDefault: !!addr.is_default,
       house: addr.house || '',
       street: addr.street || '',
@@ -101,10 +103,10 @@ const getFormattedAddresses = async (sb, email) => {
       detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`
     }));
 
-    console.log(`>>> [HELPER] Returning ${result.length} formatted addresses`);
+    console.log(`>>> [HELPER] Returning ${result.length} addresses for ${normalizedEmail}`);
     return result;
   } catch (err) {
-    console.error('❌ Helper crash:', err.message);
+    console.error('❌ [HELPER] Critical Crash:', err.message);
     return [];
   }
 };
@@ -113,21 +115,20 @@ const getFormattedAddresses = async (sb, email) => {
 app.delete('/api/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
-  console.log(`>>> [NUCLEAR DELETE] ID=${id}, Email=${email}`);
+  console.log(`>>> [DELETE] ID=${id}, Email=${email}`);
 
   if (!id) return res.status(400).json({ message: 'ID required' });
 
   try {
     const { data: user } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User verification failed' });
 
-    // Filter ONLY by user_id
     const { error } = await req.supabase.from('addresses').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
 
-    res.json({ success: true, message: 'Address removed' });
+    res.json({ success: true, message: 'Destination removed' });
   } catch (err) {
-    console.error('❌ Nuclear Delete Error:', err.message);
+    console.error('❌ Delete Error:', err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -146,10 +147,10 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
     const { data: updated, error } = await req.supabase.from('addresses').update({
       label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-      is_default: !!isDefault, user_id: user.id
+      is_default: !!isDefault
     }).eq('id', id).eq('user_id', user.id).select().maybeSingle();
 
-    if (error) return res.status(400).json({ message: error.message });
+    if (error) throw error;
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -158,8 +159,14 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
 
 // GET Addresses
 app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
-  const { email } = req.query;
+  const { email, debug } = req.query;
   if (!email) return res.status(400).json({ message: 'Email required' });
+  
+  if (debug === 'true') {
+     const { data } = await req.supabase.from('addresses').select('*').limit(5);
+     return res.json({ debug_data: data });
+  }
+
   const addresses = await getFormattedAddresses(req.supabase, email);
   res.json(addresses);
 });
@@ -174,14 +181,15 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
 
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
-    const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
-      user_id: user.id, label, name,
-      phone, house, street, city, pincode, landmark, 
+    const insertData = { 
+      user_id: user.id, label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault 
-    }]).select().maybeSingle();
+    };
 
-    if (error) return res.status(400).json({ message: error.message });
+    const { data: newAddress, error } = await req.supabase.from('addresses').insert([insertData]).select().maybeSingle();
+
+    if (error) throw error;
     res.json(newAddress);
   } catch (err) {
     res.status(500).json({ message: err.message });
