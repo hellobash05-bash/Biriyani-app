@@ -51,13 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.3)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.3.1)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.3.0-ID-FIX', 
+    version: '9.3.1-ROBUST-FETCH', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'FIXED MISSING firebase_uid COLUMN ERROR.'
+    msg: 'ROBUST ADDRESS FORMATTING AND FETCHING ENABLED.'
   });
 });
 
@@ -68,36 +68,43 @@ app.set('case sensitive routing', false);
 const getFormattedAddresses = async (sb, email) => {
   if (!email) return [];
   const normalizedEmail = email.toLowerCase().trim();
-  console.log(`>>> [HELPER] Fetching addresses for: ${normalizedEmail}`);
+  console.log(`>>> [HELPER] Robust fetch for: ${normalizedEmail}`);
 
   try {
-    // CRITICAL: First find the REAL user id from the users table
     const { data: user } = await sb.from('users').select('id').ilike('email', normalizedEmail).maybeSingle();
     if (!user) {
-      console.warn('>>> [HELPER] No user found with email:', normalizedEmail);
+      console.warn('>>> [HELPER] No user profile found for:', normalizedEmail);
       return [];
     }
 
-    // Filter ONLY by user_id as firebase_uid doesn't exist in addresses table
     const { data, error } = await sb.from('addresses')
       .select('*')
       .eq('user_id', user.id)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('>>> [HELPER] DB Error:', error.message);
+      throw error;
+    }
 
-    return (data || []).map(addr => ({
+    const result = (data || []).map(addr => ({
       ...addr,
       id: addr.id,
-      _id: addr.id,
+      _id: addr.id, // Legacy compatibility
+      is_default: !!addr.is_default,
       isDefault: !!addr.is_default,
-      house: addr.house || addr.address_line1,
-      street: addr.street || addr.address_line2,
-      detail: addr.detail || `${addr.house || addr.address_line1}, ${addr.street || addr.address_line2}, ${addr.city} - ${addr.pincode}`
+      house: addr.house || '',
+      street: addr.street || '',
+      city: addr.city || '',
+      pincode: addr.pincode || '',
+      detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`
     }));
+
+    console.log(`>>> [HELPER] Returning ${result.length} formatted addresses`);
+    return result;
   } catch (err) {
-    console.error('❌ Helper error:', err.message);
+    console.error('❌ Helper crash:', err.message);
     return [];
   }
 };

@@ -28,17 +28,37 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const loadAddresses = async () => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      console.warn('>>> [PROFILE] Cannot load addresses: No user email');
+      return;
+    }
+    
     setLoadingAddresses(true);
+    console.log('>>> [PROFILE] Fetching addresses for:', user.email);
+    
     try {
       const data = await apiFetchAddresses(user.email);
-      setAddresses(data || []);
+      console.log('>>> [PROFILE] Received addresses:', data);
+      
+      if (Array.isArray(data)) {
+        setAddresses(data);
+        console.log(`>>> [PROFILE] State updated with ${data.length} addresses`);
+      } else {
+        console.error('>>> [PROFILE] Unexpected data format:', data);
+        setAddresses([]);
+      }
     } catch (err) {
-      console.error('Failed to fetch addresses:', err);
+      console.error('>>> [PROFILE] Failed to fetch addresses:', err);
+      toast.error('Sync failed: Could not load destinations');
     } finally {
       setLoadingAddresses(false);
     }
   };
+
+  // Watch address state for debugging
+  useEffect(() => {
+    console.log('>>> [PROFILE] Address state changed:', addresses);
+  }, [addresses]);
 
   useEffect(() => {
     if (user) {
