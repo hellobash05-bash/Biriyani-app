@@ -421,6 +421,17 @@ export async function deleteAddress(id: string, email: string, uid?: string) {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
+  if (typeof window !== 'undefined') {
+    const localResponse = await fetch(`/api/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+
+    if (localResponse.ok) return localResponse.json();
+    console.warn('Local admin status route failed. Falling back to external APIs.');
+  }
+
   const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

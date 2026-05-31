@@ -115,7 +115,8 @@ export default function AdminOrders() {
       await updateOrderStatus(orderId, newStatus);
       toast.success(`Status changed to ${newStatus}`);
     } catch (err) {
-      toast.error('Failed to update status');
+      const message = err instanceof Error ? err.message : 'Failed to update status';
+      toast.error(message);
       loadData();
     }
   };
