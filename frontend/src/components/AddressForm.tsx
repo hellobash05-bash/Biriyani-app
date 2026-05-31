@@ -373,7 +373,7 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="+91 XXXXX XXXXX"
-              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-black text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
         </section>

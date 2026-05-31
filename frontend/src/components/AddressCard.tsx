@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Phone, Edit3, Trash2, CheckCircle2, Home, Briefcase, Navigation, Info } from 'lucide-react';
+import { MapPin, Phone, Edit3, Trash2, CheckCircle2, Home, Briefcase, Navigation, Info, Sparkles, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface AddressCardProps {
