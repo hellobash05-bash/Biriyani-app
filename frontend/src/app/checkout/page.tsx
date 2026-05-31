@@ -50,19 +50,19 @@ export default function CheckoutPage() {
 
     setLoading(true);
     try {
-      const fullAddressString = `${selectedAddress.address_line1}, ${selectedAddress.address_line2 ? selectedAddress.address_line2 + ', ' : ''}${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}`;
+      const fullAddressString = `${selectedAddress.address_line1 || selectedAddress.house}, ${selectedAddress.address_line2 || selectedAddress.street ? (selectedAddress.address_line2 || selectedAddress.street) + ', ' : ''}${selectedAddress.city}, ${selectedAddress.state || ''} - ${selectedAddress.pincode}${selectedAddress.landmark ? ' (Landmark: ' + selectedAddress.landmark + ')' : ''}`;
 
       const orderData = {
         userEmail: user?.email,
         customer: {
-          name: selectedAddress.full_name,
+          name: selectedAddress.full_name || selectedAddress.name,
           phone: selectedAddress.phone,
           address: {
-            house: selectedAddress.address_line1,
-            street: selectedAddress.address_line2 || '',
+            house: selectedAddress.address_line1 || selectedAddress.house,
+            street: selectedAddress.address_line2 || selectedAddress.street || '',
             city: selectedAddress.city,
             pincode: selectedAddress.pincode,
-            landmark: '',
+            landmark: selectedAddress.landmark || '',
             fullAddress: fullAddressString
           }
         },
