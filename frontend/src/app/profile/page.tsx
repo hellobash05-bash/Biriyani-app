@@ -105,12 +105,36 @@ export default function ProfilePage() {
   }, [user]);
 
   const handleManualRefresh = async () => {
+    if (!user) return;
     setIsRefreshing(true);
+    console.log('>>> [PROFILE] Starting RESCUE SYNC...');
+    
     try {
-      await Promise.all([refreshProfile(), loadAddresses()]);
-      toast.success('Records updated');
+      // 1. Force a clean user sync to Supabase
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/users/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user.uid,
+          name: user.displayName || 'Royale Member',
+          email: user.email,
+          photoURL: user.photoURL || '',
+          phone: user.phoneNumber || ''
+        })
+      });
+      
+      console.log('>>> [PROFILE] User re-synced successfully');
+
+      // 2. Parallel refresh of all profile data
+      await Promise.all([
+        refreshProfile(),
+        loadAddresses()
+      ]);
+      
+      toast.success('Vault Synchronized');
     } catch (err) {
-      toast.error('Sync failed');
+      console.error('>>> [PROFILE] Rescue sync failed:', err);
+      toast.error('Sync failed. Try again.');
     } finally {
       setIsRefreshing(false);
     }
@@ -351,7 +375,10 @@ export default function ProfilePage() {
                     <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
                     My Addresses
                   </h2>
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest italic ml-12">Manage your delivery vaults</p>
+                  <div className="flex items-center gap-3 ml-12">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest italic">Manage your delivery vaults</p>
+                    <span className="text-[8px] font-black text-orange-600/40 uppercase tracking-widest bg-orange-600/5 px-2 py-0.5 rounded-full border border-orange-600/5">Core v9.6.0</span>
+                  </div>
                 </div>
                 <button 
                   onClick={handleManualRefresh}
