@@ -78,20 +78,20 @@ export default function ProfilePage() {
   };
 
   const loadAddresses = async () => {
-    if (!user?.email || !user?.uid) {
-      console.warn('>>> [PROFILE] Cannot load addresses: Missing email or UID');
+    if (!user?.email && !user?.uid) {
+      console.warn('>>> [PROFILE] Cannot load addresses: Missing email and UID');
       setLoadingAddresses(false);
       return;
     }
-    
+
     setLoadingAddresses(true);
     console.log(`>>> [PROFILE] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid}`);
-    
+
     try {
-      const data = await apiFetchAddresses(user.email, user.uid);
+      const data = await apiFetchAddresses(user.email || '', user.uid || undefined);
       setLastFetchRaw(data);
       console.log('>>> [PROFILE] ADDRESS DATA RECEIVED:', data);
-      
+
       if (Array.isArray(data)) {
         setAddresses(data);
         if (data.length === 0) {
@@ -443,16 +443,28 @@ export default function ProfilePage() {
         </motion.div>
       </main>
       <BottomNav />
-      <AddressModal 
-        isOpen={isAddressModalOpen} 
-        onClose={async () => { 
-          setIsAddressModalOpen(false); 
-          setEditingAddress(null); 
-          toast.loading('Vault Syncing...', { duration: 1500 });
-          setTimeout(() => {
-            loadAddresses();
-          }, 1500);
-        }} 
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => {
+          setIsAddressModalOpen(false);
+          setEditingAddress(null);
+        }}
+        onSave={(savedAddress) => {
+          // Optimistically update the UI immediately so the user sees the result
+          if (editingAddress) {
+            setAddresses((prev) =>
+              prev.map((a) =>
+                (a.id === savedAddress.id || a._id === savedAddress._id) ? savedAddress : a
+              )
+            );
+            toast.success('Address updated');
+          } else {
+            setAddresses((prev) => [savedAddress, ...prev]);
+            toast.success('Address saved');
+          }
+          // Then refresh from server to ensure everything is in sync
+          loadAddresses();
+        }}
         initialData={editingAddress}
       />
       
