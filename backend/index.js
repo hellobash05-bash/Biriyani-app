@@ -119,35 +119,34 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   const userIds = identities.map(u => u.id);
   const firebaseUids = identities.map(u => u.uid).filter(Boolean);
 
+  let allResults = [];
   try {
     // Stage 1: Try querying by internal user_id (always exists)
-    let { data, error } = await sb.from('addresses')
+    const { data, error } = await sb.from('addresses')
       .select('*')
       .in('user_id', userIds)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
-    // Stage 2: If no data found and we have firebase UIDs, try querying by firebase_uid
-    // We do this in a separate check to avoid crashing the whole query if the column is missing
-    if (!error && (!data || data.length === 0) && firebaseUids.length > 0) {
-      console.log('>>> [HELPER] No internal ID matches. Attempting Firebase UID fetch...');
+    if (!error && data) {
+      allResults = [...data];
+    }
+
+    // Stage 2: If we have firebase UIDs, try querying by firebase_uid (optional check)
+    if (firebaseUids.length > 0) {
       const { data: fbData, error: fbError } = await sb.from('addresses')
         .select('*')
-        .in('firebase_uid', firebaseUids)
-        .order('is_default', { ascending: false });
+        .in('firebase_uid', firebaseUids);
       
       if (!fbError && fbData && fbData.length > 0) {
-        data = fbData;
+        const existingIds = new Set(allResults.map(a => a.id));
+        fbData.forEach(addr => {
+          if (!existingIds.has(addr.id)) allResults.push(addr);
+        });
       }
     }
 
-    if (error) {
-      console.error('❌ [HELPER] Supabase Query Error:', error.message);
-      // Fallback to empty if it really crashed
-      data = [];
-    }
-
-    return (data || []).map(addr => ({
+    return allResults.map(addr => ({
       ...addr,
       id: addr.id,
       _id: addr.id,
@@ -155,9 +154,9 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
       // Handle both legacy (house/street) and modern (address_line1/2) naming
       house: addr.house || addr.address_line1 || '',
       street: addr.street || addr.address_line2 || '',
-      full_name: addr.full_name || addr.name || 'User',
+      full_name: addr.full_name || addr.name || 'Royale Member',
       detail: addr.detail || `${addr.house || addr.address_line1 || ''}, ${addr.street || addr.address_line2 || ''}, ${addr.city} - ${addr.pincode}`,
-      cluster_sync: `v12-robust-count-${userIds.length}`
+      cluster_sync: `v13-safe-count-${userIds.length}`
     }));
   } catch (err) {
     console.error('❌ [HELPER] Crash:', err.message);
@@ -333,7 +332,7 @@ app.get('/api/menu', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
-  const { customer, items, totalAmount, paymentMethod, userEmail } = req.body;
+  const { customer, items, totalAmount, paymentMethod, userEmail, delivery_address_snapshot } = req.body;
   try {
     const { data: orderData, error: orderError } = await req.supabase.from('orders').insert([{
       user_email: userEmail,
@@ -345,10 +344,30 @@ app.post('/api/orders', async (req, res) => {
       address_pincode: customer.address.pincode,
       address_landmark: customer.address.landmark,
       total_amount: totalAmount,
-      payment_method: paymentMethod || 'Cash on Delivery'
+      payment_method: paymentMethod || 'Cash on Delivery',
+      address_id: delivery_address_snapshot?.id || delivery_address_snapshot?._id // Link to saved address
     }]).select().single();
 
-    if (orderError) throw orderError;
+    if (orderError) {
+      // Fallback if address_id column is missing
+      if (orderError.code === '42703') {
+        const fallback = await req.supabase.from('orders').insert([{
+          user_email: userEmail,
+          customer_name: customer.name,
+          customer_phone: customer.phone,
+          address_house: customer.address.house,
+          address_street: customer.address.street,
+          address_city: customer.address.city,
+          address_pincode: customer.address.pincode,
+          address_landmark: customer.address.landmark,
+          total_amount: totalAmount,
+          payment_method: paymentMethod || 'Cash on Delivery'
+        }]).select().single();
+        if (fallback.error) throw fallback.error;
+        return res.status(201).json({ ...fallback.data, _id: fallback.data.id, items });
+      }
+      throw orderError;
+    }
 
     if (items && items.length > 0) {
       await req.supabase.from('order_items').insert(items.map(item => ({

@@ -33,6 +33,14 @@ UPDATE public.addresses SET address_line1 = house WHERE address_line1 IS NULL AN
 UPDATE public.addresses SET address_line2 = street WHERE address_line2 IS NULL AND street IS NOT NULL;
 UPDATE public.addresses SET full_name = name WHERE full_name IS NULL AND name IS NOT NULL;
 
+-- 6. Link Addresses to Orders
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='address_id') THEN
+        ALTER TABLE public.orders ADD COLUMN address_id UUID REFERENCES public.addresses(id);
+    END IF;
+END $$;
+
 -- 5. Update RLS Policies to be robust
 ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
 
@@ -70,3 +78,5 @@ USING (
     OR 
     user_id IN (SELECT id FROM public.users WHERE uid = auth.uid()::text)
 );
+
+
