@@ -174,57 +174,6 @@ export default function CheckoutAddressSelector({
               onCancel={handleFormCancel}
             />
           </motion.div>
-        ) : addresses.length === 0 ? (
-          <motion.div
-            key="empty-vault"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-8"
-          >
-            <div className="grid grid-cols-1 gap-6 opacity-20 grayscale pointer-events-none">
-              <AddressCard
-                address={{
-                  label: 'Home',
-                  full_name: 'Royale Member',
-                  phone: '+91 XXXXX XXXXX',
-                  house: 'Palace No. 777',
-                  street: 'Emerald Street, Gourmet Valley',
-                  city: 'Foodie City',
-                  pincode: '400001',
-                  is_default: true
-                }}
-                onEdit={() => {}}
-                onDelete={() => {}}
-              />
-            </div>
-            <div className="bg-stone-50 dark:bg-white/5 rounded-[3rem] p-12 text-center border border-dashed border-stone-200 dark:border-white/10">
-              <MapPin size={40} className="mx-auto text-orange-600/30 mb-4" />
-              <p className="text-stone-900 dark:text-white font-black uppercase tracking-[0.2em] text-[10px] mb-2">Your Vault is Empty</p>
-              <p className="text-stone-500 font-bold uppercase tracking-widest text-[8px] mb-8 italic">Add your first destination to begin your feast.</p>
-              <button
-                onClick={() => { setActiveLabel(null); setShowForm(true); }}
-                className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:bg-orange-600 hover:text-white transition-all"
-              >
-                Add First Destination
-              </button>
-            </div>
-          </motion.div>
-        ) : filteredAddresses.length === 0 ? (
-          <motion.div
-            key="empty-filter"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-stone-50 dark:bg-white/5 rounded-[3rem] p-12 text-center border border-dashed border-stone-200 dark:border-white/10"
-          >
-            <MapPin size={40} className="mx-auto text-orange-600/30 mb-4" />
-            <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] mb-6 italic">No destinations found in this category.</p>
-            <button
-              onClick={() => { setActiveLabel(null); setShowForm(true); }}
-              className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl"
-            >
-              Add New Destination
-            </button>
-          </motion.div>
         ) : (
           <motion.div
             key="list"
@@ -238,11 +187,50 @@ export default function CheckoutAddressSelector({
                 address={address}
                 isSelected={selectedAddressId === (address.id || address._id)}
                 onSelect={onAddressSelect}
-                showDeliverHere={true} // Prompt 3.3: quick select switching
+                showDeliverHere={true}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />
             ))}
+
+            {/* Add New Ghost Preview Card */}
+            {!activeLabel && (
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { setEditingAddress(null); setShowForm(true); }}
+                className="relative group rounded-[3rem] p-8 border-4 border-dashed border-stone-100 dark:border-white/5 hover:border-orange-500/30 transition-all duration-500 bg-stone-50/50 dark:bg-stone-950/20 flex items-center gap-8 min-h-[160px]"
+              >
+                <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-[1.8rem] flex items-center justify-center text-3xl text-stone-300 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl group-hover:shadow-orange-600/30 shrink-0">
+                  +
+                </div>
+                <div className="flex flex-col gap-1 text-left">
+                  <p className="text-stone-400 group-hover:text-orange-600 font-black uppercase tracking-[0.3em] text-[10px] transition-colors">
+                    {addresses.length === 0 ? 'Initialize Vault' : 'New Destination'}
+                  </p>
+                  <p className="text-stone-400/50 font-bold uppercase tracking-widest text-[8px] italic">
+                    {addresses.length === 0 ? 'Add your first delivery sanctuary' : 'Secure another delivery vault'}
+                  </p>
+                </div>
+
+                {/* Background Ghost Preview Decoration */}
+                <div className="absolute inset-0 opacity-[0.02] grayscale pointer-events-none p-4 overflow-hidden">
+                   <div className="transform scale-75 origin-left">
+                     <AddressCard
+                       address={{ label: 'Preview', full_name: 'Next Member', phone: 'XXXXX' }}
+                       onEdit={() => {}}
+                       onDelete={() => {}}
+                     />
+                   </div>
+                </div>
+              </motion.button>
+            )}
+
+            {activeLabel && filteredAddresses.length === 0 && (
+              <div className="bg-stone-50 dark:bg-white/5 rounded-[3rem] p-12 text-center border border-dashed border-stone-200 dark:border-white/10">
+                <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">No destinations found for "{activeLabel}"</p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -396,7 +396,7 @@ export default function ProfilePage() {
                       <div className="inline-block w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                       <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-6">Accessing Vault...</p>
                     </div>
-                  ) : addresses.length > 0 ? (
+                  ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {addresses.map((addr: any, idx: number) => (
                         <AddressCard
@@ -406,50 +406,39 @@ export default function ProfilePage() {
                           onDelete={handleDeleteAddress}
                         />
                       ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative group/empty">
-                      {/* Ghost Preview Card */}
-                      <div className="opacity-20 grayscale pointer-events-none transform scale-[0.98] origin-left transition-all duration-700 group-hover/empty:opacity-30 group-hover/empty:scale-100">
-                        <AddressCard
-                          address={{
-                            label: 'Home',
-                            full_name: 'Royale Member',
-                            phone: '+91 XXXXX XXXXX',
-                            house: 'Palace No. 777',
-                            street: 'Emerald Street, Gourmet Valley',
-                            city: 'Foodie City',
-                            pincode: '400001',
-                            is_default: true
-                          }}
-                          onEdit={() => {}}
-                          onDelete={() => {}}
-                        />
-                      </div>
                       
-                      {/* Empty State Call to Action */}
-                      <div className="bg-stone-50/50 dark:bg-white/5 p-12 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center justify-center gap-6 group-hover/empty:border-orange-500/30 transition-all duration-500">
-                        <div className="w-16 h-16 bg-orange-600/5 rounded-full flex items-center justify-center text-orange-600/20 group-hover/empty:scale-110 group-hover/empty:bg-orange-600/10 group-hover/empty:text-orange-600/40 transition-all">
-                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      {/* Add New Ghost Preview Card - Always Visible as the 'Next' slot */}
+                      <motion.button
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }}
+                        className="relative group rounded-[3rem] p-8 border-4 border-dashed border-stone-100 dark:border-white/5 hover:border-orange-500/30 transition-all duration-500 bg-stone-50/50 dark:bg-stone-950/20 flex flex-col items-center justify-center gap-6 min-h-[300px]"
+                      >
+                        <div className="w-20 h-20 bg-white dark:bg-white/5 rounded-[2rem] flex items-center justify-center text-4xl text-stone-300 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl shadow-stone-900/5 group-hover:shadow-orange-600/30">
+                          +
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <p className="text-stone-900 dark:text-white font-black uppercase tracking-[0.2em] text-[10px]">Your Vault is Empty</p>
-                          <p className="text-stone-500 font-bold uppercase tracking-widest text-[8px] italic">No destinations secured yet.</p>
+                        <div className="flex flex-col gap-2 items-center">
+                          <p className="text-stone-400 group-hover:text-orange-600 font-black uppercase tracking-[0.3em] text-[10px] transition-colors">
+                            {addresses.length === 0 ? 'Initialize Vault' : 'Add New Destination'}
+                          </p>
+                          <p className="text-stone-400/50 font-bold uppercase tracking-widest text-[8px] italic">
+                            {addresses.length === 0 ? 'Your first delivery sanctuary' : 'Secure another delivery vault'}
+                          </p>
                         </div>
-                      </div>
+                        
+                        {/* Background Ghost Preview Decoration */}
+                        <div className="absolute inset-0 opacity-[0.03] grayscale pointer-events-none p-8 overflow-hidden">
+                           <div className="transform scale-90 translate-y-4">
+                             <AddressCard
+                               address={{ label: 'Preview', full_name: 'Next Member', phone: 'XXXXX', house: 'Vault' }}
+                               onEdit={() => {}}
+                               onDelete={() => {}}
+                             />
+                           </div>
+                        </div>
+                      </motion.button>
                     </div>
                   )}
-                  
-                  <motion.button 
-                    whileHover={{ scale: 1.01, backgroundColor: 'rgba(234, 88, 12, 0.05)' }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} 
-                    disabled={isRefreshing}
-                    className="w-full border-4 border-dashed border-stone-100 dark:border-white/5 p-12 rounded-[3rem] text-stone-400 font-black uppercase tracking-[0.3em] text-[10px] flex flex-col items-center justify-center gap-6 hover:border-orange-500/30 hover:text-orange-600 transition-all group bg-stone-50/50 dark:bg-stone-950/20 disabled:opacity-30 mt-4"
-                  >
-                    <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-3xl flex items-center justify-center text-3xl group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl shadow-stone-900/5 group-hover:shadow-orange-600/30">+</div> 
-                    ADD NEW DESTINATION TO VAULT
-                  </motion.button>
                 </div>
               </div>
             </section>
