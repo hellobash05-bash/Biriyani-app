@@ -98,7 +98,7 @@ export async function syncUser(userData: { uid: string; name: string | null; ema
 }
 
 export async function fetchUserOrders(email?: string) {
-  const url = email ? `${API_BASE_URL}/user/orders?email=${email}` : `${API_BASE_URL}/user/orders`;
+  const url = email ? `${API_BASE_URL}/user/orders?email=${encodeURIComponent(email)}` : `${API_BASE_URL}/user/orders`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch user orders');
@@ -137,13 +137,26 @@ export async function placeOrder(orderData: any) {
   return await response.json();
 }
 
-export async function fetchOrderById(id: string) {
+export async function fetchOrderById(id: string, email?: string | null) {
   const response = await fetch(`${API_BASE_URL}/orders/${id}`);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to fetch order');
+  if (response.ok) {
+    return await response.json();
   }
-  return await response.json();
+
+  const errorData = await response.json().catch(() => ({}));
+
+  if (email) {
+    const orders = await fetchUserOrders(email);
+    const matchingOrder = Array.isArray(orders)
+      ? orders.find((order: any) => (order.id || order._id) === id)
+      : null;
+
+    if (matchingOrder) {
+      return matchingOrder;
+    }
+  }
+
+  throw new Error(errorData.message || 'Failed to fetch order');
 }
 
 export async function fetchAdminOrders() {

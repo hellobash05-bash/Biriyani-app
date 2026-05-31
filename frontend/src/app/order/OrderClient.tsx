@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import ReviewForm from '@/components/ReviewForm';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 import { fetchOrderById, cancelOrder } from '@/lib/api';
 
@@ -24,6 +25,7 @@ const NOTIFICATION_SOUND = 'https://cdn.pixabay.com/audio/2022/03/15/audio_50727
 export default function OrderTrackingPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
+  const { user, loading: authLoading } = useAuth();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
@@ -37,6 +39,10 @@ export default function OrderTrackingPage() {
   };
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     if (!orderId) {
       setLoading(false);
       return;
@@ -45,7 +51,7 @@ export default function OrderTrackingPage() {
     // 1. Fetch initial order data
     const fetchOrder = async () => {
       try {
-        const data = await fetchOrderById(orderId);
+        const data = await fetchOrderById(orderId, user?.email);
         setOrder(data);
       } catch (err) {
         console.error('Order fetch error:', err);
@@ -116,7 +122,7 @@ export default function OrderTrackingPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId, order?.items]);
+  }, [orderId, order?.items, authLoading, user?.email]);
 
   const handleCancelOrder = async () => {
     if (!orderId) return;
