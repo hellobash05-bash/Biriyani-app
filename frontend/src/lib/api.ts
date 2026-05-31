@@ -273,17 +273,23 @@ export async function fetchAnalytics() {
 }
 
 export async function fetchAddresses(email: string) {
-  // Use /profile endpoint which is proven to return addresses correctly
-  const url = `${getCleanUrl('/profile')}?email=${encodeURIComponent(email)}`;
-  console.log('--- API: FETCHING ADDRESSES VIA PROFILE ---', url);
+  // Use dedicated /address endpoint with cache busting
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/address?email=${encodeURIComponent(email)}&t=${Date.now()}`;
+  console.log('>>> [API] FETCHING ADDRESSES:', url);
   
-  const response = await fetch(url);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Failed to fetch addresses via profile');
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Server error: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log(`>>> [API] RECEIVED ${Array.isArray(data) ? data.length : 0} ADDRESSES`);
+    return Array.isArray(data) ? data : [];
+  } catch (err: any) {
+    console.error('>>> [API] FETCH FAILED:', err.message);
+    throw err;
   }
-  const data = await response.json();
-  return data.addresses || [];
 }
 
 export async function addAddress(email: string, addressData: any) {
