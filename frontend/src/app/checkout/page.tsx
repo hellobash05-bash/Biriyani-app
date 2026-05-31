@@ -127,10 +127,9 @@ export default function CheckoutPage() {
                  DELIVERY DETAILS
                </h2>
 
-               <CheckoutAddressSelector 
-                 onAddressSelect={(addr) => setSelectedAddress(addr)}
-                 selectedAddressId={selectedAddress?.id}
-               />
+               <div className="bg-stone-50 dark:bg-white/5 p-12 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center">
+                 <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">Delivery address system is being updated...</p>
+               </div>
             </section>
 
             {/* Order Summary */}
