@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { fetchAddresses, deleteAddress } from '@/lib/api';
 import AddressCard from './AddressCard';
 import AddressForm from './AddressForm';
-import { Plus, MapPin, Home, Briefcase, MapPins, Sparkles } from 'lucide-react';
+import { Plus, MapPin, Home, Briefcase, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 

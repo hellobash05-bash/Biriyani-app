@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Phone, Edit2, Trash2, CheckCircle2, Home, Briefcase, MapPins } from 'lucide-react';
+import { MapPin, Phone, Edit2, Trash2, CheckCircle2, Home, Briefcase } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface AddressCardProps {
@@ -25,7 +25,7 @@ export default function AddressCard({
       case 'home': return <Home size={18} />;
       case 'office': 
       case 'work': return <Briefcase size={18} />;
-      default: return <MapPins size={18} />;
+      default: return <MapPin size={18} />;
     }
   };
 
