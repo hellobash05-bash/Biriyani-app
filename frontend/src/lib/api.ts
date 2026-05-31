@@ -7,6 +7,8 @@ const isProd = typeof window !== 'undefined' && (
 );
 // Force absolute URL in production to bypass Vercel proxy issues
 const DEFAULT_PROD_URL = 'https://biriyani-backend.onrender.com/api';
+const SUPABASE_REST_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bfrhmbtqogrlrkiyquce.supabase.co';
+const SUPABASE_REST_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_n7eiiI_lHFrqewV5WR9iCQ_rYk4dSyG';
 
 let rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || (isProd 
   ? DEFAULT_PROD_URL 
@@ -19,6 +21,18 @@ if (isProd && rawBaseUrl.startsWith('/')) {
 }
 
 export const API_BASE_URL = rawBaseUrl;
+
+const formatOrderFromDatabase = (data: any) => ({
+  ...data,
+  _id: data.id,
+  totalAmount: data.total_amount,
+  estimatedDeliveryTime: data.estimated_delivery_time,
+  deliveryPartner: data.delivery_partner_name ? {
+    name: data.delivery_partner_name,
+    phone: data.delivery_partner_phone,
+    vehicleNumber: data.delivery_partner_vehicle
+  } : null
+});
 
 // Helper to ensure path is robust
 const getCleanUrl = (path: string) => {
@@ -414,29 +428,46 @@ export async function updateOrderStatus(orderId: string, status: string) {
   });
   if (response.ok) return response.json();
 
-  if (!supabase) throw new Error('Failed to update status');
-
   console.warn('Admin status endpoint unavailable. Falling back to Supabase update.');
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', orderId)
-    .select('*')
-    .single();
 
-  if (error) throw error;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', orderId)
+        .select('*')
+        .single();
 
-  return {
-    ...data,
-    _id: data.id,
-    totalAmount: data.total_amount,
-    estimatedDeliveryTime: data.estimated_delivery_time,
-    deliveryPartner: data.delivery_partner_name ? {
-      name: data.delivery_partner_name,
-      phone: data.delivery_partner_phone,
-      vehicleNumber: data.delivery_partner_vehicle
-    } : null
-  };
+      if (error) throw error;
+      return formatOrderFromDatabase(data);
+    } catch (err) {
+      console.warn('Supabase client status update failed. Trying REST fallback.', err);
+    }
+  }
+
+  const restResponse = await fetch(`${SUPABASE_REST_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=*`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_REST_KEY,
+      Authorization: `Bearer ${SUPABASE_REST_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify({ status })
+  });
+
+  if (!restResponse.ok) {
+    const errorData = await restResponse.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to update status');
+  }
+
+  const rows = await restResponse.json();
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error('Failed to update status');
+  }
+
+  return formatOrderFromDatabase(rows[0]);
 }
 
 export async function cancelOrder(orderId: string) {
