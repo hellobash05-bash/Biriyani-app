@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 const isProd = typeof window !== 'undefined' && (
   window.location.hostname.includes('github.io') || 
   window.location.hostname.includes('onrender.com') ||
@@ -410,8 +412,31 @@ export async function updateOrderStatus(orderId: string, status: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
-  if (!response.ok) throw new Error('Failed to update status');
-  return response.json();
+  if (response.ok) return response.json();
+
+  if (!supabase) throw new Error('Failed to update status');
+
+  console.warn('Admin status endpoint unavailable. Falling back to Supabase update.');
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  return {
+    ...data,
+    _id: data.id,
+    totalAmount: data.total_amount,
+    estimatedDeliveryTime: data.estimated_delivery_time,
+    deliveryPartner: data.delivery_partner_name ? {
+      name: data.delivery_partner_name,
+      phone: data.delivery_partner_phone,
+      vehicleNumber: data.delivery_partner_vehicle
+    } : null
+  };
 }
 
 export async function cancelOrder(orderId: string) {

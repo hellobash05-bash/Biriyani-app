@@ -444,6 +444,55 @@ app.get('/api/orders/:id', async (req, res) => {
   }
 });
 
+app.get('/api/admin/orders', async (req, res) => {
+  try {
+    const { data: orders, error } = await req.supabase
+      .from('orders')
+      .select('*, order_items (*)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json((orders || []).map(formatOrderForClient));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.patch('/api/admin/orders/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status, deliveryPartner } = req.body;
+
+  try {
+    const updateData = { status };
+
+    if (deliveryPartner) {
+      updateData.delivery_partner_name = deliveryPartner.name;
+      updateData.delivery_partner_phone = deliveryPartner.phone;
+      updateData.delivery_partner_vehicle = deliveryPartner.vehicleNumber;
+    }
+
+    const { error: updateError } = await req.supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    const { data: order, error: fetchError } = await req.supabase
+      .from('orders')
+      .select('*, order_items (*)')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    res.json(formatOrderForClient(order));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 app.get('/api/user/orders', async (req, res) => {
   const { email } = req.query;
   try {
