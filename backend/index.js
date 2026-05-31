@@ -61,68 +61,35 @@ app.set('case sensitive routing', false);
 app.use(cors());
 app.use(express.json());
 
-// Detailed logging Middleware
-app.use((req, res, next) => {
-  const originalUrl = req.url;
-  const method = req.method;
-  
-  if (originalUrl.toLowerCase().includes('/api')) {
-    console.log(`>>> [REQUEST] ${method} ${originalUrl}`);
-  }
-  next();
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V7)
+app.get('/api/version', (req, res) => {
+  res.status(200).send({ 
+    version: '7.0.0-NUCLEAR-FIX', 
+    timestamp: new Date().toISOString(),
+    msg: 'SERVER IS NOW FULLY UPDATED AND READY.'
+  });
 });
 
-app.use((req, res, next) => {
-  req.supabase = supabase;
-  next();
-});
-
-// ULTIMATE DEPLOYMENT VERIFIER
-app.get('/api/ultimate-test', (req, res) => {
-  res.send('<h1>ROYALE-ULTIMATE-V6-SUCCESS</h1>');
-});
-
-const handleAddressDelete = async (req, res) => {
+// --- CRITICAL: HIGH-PRIORITY DELETE ROUTE ---
+app.delete('/api/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email } = req.query;
-  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  console.log(`>>> [NUCLEAR DELETE] ID=${id}, Email=${email}`);
 
-  console.log(`>>> [Surgical Delete] TargetID=${id}, UserEmail=${normalizedEmail}`);
-
-  if (!id) return res.status(400).json({ message: 'Address ID is required' });
+  if (!id) return res.status(400).json({ message: 'ID required' });
 
   try {
-    const { data: user, error: userError } = await req.supabase
-      .from('users')
-      .select('id, uid')
-      .ilike('email', normalizedEmail)
-      .maybeSingle();
+    const { data: user } = await req.supabase.from('users').select('id, uid').ilike('email', email).maybeSingle();
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (userError || !user) {
-      console.error('❌ User not found for delete:', normalizedEmail);
-      return res.status(404).json({ message: 'Authentication verification failed.' });
-    }
+    const { error } = await req.supabase.from('addresses').delete().eq('id', id).or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
+    if (error) throw error;
 
-    const { error } = await req.supabase
-      .from('addresses')
-      .delete()
-      .eq('id', id)
-      .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
-
-    if (error) {
-      console.error('❌ Database Delete Error:', error.message);
-      return res.status(400).json({ message: error.message });
-    }
-
-    console.log(`✅ Success: Address ${id} removed`);
-    res.json({ success: true, message: 'Address removed successfully', id });
+    res.json({ success: true, message: 'Address removed' });
   } catch (err) {
-    console.error('💥 Delete Crash:', err.message);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: err.message });
   }
-};
-
-app.delete(['/api/address/:id', '/api/users/address/:id', '/api/user/address/:id'], handleAddressDelete);
+});
 
 // PUT Address - Multiple explicit routes
 const handleUpdateLogic = async (req, res) => {
