@@ -11,6 +11,7 @@ import { placeOrder } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import toast from 'react-hot-toast';
+import CheckoutAddressSelector from '@/components/CheckoutAddressSelector';
 
 export default function CheckoutPage() {
   const { cart, total, clearCart, setIsCartOpen } = useCart();
@@ -18,6 +19,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const router = useRouter();
 
   const playNotificationSound = () => {
@@ -40,22 +42,30 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!selectedAddress) {
+      toast.error('Please select a delivery address');
+      return;
+    }
+
     setLoading(true);
     try {
+      const fullAddressString = `${selectedAddress.house || selectedAddress.address_line1}, ${selectedAddress.street || selectedAddress.address_line2}, ${selectedAddress.city} - ${selectedAddress.pincode}${selectedAddress.landmark ? ' (Landmark: ' + selectedAddress.landmark + ')' : ''}`;
+
       const orderData = {
         userEmail: user?.email,
         customer: {
-          name: user?.displayName || profile?.name || 'Royale Member',
-          phone: user?.phoneNumber || profile?.phone || '0000000000',
+          name: selectedAddress.full_name || selectedAddress.name || user?.displayName || profile?.name,
+          phone: selectedAddress.phone || user?.phoneNumber || profile?.phone,
           address: {
-            house: 'N/A',
-            street: 'Updating System',
-            city: 'Chennai',
-            pincode: '600001',
-            landmark: '',
-            fullAddress: 'Delivery system is being updated. Contact support.'
+            house: selectedAddress.house || selectedAddress.address_line1,
+            street: selectedAddress.street || selectedAddress.address_line2 || '',
+            city: selectedAddress.city,
+            pincode: selectedAddress.pincode,
+            landmark: selectedAddress.landmark || '',
+            fullAddress: fullAddressString
           }
         },
+        delivery_address_snapshot: selectedAddress, // Prompt 1.2: Snapshot of selected address
         items: cart.map(i => ({ 
           foodId: i._id,
           name: i.name, 
@@ -116,10 +126,10 @@ export default function CheckoutPage() {
                  DELIVERY DETAILS
                </h2>
 
-               <div className="bg-stone-50 dark:bg-white/5 p-12 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center">
-                 <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">Delivery address system is being updated...</p>
-                 <p className="text-[9px] text-stone-400 mt-2 uppercase tracking-widest">Orders will use your profile defaults temporarily.</p>
-               </div>
+               <CheckoutAddressSelector 
+                 onAddressSelect={(addr) => setSelectedAddress(addr)}
+                 selectedAddressId={selectedAddress?.id || selectedAddress?._id}
+               />
             </section>
 
             {/* Order Summary */}

@@ -5,21 +5,46 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUserOrders } from '@/lib/api';
+import { fetchUserOrders, fetchAddresses as apiFetchAddresses, deleteAddress } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import AddressCard from '@/components/AddressCard';
+import AddressModal from '@/components/AddressModal';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
+
+  const loadAddresses = async () => {
+    if (!user?.email) return;
+    setLoadingAddresses(true);
+    try {
+      const data = await apiFetchAddresses(user.email);
+      setAddresses(data || []);
+    } catch (err) {
+      console.error('Failed to fetch addresses:', err);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadAddresses();
+    }
+  }, [user]);
 
   useEffect(() => {
     const checkDb = async () => {
@@ -62,10 +87,30 @@ export default function ProfilePage() {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshProfile();
+      await Promise.all([refreshProfile(), loadAddresses()]);
       toast.success('Records updated');
     } catch (err) {
       toast.error('Sync failed');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleEditClick = (addr: any) => {
+    setEditingAddress(addr);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!user?.email) return;
+    if (!confirm('Are you sure you want to delete this address?')) return;
+    setIsRefreshing(true);
+    try {
+      await deleteAddress(id, user.email);
+      toast.success('Address removed');
+      loadAddresses();
+    } catch (err) {
+      toast.error('Failed to remove');
     } finally {
       setIsRefreshing(false);
     }
@@ -265,6 +310,66 @@ export default function ProfilePage() {
               </div>
             </section>
 
+            {/* Saved Addresses Section */}
+            <section className="flex flex-col gap-10">
+              <div className="flex justify-between items-center px-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
+                    <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
+                    My Addresses
+                  </h2>
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest italic ml-12">Manage your delivery vaults</p>
+                </div>
+                <button 
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-stone-400 hover:text-orange-600 transition-all disabled:opacity-30 group"
+                  title="Sync Vault"
+                >
+                  <motion.div animate={isRefreshing ? { rotate: 360 } : {}} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  </motion.div>
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-8">
+                {loadingAddresses ? (
+                  <div className="p-12 text-center bg-stone-50 dark:bg-white/5 rounded-[3rem] border border-stone-100 dark:border-white/5">
+                    <div className="inline-block w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-4">Accessing Vault...</p>
+                  </div>
+                ) : addresses.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-6">
+                    {addresses.map((addr: any) => (
+                      <AddressCard
+                        key={addr.id || addr._id}
+                        address={addr}
+                        onEdit={handleEditClick}
+                        onDelete={handleDeleteAddress}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-stone-50 dark:bg-white/5 p-20 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center gap-6">
+                    <div className="w-20 h-20 bg-orange-600/10 rounded-full flex items-center justify-center text-orange-600/30">
+                      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </div>
+                    <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">Your address vault is currently empty.</p>
+                  </div>
+                )}
+                
+                <motion.button 
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }} 
+                  disabled={isRefreshing}
+                  className="w-full border-4 border-dashed border-stone-100 dark:border-white/5 p-10 rounded-[3rem] text-stone-400 font-black uppercase tracking-[0.3em] text-[10px] flex flex-col items-center justify-center gap-6 hover:border-orange-500/30 hover:text-orange-600 transition-all group bg-white/50 dark:bg-stone-900/20 disabled:opacity-30"
+                >
+                  <div className="w-14 h-14 bg-stone-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl shadow-stone-900/5 group-hover:shadow-orange-600/20">+</div> 
+                  ADD NEW DESTINATION
+                </motion.button>
+              </div>
+            </section>
           </div>
 
           {/* Account Actions - Below Grid */}
