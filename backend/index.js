@@ -51,13 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.5)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.6)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.5.0-TRIPLE-SYNC', 
+    version: '9.6.0-PRECISION-ID', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'DUAL-KEY FETCHING (EMAIL + UID) ENABLED.'
+    msg: 'SEQUENTIAL USER LOOKUP ENABLED.'
   });
 });
 
@@ -67,22 +67,27 @@ app.set('case sensitive routing', false);
 // --- ROBUST HELPER ---
 const getFormattedAddresses = async (sb, email, uid = null) => {
   if (!email && !uid) return [];
-  console.log(`>>> [HELPER] Fetching for: Email=${email}, UID=${uid}`);
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  console.log(`>>> [HELPER] Fetching for: Email=${normalizedEmail}, UID=${uid}`);
 
   try {
-    // 1. Find user by email OR uid
-    let query = sb.from('users').select('id, uid, email');
-    const filters = [];
-    if (email) filters.push(`email.ilike.${email.toLowerCase().trim()}`);
-    if (uid) filters.push(`uid.eq.${uid}`);
+    // 1. Find user using sequential precision (UID first, then Email)
+    let user = null;
+    if (uid) {
+      const { data } = await sb.from('users').select('id, email').eq('uid', uid).maybeSingle();
+      user = data;
+    }
     
-    const { data: user } = await query.or(filters.join(',')).maybeSingle();
+    if (!user && normalizedEmail) {
+      const { data } = await sb.from('users').select('id, email').ilike('email', normalizedEmail).maybeSingle();
+      user = data;
+    }
     
     if (!user) {
-      console.warn('>>> [HELPER] User NOT FOUND for identifiers provided');
+      console.warn('>>> [HELPER] User NOT FOUND in database');
       return [];
     }
-    console.log(`>>> [HELPER] Linked to User ID: ${user.id}`);
+    console.log(`>>> [HELPER] Identified User UUID: ${user.id}`);
 
     // 2. Fetch addresses strictly by user_id (UUID)
     const { data, error } = await sb.from('addresses')
@@ -105,7 +110,7 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
       detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`
     }));
   } catch (err) {
-    console.error('❌ Helper error:', err.message);
+    console.error('❌ [HELPER] Critical Error:', err.message);
     return [];
   }
 };
@@ -114,17 +119,20 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
 app.delete('/api/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email, uid } = req.query;
-  console.log(`>>> [DELETE] ID=${id}, Email=${email}, UID=${uid}`);
+  console.log(`>>> [DELETE] ID=${id}, User=${email || uid}`);
 
   if (!id) return res.status(400).json({ message: 'ID required' });
 
   try {
-    // Find user by email OR uid
-    let userQuery = req.supabase.from('users').select('id');
-    const filters = [];
-    if (email) filters.push(`email.ilike.${email.toLowerCase().trim()}`);
-    if (uid) filters.push(`uid.eq.${uid}`);
-    const { data: user } = await userQuery.or(filters.join(',')).maybeSingle();
+    let user = null;
+    if (uid) {
+      const { data } = await req.supabase.from('users').select('id').eq('uid', uid).maybeSingle();
+      user = data;
+    }
+    if (!user && email) {
+      const { data } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
+      user = data;
+    }
     
     if (!user) return res.status(404).json({ message: 'User verification failed' });
 
@@ -144,11 +152,15 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
-    let userQuery = req.supabase.from('users').select('id');
-    const filters = [];
-    if (email) filters.push(`email.ilike.${email.toLowerCase().trim()}`);
-    if (uid) filters.push(`uid.eq.${uid}`);
-    const { data: user } = await userQuery.or(filters.join(',')).maybeSingle();
+    let user = null;
+    if (uid) {
+      const { data } = await req.supabase.from('users').select('id').eq('uid', uid).maybeSingle();
+      user = data;
+    }
+    if (!user && email) {
+      const { data } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
+      user = data;
+    }
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -180,11 +192,15 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   
   try {
-    let userQuery = req.supabase.from('users').select('id');
-    const filters = [];
-    if (email) filters.push(`email.ilike.${email.toLowerCase().trim()}`);
-    if (uid) filters.push(`uid.eq.${uid}`);
-    const { data: user } = await userQuery.or(filters.join(',')).maybeSingle();
+    let user = null;
+    if (uid) {
+      const { data } = await req.supabase.from('users').select('id').eq('uid', uid).maybeSingle();
+      user = data;
+    }
+    if (!user && email) {
+      const { data } = await req.supabase.from('users').select('id').ilike('email', email).maybeSingle();
+      user = data;
+    }
     
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -317,3 +333,5 @@ app.use((req, res) => res.status(404).json({ message: 'Not Found' }));
 httpServer.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
+
+// Trigger redeploy at 1780213000
