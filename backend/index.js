@@ -91,13 +91,13 @@ const resolveAllUserIds = async (sb, email, uid = null) => {
         email: normalizedEmail,
         name: 'Royale Member',
         last_login: new Date().toISOString()
-      }, { onConflict: 'email' }).select('id, uid').single();
+      }, { onConflict: 'email' }).select('id, uid, email').single();
       
       if (anchorError) throw anchorError;
-      return [{ id: anchor.id, uid: anchor.uid }];
+      return [{ id: anchor.id, uid: anchor.uid, email: anchor.email }];
     }
 
-    const allUserIdentities = users.map(u => ({ id: u.id, uid: u.uid }));
+    const allUserIdentities = users.map(u => ({ id: u.id, uid: u.uid, email: u.email }));
     console.log(`>>> [BRIDGE] Resolved Cluster IDs:`, allUserIdentities.map(u => u.id).join(', '));
 
     if (uid && normalizedEmail) {
@@ -118,7 +118,7 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   
   const userIds = identities.map(u => u.id);
   const firebaseUids = identities.map(u => u.uid).filter(Boolean);
-  const searchEmails = [normalizedEmail, ...identities.map(u => u.email)].filter(Boolean);
+  const searchEmails = Array.from(new Set([normalizedEmail, ...identities.map(u => u.email)].filter(Boolean)));
 
   console.log(`>>> [BRIDGE] SAFE-FETCH START: IDs=${userIds.length}, UIDs=${firebaseUids.length}, Emails=${searchEmails.length}`);
 
@@ -146,6 +146,16 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
         data.forEach(a => uniqueMap.set(a.id, a));
       }
     } catch (e) { console.warn('>>> [BRIDGE] Email Fetch skipped:', e.message); }
+  }
+
+  // 4. SAFE FETCH BY LEGACY USER_EMAIL
+  if (searchEmails.length > 0) {
+    try {
+      const { data, error } = await sb.from('addresses').select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('user_email', searchEmails);
+      if (!error && data) {
+        data.forEach(a => uniqueMap.set(a.id, a));
+      }
+    } catch (e) { console.warn('>>> [BRIDGE] Legacy email fetch skipped:', e.message); }
   }
 
   const allResults = Array.from(uniqueMap.values());

@@ -3,6 +3,8 @@
 
 -- 1. Add missing identity columns
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS firebase_uid TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS user_email TEXT;
 
 -- 2. Add missing modern address fields
 ALTER TABLE public.addresses ADD COLUMN IF NOT EXISTS district TEXT;
@@ -32,6 +34,8 @@ END $$;
 UPDATE public.addresses SET address_line1 = house WHERE address_line1 IS NULL AND house IS NOT NULL;
 UPDATE public.addresses SET address_line2 = street WHERE address_line2 IS NULL AND street IS NOT NULL;
 UPDATE public.addresses SET full_name = name WHERE full_name IS NULL AND name IS NOT NULL;
+UPDATE public.addresses SET email = user_email WHERE email IS NULL AND user_email IS NOT NULL;
+UPDATE public.addresses SET user_email = email WHERE user_email IS NULL AND email IS NOT NULL;
 
 -- 6. Link Addresses to Orders
 DO $$ 
@@ -78,5 +82,4 @@ USING (
     OR 
     user_id IN (SELECT id FROM public.users WHERE uid = auth.uid()::text)
 );
-
 
