@@ -18,6 +18,8 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
+  const [lastFetchRaw, setLastFetchRaw] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
@@ -34,31 +36,24 @@ export default function ProfilePage() {
     }
     
     setLoadingAddresses(true);
-    console.log('>>> [PROFILE] Fetching addresses for:', user.email, user.uid);
+    console.log('>>> [PROFILE] ULTIMATE FETCH START:', user.email, user.uid);
     
     try {
       const data = await apiFetchAddresses(user.email, user.uid);
-      console.log('>>> [PROFILE] Received addresses:', data);
+      setLastFetchRaw(data);
+      console.log('>>> [PROFILE] RAW DATA RECEIVED:', data);
       
       if (Array.isArray(data)) {
         setAddresses(data);
-        console.log(`>>> [PROFILE] State updated with ${data.length} addresses`);
       } else {
-        console.error('>>> [PROFILE] Unexpected data format:', data);
         setAddresses([]);
       }
     } catch (err) {
-      console.error('>>> [PROFILE] Failed to fetch addresses:', err);
-      toast.error('Sync failed: Could not load destinations');
+      console.error('>>> [PROFILE] FETCH FAILED:', err);
     } finally {
       setLoadingAddresses(false);
     }
   };
-
-  // Watch address state for debugging
-  useEffect(() => {
-    console.log('>>> [PROFILE] Address state changed:', addresses);
-  }, [addresses]);
 
   useEffect(() => {
     if (user) {
@@ -107,7 +102,7 @@ export default function ProfilePage() {
   const handleManualRefresh = async () => {
     if (!user) return;
     setIsRefreshing(true);
-    console.log('>>> [PROFILE] Starting RESCUE SYNC...');
+    console.log('>>> [PROFILE] TRIGGERING ULTIMATE RESCUE SYNC...');
     
     try {
       // 1. Force a clean user sync to Supabase
@@ -123,18 +118,15 @@ export default function ProfilePage() {
         })
       });
       
-      console.log('>>> [PROFILE] User re-synced successfully');
-
-      // 2. Parallel refresh of all profile data
-      await Promise.all([
-        refreshProfile(),
-        loadAddresses()
-      ]);
+      // 2. Clear local cache and re-fetch
+      setAddresses([]);
+      await refreshProfile();
+      await loadAddresses();
       
-      toast.success('Vault Synchronized');
+      toast.success('Vault System Reset & Synced');
     } catch (err) {
-      console.error('>>> [PROFILE] Rescue sync failed:', err);
-      toast.error('Sync failed. Try again.');
+      console.error('>>> [PROFILE] Sync failed:', err);
+      toast.error('Connection weak. Try again.');
     } finally {
       setIsRefreshing(false);
     }
@@ -148,7 +140,6 @@ export default function ProfilePage() {
   const handleDeleteAddress = async (id: string) => {
     if (!user?.email || !user?.uid) return;
     
-    // Prompt: Delete the specific address only
     const addressToDelete = addresses.find(a => (a.id || a._id) === id);
     const label = addressToDelete?.label || 'this address';
     
@@ -158,16 +149,12 @@ export default function ProfilePage() {
     try {
       await deleteAddress(id, user.email, user.uid);
       toast.success(`"${label}" removed from vault`);
-      
-      // Optimistic update for instant feedback
       setAddresses(prev => prev.filter(a => (a.id || a._id) !== id));
-      
-      // Secondary background refresh to ensure sync
       loadAddresses();
     } catch (err: any) {
       console.error('Delete failed:', err);
       toast.error(err.message || 'Failed to remove destination');
-      loadAddresses(); // Rollback/Sync
+      loadAddresses();
     } finally {
       setIsRefreshing(false);
     }
@@ -182,7 +169,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Ensure profile is refreshed whenever user state is finalized
   useEffect(() => {
     if (user && !authLoading) {
       refreshProfile();
@@ -199,9 +185,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-200 relative overflow-hidden bg-background">
-      {/* Build V3 - Fixed Visibility */}
       <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern opacity-[0.03] dark:opacity-[0.07]" />
-      
       <Navbar />
 
       <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-7xl mx-auto">
@@ -212,21 +196,13 @@ export default function ProfilePage() {
               <div className="flex items-center gap-4">
                 <span className="text-2xl">⚠️</span>
                 <p className="text-red-500 text-xs font-bold uppercase tracking-widest leading-relaxed">
-                  Temporary Mode Active: Your Cloud Database (Atlas) is unreachable. <br />
-                  Data added now will be deleted when the server restarts.
+                  Temporary Mode Active: Your Cloud Database (Atlas) is unreachable.
                 </p>
               </div>
-              <button 
-                onClick={() => window.open('https://www.mongodb.com/docs/atlas/security-whitelist/', '_blank')}
-                className="bg-red-500 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shrink-0"
-              >
-                Fix Connection
-              </button>
             </section>
           )}
 
-          {/* User Header */}
-          <section className="flex flex-col md:flex-row items-center gap-8 premium-card p-10 rounded-[3rem] relative overflow-hidden border border-stone-200 dark:border-white/5 bg-white dark:bg-stone-900/40">
+          <section className="flex flex-col md:flex-row items-center gap-8 premium-card p-10 rounded-[3rem] border border-stone-200 dark:border-white/5 bg-white dark:bg-stone-900/40">
             <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20 shrink-0 overflow-hidden">
               {profile?.photo_url || user?.photoURL ? (
                 <img src={profile?.photo_url || user?.photoURL} alt="Profile" className="w-full h-full object-cover" />
@@ -234,141 +210,58 @@ export default function ProfilePage() {
                 profile?.name?.charAt(0) || user?.displayName?.charAt(0) || 'A'
               )}
             </div>
-            <div className="flex flex-col items-center md:items-start gap-2 text-center md:text-left overflow-hidden w-full">
-              <h1 className="text-3xl md:text-5xl font-black text-stone-900 dark:text-white uppercase tracking-tight leading-none truncate w-full">
+            <div className="flex-1 overflow-hidden w-full text-center md:text-left">
+              <h1 className="text-3xl md:text-5xl font-black text-stone-900 dark:text-white uppercase tracking-tight truncate w-full">
                 {user?.displayName || profile?.name || 'Royale Member'}
               </h1>
               <p className="text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest text-[10px] truncate w-full">
                 {user?.phoneNumber || profile?.phone || '+91 00000 00000'} • {user?.email || profile?.email}
               </p>
-              <div className="flex gap-4 mt-4">
-                <button 
-                  onClick={() => {
-                    const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_5072705b4b.mp3');
-                    audio.play().catch(e => alert('Audio blocked by browser. Click anywhere first!'));
-                  }}
-                  className="text-[10px] font-black uppercase tracking-[0.3em] text-green-600 hover:text-green-500 transition-colors bg-green-500/5 px-6 py-2 rounded-full border border-green-500/10"
-                >
-                  🔊 Test Sound
-                </button>
-              </div>
             </div>
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Projects Section */}
-            <section className="flex flex-col gap-8">
-              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
-                <span className="w-8 h-1 bg-purple-500 rounded-full"></span>
-                My Projects
-              </h2>
-              <div className="flex flex-col gap-4">
-                {loadingData ? (
-                  <div className="p-8 text-center opacity-50 italic uppercase text-[10px] font-bold">Loading vault...</div>
-                ) : projects.length > 0 ? projects.map((project: any) => (
-                  <div key={project.id} className="p-4 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200 dark:border-white/5 flex justify-between items-center">
-                    <div>
-                      <h4 className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-tight">{project.name}</h4>
-                      <p className="text-xs text-stone-500">{project.description || 'No description'}</p>
-                    </div>
-                    <span className="text-[10px] font-bold text-stone-400">{new Date(project.created_at).toLocaleDateString()}</span>
-                  </div>
-                )) : (
-                  <div className="p-8 border border-dashed border-stone-200 dark:border-white/10 rounded-[2rem] text-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                    Your project vault is empty.
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Wishlist Section */}
-            <section className="flex flex-col gap-8">
-              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
-                <span className="w-8 h-1 bg-red-500 rounded-full"></span>
-                My Wishlist
-              </h2>
-              <div className="flex flex-col gap-6">
-                {profile?.favorites?.length > 0 ? profile.favorites.map((item: any) => (
-                  <motion.div 
-                    key={item._id}
-                    whileHover={{ scale: 1.01 }}
-                    className="premium-card p-6 flex items-center gap-6 group relative overflow-hidden bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5"
-                  >
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-foreground/5 shrink-0">
-                      <img src={item.image || '/images/biriyani-placeholder.jpg'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    </div>
-                    <div className="flex-1">
-                       <h3 className="text-lg font-black text-stone-900 dark:text-white uppercase tracking-tight leading-none mb-1">{item.name}</h3>
-                       <p className="text-xs text-stone-500 font-bold uppercase tracking-widest">{item.category}</p>
-                       <div className="mt-3 flex items-center gap-3">
-                          <span className="text-xl font-black text-orange-600">₹{item.offerPrice || item.price}</span>
-                          {item.offerPrice && <span className="text-xs font-bold text-stone-400 line-through">₹{item.price}</span>}
-                       </div>
-                    </div>
-                    <button 
-                      onClick={() => router.push('/menu')}
-                      className="w-10 h-10 rounded-full bg-foreground/5 flex items-center justify-center text-stone-900 dark:text-white hover:bg-orange-600 hover:text-white transition-all shadow-lg"
-                    >
-                      →
-                    </button>
-                  </motion.div>
-                )) : (
-                  <div className="bg-foreground/5 p-16 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center gap-4">
-                    <span className="text-4xl opacity-30">❤️</span>
-                    <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px]">No favorites saved yet.</p>
-                    <button onClick={() => router.push('/menu')} className="mt-2 px-6 py-2 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-full text-[9px] font-black uppercase tracking-widest">Explore Collection</button>
-                  </div>
-                )}
-              </div>
-            </section>
-
             {/* Orders Section */}
-            <section className="flex flex-col gap-8">
+            <section className="flex flex-col gap-8 lg:col-span-2">
               <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
                 <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
                 My Orders
               </h2>
-              <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {loadingOrders ? (
-                  <div className="p-12 text-center">
+                  <div className="p-12 text-center col-span-full">
                     <div className="inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : orders.length > 0 ? orders.map((order) => (
-                  <motion.div key={order._id} whileHover={{ scale: 1.01 }} className="premium-card p-8 group flex flex-col gap-6 bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Order ID: #{order._id.slice(-6)}</span>
-                        <span className="text-xs font-bold text-stone-400">{new Date(order.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
-                      <span className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                  <motion.div key={order._id} whileHover={{ scale: 1.01 }} className="premium-card p-8 bg-white dark:bg-stone-900/40 border border-stone-100 dark:border-white/5">
+                    <div className="flex justify-between items-start mb-6">
+                      <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Order ID: #{order._id.slice(-6)}</span>
+                      <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
                         order.status === 'Delivered' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
                       }`}>
                         {order.status}
                       </span>
                     </div>
-                    
-                    <div className="border-t border-stone-100 dark:border-white/5 pt-6">
-                      <p className="text-stone-800 dark:text-white font-bold mb-4 line-clamp-1">
-                        {order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
-                      </p>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl font-black text-orange-500">₹{order.totalAmount}</span>
-                        <button onClick={() => router.push(`/order?id=${order._id}`)} className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[9px] shadow-xl active:scale-95 transition-all hover:bg-orange-600 hover:text-white">
-                          {order.status === 'Delivered' ? 'VIEW RECEIPT' : 'TRACK ORDER'}
-                        </button>
-                      </div>
+                    <p className="text-stone-800 dark:text-white font-bold mb-4 line-clamp-1">
+                      {order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
+                    </p>
+                    <div className="flex justify-between items-center border-t border-stone-100 dark:border-white/5 pt-4">
+                      <span className="text-xl font-black text-orange-500">₹{order.totalAmount}</span>
+                      <button onClick={() => router.push(`/order?id=${order._id}`)} className="text-stone-900 dark:text-white font-black uppercase tracking-widest text-[9px] hover:text-orange-600 transition-colors">
+                        VIEW RECEIPT →
+                      </button>
                     </div>
                   </motion.div>
                 )) : (
-                  <div className="bg-foreground/5 p-20 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center">
-                    <p className="text-stone-500 font-bold uppercase tracking-widest text-xs italic">No culinary journeys yet.</p>
+                  <div className="col-span-full bg-stone-50 dark:bg-white/5 p-12 rounded-[3rem] text-center border border-dashed border-stone-200 dark:border-white/10">
+                    <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">No culinary journeys yet.</p>
                   </div>
                 )}
               </div>
             </section>
 
             {/* Saved Addresses Section */}
-            <section className="flex flex-col gap-10">
+            <section className="flex flex-col gap-10 lg:col-span-2">
               <div className="flex justify-between items-center px-4">
                 <div className="flex flex-col gap-1">
                   <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-4">
@@ -377,14 +270,19 @@ export default function ProfilePage() {
                   </h2>
                   <div className="flex items-center gap-3 ml-12">
                     <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest italic">Manage your delivery vaults</p>
-                    <span className="text-[8px] font-black text-orange-600/40 uppercase tracking-widest bg-orange-600/5 px-2 py-0.5 rounded-full border border-orange-600/5">System v9.8.0</span>
+                    <button 
+                      onClick={() => setShowDebug(!showDebug)}
+                      className="text-[8px] font-black text-orange-600 uppercase tracking-widest bg-orange-600/10 px-2 py-0.5 rounded-full border border-orange-600/20 animate-pulse"
+                    >
+                      ULTIMATE v10.0.0
+                    </button>
                   </div>
                 </div>
                 <button 
                   onClick={handleManualRefresh}
                   disabled={isRefreshing}
-                  className="bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-stone-400 hover:text-orange-600 transition-all disabled:opacity-30 group"
-                  title="Sync Vault"
+                  className="bg-stone-50 dark:bg-white/5 p-4 rounded-2xl text-stone-400 hover:text-orange-600 transition-all disabled:opacity-30"
+                  title="Force Sync"
                 >
                   <motion.div animate={isRefreshing ? { rotate: 360 } : {}} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -393,13 +291,24 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex flex-col gap-8">
+                {showDebug && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-stone-950 p-6 rounded-3xl border border-orange-600/30 font-mono text-[10px] text-orange-500 overflow-x-auto">
+                    <p className="font-bold mb-2">>>> SYSTEM DIAGNOSTIC TERMINAL</p>
+                    <p>USER_EMAIL: {user?.email}</p>
+                    <p>USER_UID: {user?.uid}</p>
+                    <p>LOCAL_ADDR: {addresses.length}</p>
+                    <p>PROFILE_ADDR: {profile?.addresses?.length || 0}</p>
+                    <pre className="mt-2 text-stone-400">{JSON.stringify(lastFetchRaw, null, 2)}</pre>
+                  </motion.div>
+                )}
+
                 {loadingAddresses ? (
                   <div className="p-12 text-center bg-stone-50 dark:bg-white/5 rounded-[3rem] border border-stone-100 dark:border-white/5">
                     <div className="inline-block w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-4">Accessing Vault...</p>
                   </div>
                 ) : (addresses.length > 0 || (profile?.addresses && profile.addresses.length > 0)) ? (
-                  <div className="grid grid-cols-1 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {(addresses.length > 0 ? addresses : profile?.addresses || []).map((addr: any, idx: number) => (
                       <AddressCard
                         key={addr.id || addr._id || idx}
@@ -432,7 +341,6 @@ export default function ProfilePage() {
             </section>
           </div>
 
-          {/* Account Actions - Below Grid */}
           <section className="pt-12 border-t border-stone-200 dark:border-white/10">
              <button onClick={handleLogout} className="flex justify-between items-center p-8 rounded-[2.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group w-full text-left">
                 <span className="font-black uppercase tracking-widest text-xs text-red-500/80 group-hover:text-red-500">Secure Logout</span>
@@ -444,7 +352,14 @@ export default function ProfilePage() {
       <BottomNav />
       <AddressModal 
         isOpen={isAddressModalOpen} 
-        onClose={() => { setIsAddressModalOpen(false); setEditingAddress(null); loadAddresses(); }} 
+        onClose={async () => { 
+          setIsAddressModalOpen(false); 
+          setEditingAddress(null); 
+          toast.loading('Vault Syncing...', { duration: 1500 });
+          setTimeout(() => {
+            loadAddresses();
+          }, 1500);
+        }} 
         initialData={editingAddress}
       />
     </div>
