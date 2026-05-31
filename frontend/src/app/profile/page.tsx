@@ -120,9 +120,9 @@ export default function ProfilePage() {
       
       // Secondary background refresh to ensure sync
       loadAddresses();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete failed:', err);
-      toast.error('Failed to remove destination');
+      toast.error(err.message || 'Failed to remove destination');
       loadAddresses(); // Rollback/Sync
     } finally {
       setIsRefreshing(false);
