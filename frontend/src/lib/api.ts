@@ -322,6 +322,37 @@ export async function updateAddress(id: string, email: string, addressData: any,
   }
   return response.json();
 }
+
+export async function updateProfile(uid: string, profileData: any) {
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/users/profile`;
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uid, ...profileData }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to update profile');
+  }
+  return response.json();
+}
+
+export async function uploadProfileImage(uid: string, file: File) {
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/users/profile/upload`;
+  const formData = new FormData();
+  formData.append('uid', uid);
+  formData.append('image', file);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to upload image');
+  }
+  return response.json();
+}
 export async function deleteAddress(id: string, email: string, uid?: string) {
   // Ensure we have a clean ID
   if (!id) throw new Error('Cannot delete: Missing address ID');

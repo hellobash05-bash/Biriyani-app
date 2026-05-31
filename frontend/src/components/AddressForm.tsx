@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { addAddress, updateAddress } from '@/lib/api';
 import { motion } from 'framer-motion';
-import { MapPin, Phone, User, Landmark, Building2 } from 'lucide-react';
+import { MapPin, Phone, User, Landmark, Building2, Search, Compass, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface AddressFormProps {
   initialData?: any;
-  onSuccess: () => void;
+  onSuccess: (address?: any) => void;
   onCancel: () => void;
 }
 
 export default function AddressForm({ initialData, onSuccess, onCancel }: AddressFormProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
+
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -27,7 +30,11 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
     country: 'India',
     landmark: '',
     label: 'Home',
-    is_default: false
+    is_default: false,
+    district: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+    delivery_instructions: ''
   });
 
   useEffect(() => {
@@ -43,10 +50,70 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
         country: initialData.country || 'India',
         landmark: initialData.landmark || '',
         label: initialData.label || 'Home',
-        is_default: !!(initialData.is_default || initialData.isDefault)
+        is_default: !!(initialData.is_default || initialData.isDefault),
+        district: initialData.district || '',
+        latitude: initialData.latitude || null,
+        longitude: initialData.longitude || null,
+        delivery_instructions: initialData.delivery_instructions || ''
       });
     }
   }, [initialData]);
+
+  // Google Places Autocomplete Integration
+  useEffect(() => {
+    const loadGoogleMaps = () => {
+      if (window.google) {
+        initAutocomplete();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = initAutocomplete;
+      document.head.appendChild(script);
+    };
+
+    const initAutocomplete = () => {
+      if (!searchInputRef.current || !window.google) return;
+      
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(searchInputRef.current, {
+        componentRestrictions: { country: 'in' },
+        fields: ['address_components', 'geometry']
+      });
+
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current.getPlace();
+        if (!place.geometry) return;
+
+        const components = place.address_components;
+        let street = '', city = '', state = '', pincode = '', district = '';
+
+        components.forEach((c: any) => {
+          if (c.types.includes('sublocality_level_1') || c.types.includes('route')) street = c.long_name;
+          if (c.types.includes('locality')) city = c.long_name;
+          if (c.types.includes('administrative_area_level_1')) state = c.long_name;
+          if (c.types.includes('administrative_area_level_2')) district = c.long_name;
+          if (c.types.includes('postal_code')) pincode = c.long_name;
+        });
+
+        setFormData(prev => ({
+          ...prev,
+          address_line2: street || prev.address_line2,
+          city: city || prev.city,
+          state: state || prev.state,
+          district: district || prev.district,
+          pincode: pincode || prev.pincode,
+          latitude: place.geometry.location.lat(),
+          longitude: place.geometry.location.lng()
+        }));
+        
+        toast.success('Location details populated');
+      });
+    };
+
+    loadGoogleMaps();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target as HTMLInputElement;
@@ -71,21 +138,26 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
         street: formData.address_line2,
         city: formData.city,
         state: formData.state,
+        district: formData.district,
         pincode: formData.pincode,
         country: formData.country,
         landmark: formData.landmark,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        delivery_instructions: formData.delivery_instructions,
         detail: `${formData.address_line1}, ${formData.address_line2}, ${formData.city} - ${formData.pincode}`,
         isDefault: formData.is_default
       };
 
+      let result;
       if (initialData?.id || initialData?._id) {
-        await updateAddress(initialData.id || initialData._id, user.email, addressData, user.uid);
+        result = await updateAddress(initialData.id || initialData._id, user.email, addressData, user.uid);
         toast.success('Address updated successfully');
       } else {
-        await addAddress(user.email, addressData, user.uid);
+        result = await addAddress(user.email, addressData, user.uid);
         toast.success('Address added successfully');
       }
-      onSuccess();
+      onSuccess(result);
     } catch (error: any) {
       console.error('Error saving address:', error);
       toast.error(error.message || 'Failed to save address');
@@ -130,6 +202,24 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
           </div>
         </div>
 
+        {/* Google Places Search */}
+        <div className="flex flex-col gap-2 relative">
+          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
+            <Search size={12} className="text-orange-600" /> Search Address
+          </label>
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search for your building, street, or area..."
+            className="w-full bg-orange-50/50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/10 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-xl shadow-orange-600/5"
+          />
+          {formData.latitude && (
+            <div className="absolute right-4 bottom-4 flex items-center gap-1 text-[8px] font-black text-green-500 uppercase tracking-widest">
+              <Compass size={10} /> Verified
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
@@ -163,7 +253,7 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
 
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-            <Building2 size={12} className="text-orange-600" /> House Number
+            <Building2 size={12} className="text-orange-600" /> House Number / Building
           </label>
           <input
             type="text"
@@ -193,6 +283,18 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
 
         <div className="grid grid-cols-2 gap-6">
           <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">District</label>
+            <input
+              type="text"
+              name="district"
+              value={formData.district}
+              onChange={handleChange}
+              required
+              placeholder="E.g. Ernakulam"
+              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">City</label>
             <input
               type="text"
@@ -201,6 +303,21 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="Chennai"
+              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">State</label>
+            <input
+              type="text"
+              name="state"
+              value={formData.state}
+              onChange={handleChange}
+              required
+              placeholder="Kerala"
               className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
@@ -228,6 +345,20 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
             value={formData.landmark}
             onChange={handleChange}
             placeholder="Nearby landmark"
+            className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
+            <Info size={12} className="text-orange-600" /> Delivery Instructions
+          </label>
+          <input
+            type="text"
+            name="delivery_instructions"
+            value={formData.delivery_instructions}
+            onChange={handleChange}
+            placeholder="E.g. Ring the bell twice, leave at gate"
             className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
           />
         </div>

@@ -5,13 +5,14 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUserOrders, fetchAddresses as apiFetchAddresses, deleteAddress } from '@/lib/api';
+import { fetchUserOrders, fetchAddresses as apiFetchAddresses, deleteAddress, updateProfile, uploadProfileImage } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import AddressCard from '@/components/AddressCard';
 import AddressModal from '@/components/AddressModal';
+import { Camera, Edit3, X, Save, User, Phone } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
@@ -24,42 +25,103 @@ export default function ProfilePage() {
   const [loadingData, setLoadingData] = useState(true);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [editFormData, setEditFormData] = useState({ name: '', phone: '' });
   const router = useRouter();
+
+  useEffect(() => {
+    if (profile || user) {
+      setEditFormData({
+        name: profile?.name || user?.displayName || '',
+        phone: profile?.phone || user?.phoneNumber || ''
+      });
+    }
+  }, [profile, user]);
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.uid) return;
+    
+    setIsRefreshing(true);
+    try {
+      await updateProfile(user.uid, editFormData);
+      toast.success('Profile updated');
+      setIsProfileModalOpen(false);
+      refreshProfile();
+    } catch (err: any) {
+      toast.error(err.message || 'Update failed');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.uid) return;
+
+    setIsUploading(true);
+    const id = toast.loading('Uploading photo...');
+    try {
+      const { publicUrl } = await uploadProfileImage(user.uid, file);
+      await updateProfile(user.uid, { photo_url: publicUrl });
+      toast.success('Photo updated', { id });
+      refreshProfile();
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed', { id });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const loadAddresses = async () => {
     if (!user?.email || !user?.uid) {
       console.warn('>>> [PROFILE] Cannot load addresses: Missing email or UID');
+      setLoadingAddresses(false);
       return;
     }
     
     setLoadingAddresses(true);
-    console.log('>>> [PROFILE] ULTIMATE FETCH START:', user.email, user.uid);
+    console.log(`>>> [PROFILE] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid}`);
     
     try {
       const data = await apiFetchAddresses(user.email, user.uid);
       setLastFetchRaw(data);
-      console.log('>>> [PROFILE] RAW DATA RECEIVED:', data);
+      console.log('>>> [PROFILE] ADDRESS DATA RECEIVED:', data);
       
       if (Array.isArray(data)) {
         setAddresses(data);
+        if (data.length === 0) {
+          console.log('>>> [PROFILE] NO ADDRESSES FOUND IN VAULT');
+        }
       } else {
+        console.error('>>> [PROFILE] RECEIVED INVALID DATA FORMAT:', data);
         setAddresses([]);
       }
-    } catch (err) {
-      console.error('>>> [PROFILE] FETCH FAILED:', err);
+    } catch (err: any) {
+      console.error('>>> [PROFILE] FETCH FAILED:', err.message);
+      toast.error('Failed to sync addresses');
     } finally {
       setLoadingAddresses(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       loadAddresses();
     }
-  }, [user]);
+  }, [user, authLoading]);
+
+  // Sync addresses from profile if they exist and addresses state is empty
+  useEffect(() => {
+    if (addresses.length === 0 && profile?.addresses?.length > 0) {
+      console.log('>>> [PROFILE] SYNCING ADDRESSES FROM PROFILE STATE');
+      setAddresses(profile.addresses);
+    }
+  }, [profile, addresses.length]);
 
   useEffect(() => {
     const checkDb = async () => {
@@ -202,21 +264,37 @@ export default function ProfilePage() {
             </section>
           )}
 
-          <section className="flex flex-col md:flex-row items-center gap-8 premium-card p-10 rounded-[3rem] border border-stone-200 dark:border-white/5 bg-white dark:bg-stone-900/40">
-            <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20 shrink-0 overflow-hidden">
-              {profile?.photo_url || user?.photoURL ? (
-                <img src={profile?.photo_url || user?.photoURL} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                profile?.name?.charAt(0) || user?.displayName?.charAt(0) || 'A'
-              )}
+          <section className="flex flex-col md:flex-row items-center gap-8 premium-card p-10 rounded-[3rem] border border-stone-200 dark:border-white/5 bg-white dark:bg-stone-900/40 relative overflow-hidden">
+            <div className="relative group">
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-tr from-orange-600 to-orange-400 rounded-full flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-2xl shadow-orange-600/20 shrink-0 overflow-hidden">
+                {profile?.photo_url || user?.photoURL ? (
+                  <img src={profile?.photo_url || user?.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  profile?.name?.charAt(0) || user?.displayName?.charAt(0) || 'A'
+                )}
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
+                <Camera className="text-white" size={24} />
+                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+              </label>
             </div>
             <div className="flex-1 overflow-hidden w-full text-center md:text-left">
-              <h1 className="text-3xl md:text-5xl font-black text-stone-900 dark:text-white uppercase tracking-tight truncate w-full">
-                {user?.displayName || profile?.name || 'Royale Member'}
-              </h1>
-              <p className="text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest text-[10px] truncate w-full">
-                {user?.phoneNumber || profile?.phone || '+91 00000 00000'} • {user?.email || profile?.email}
-              </p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl md:text-5xl font-black text-stone-900 dark:text-white uppercase tracking-tight truncate w-full">
+                    {profile?.name || user?.displayName || 'Royale Member'}
+                  </h1>
+                  <p className="text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest text-[10px] truncate w-full">
+                    {profile?.phone || user?.phoneNumber || '+91 00000 00000'} • {user?.email || profile?.email}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-600 hover:text-white transition-all shadow-xl shadow-stone-900/10"
+                >
+                  <Edit3 size={14} /> Edit Profile
+                </button>
+              </div>
             </div>
           </section>
 
@@ -307,9 +385,9 @@ export default function ProfilePage() {
                     <div className="inline-block w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-4">Accessing Vault...</p>
                   </div>
-                ) : (addresses.length > 0 || (profile?.addresses && profile.addresses.length > 0)) ? (
+                ) : addresses.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {(addresses.length > 0 ? addresses : profile?.addresses || []).map((addr: any, idx: number) => (
+                    {addresses.map((addr: any, idx: number) => (
                       <AddressCard
                         key={addr.id || addr._id || idx}
                         address={addr}
@@ -362,6 +440,41 @@ export default function ProfilePage() {
         }} 
         initialData={editingAddress}
       />
+      
+      {/* Profile Edit Modal */}
+      <AnimatePresence>
+        {isProfileModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 overflow-y-auto">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsProfileModalOpen(false)} className="absolute inset-0 bg-stone-950/80 backdrop-blur-xl" />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-lg z-10 bg-white dark:bg-stone-900 rounded-[3rem] p-10 shadow-2xl border border-stone-100 dark:border-white/5">
+              <header className="mb-10 flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-tighter">Edit Profile</h3>
+                  <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] mt-1 italic">Update your personal vault details.</p>
+                </div>
+                <button onClick={() => setIsProfileModalOpen(false)} className="text-stone-400 hover:text-stone-600 transition-colors"><X size={24} /></button>
+              </header>
+              <form onSubmit={handleProfileUpdate} className="space-y-8">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
+                    <User size={12} className="text-orange-600" /> Full Name
+                  </label>
+                  <input type="text" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} required className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
+                    <Phone size={12} className="text-orange-600" /> Phone Number
+                  </label>
+                  <input type="tel" value={editFormData.phone} onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })} required className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner" />
+                </div>
+                <button type="submit" disabled={isRefreshing} className="w-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 py-5 rounded-[2rem] font-black text-[10px] shadow-2xl shadow-stone-900/20 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                  <Save size={14} /> {isRefreshing ? 'Saving...' : 'Save Changes'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

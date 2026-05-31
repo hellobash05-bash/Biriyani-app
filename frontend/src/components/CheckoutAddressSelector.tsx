@@ -65,10 +65,13 @@ export default function CheckoutAddressSelector({
     setShowForm(true);
   };
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (newAddress?: any) => {
     setShowForm(false);
     setEditingAddress(null);
     loadAddresses();
+    if (newAddress) {
+      onAddressSelect(newAddress);
+    }
   };
 
   const handleFormCancel = () => {

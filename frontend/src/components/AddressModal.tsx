@@ -19,7 +19,7 @@ export default function AddressModal({ isOpen, onClose, initialData }: AddressMo
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
-            onClick={onClose}
+            onClick={() => onClose()}
             className="absolute inset-0 bg-stone-950/80 backdrop-blur-xl"
           />
           <motion.div 
@@ -30,8 +30,8 @@ export default function AddressModal({ isOpen, onClose, initialData }: AddressMo
           >
             <AddressForm 
               initialData={initialData}
-              onSuccess={onClose}
-              onCancel={onClose}
+              onSuccess={() => onClose()}
+              onCancel={() => onClose()}
             />
           </motion.div>
         </div>
