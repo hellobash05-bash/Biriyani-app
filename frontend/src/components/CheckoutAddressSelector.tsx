@@ -174,9 +174,44 @@ export default function CheckoutAddressSelector({
               onCancel={handleFormCancel}
             />
           </motion.div>
+        ) : addresses.length === 0 ? (
+          <motion.div
+            key="empty-vault"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-8"
+          >
+            <div className="grid grid-cols-1 gap-6 opacity-20 grayscale pointer-events-none">
+              <AddressCard
+                address={{
+                  label: 'Home',
+                  full_name: 'Royale Member',
+                  phone: '+91 XXXXX XXXXX',
+                  house: 'Palace No. 777',
+                  street: 'Emerald Street, Gourmet Valley',
+                  city: 'Foodie City',
+                  pincode: '400001',
+                  is_default: true
+                }}
+                onEdit={() => {}}
+                onDelete={() => {}}
+              />
+            </div>
+            <div className="bg-stone-50 dark:bg-white/5 rounded-[3rem] p-12 text-center border border-dashed border-stone-200 dark:border-white/10">
+              <MapPin size={40} className="mx-auto text-orange-600/30 mb-4" />
+              <p className="text-stone-900 dark:text-white font-black uppercase tracking-[0.2em] text-[10px] mb-2">Your Vault is Empty</p>
+              <p className="text-stone-500 font-bold uppercase tracking-widest text-[8px] mb-8 italic">Add your first destination to begin your feast.</p>
+              <button
+                onClick={() => { setActiveLabel(null); setShowForm(true); }}
+                className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:bg-orange-600 hover:text-white transition-all"
+              >
+                Add First Destination
+              </button>
+            </div>
+          </motion.div>
         ) : filteredAddresses.length === 0 ? (
           <motion.div
-            key="empty"
+            key="empty-filter"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="bg-stone-50 dark:bg-white/5 rounded-[3rem] p-12 text-center border border-dashed border-stone-200 dark:border-white/10"
@@ -187,7 +222,7 @@ export default function CheckoutAddressSelector({
               onClick={() => { setActiveLabel(null); setShowForm(true); }}
               className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl"
             >
-              Add First Destination
+              Add New Destination
             </button>
           </motion.div>
         ) : (

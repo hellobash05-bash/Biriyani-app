@@ -408,13 +408,34 @@ export default function ProfilePage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-stone-50/50 dark:bg-white/5 p-24 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center gap-8">
-                      <div className="w-24 h-24 bg-orange-600/5 rounded-full flex items-center justify-center text-orange-600/20">
-                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative group/empty">
+                      {/* Ghost Preview Card */}
+                      <div className="opacity-20 grayscale pointer-events-none transform scale-[0.98] origin-left transition-all duration-700 group-hover/empty:opacity-30 group-hover/empty:scale-100">
+                        <AddressCard
+                          address={{
+                            label: 'Home',
+                            full_name: 'Royale Member',
+                            phone: '+91 XXXXX XXXXX',
+                            house: 'Palace No. 777',
+                            street: 'Emerald Street, Gourmet Valley',
+                            city: 'Foodie City',
+                            pincode: '400001',
+                            is_default: true
+                          }}
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                        />
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <p className="text-stone-900 dark:text-white font-black uppercase tracking-[0.2em] text-xs">Your Vault is Empty</p>
-                        <p className="text-stone-500 font-bold uppercase tracking-widest text-[9px] italic">Add a destination below to begin your journey.</p>
+                      
+                      {/* Empty State Call to Action */}
+                      <div className="bg-stone-50/50 dark:bg-white/5 p-12 rounded-[3rem] border border-dashed border-stone-200 dark:border-white/10 text-center flex flex-col items-center justify-center gap-6 group-hover/empty:border-orange-500/30 transition-all duration-500">
+                        <div className="w-16 h-16 bg-orange-600/5 rounded-full flex items-center justify-center text-orange-600/20 group-hover/empty:scale-110 group-hover/empty:bg-orange-600/10 group-hover/empty:text-orange-600/40 transition-all">
+                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <p className="text-stone-900 dark:text-white font-black uppercase tracking-[0.2em] text-[10px]">Your Vault is Empty</p>
+                          <p className="text-stone-500 font-bold uppercase tracking-widest text-[8px] italic">No destinations secured yet.</p>
+                        </div>
                       </div>
                     </div>
                   )}
