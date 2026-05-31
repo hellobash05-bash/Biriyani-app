@@ -126,31 +126,26 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
 
   // 1. SAFE FETCH BY INTERNAL ID
   try {
-    const { data } = await sb.from('addresses').select('*').in('user_id', userIds);
+    const { data } = await sb.from('addresses').select('id, user_id, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('user_id', userIds);
     (data || []).forEach(a => uniqueMap.set(a.id, a));
   } catch (e) { console.warn('>>> [BRIDGE] ID Fetch skipped:', e.message); }
 
   // 2. SAFE FETCH BY FIREBASE UID
   if (firebaseUids.length > 0) {
     try {
-      const { data } = await sb.from('addresses').select('*').in('firebase_uid', firebaseUids);
+      const { data } = await sb.from('addresses').select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('firebase_uid', firebaseUids);
       (data || []).forEach(a => uniqueMap.set(a.id, a));
     } catch (e) { console.warn('>>> [BRIDGE] UID Fetch skipped:', e.message); }
   }
 
-  // 3. SAFE FETCH BY EMAIL (Highly resilient check)
+  // 3. SAFE FETCH BY EMAIL
   if (searchEmails.length > 0) {
-    // Try 'email' column first
-    const { data: eData, error: eErr } = await sb.from('addresses').select('*').in('email', searchEmails);
-    if (!eErr && eData) {
-      eData.forEach(a => uniqueMap.set(a.id, a));
-    } else {
-      // Fallback: try 'user_email' only if 'email' failed (might be an older or different schema)
-      const { data: ueData, error: ueErr } = await sb.from('addresses').select('*').in('user_email', searchEmails);
-      if (!ueErr && ueData) {
-        ueData.forEach(a => uniqueMap.set(a.id, a));
+    try {
+      const { data, error } = await sb.from('addresses').select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('email', searchEmails);
+      if (!error && data) {
+        data.forEach(a => uniqueMap.set(a.id, a));
       }
-    }
+    } catch (e) { console.warn('>>> [BRIDGE] Email Fetch skipped:', e.message); }
   }
 
   const allResults = Array.from(uniqueMap.values());
@@ -205,7 +200,7 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
        await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
     }
 
-    const payload = {
+    const rawPayload = {
       label, 
       name, 
       full_name: name,
@@ -225,13 +220,17 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
       firebase_uid: primaryUid
     };
 
-    let { data: updated, error } = await req.supabase.from('addresses').update(payload).eq('id', id).select().maybeSingle();
+    // Strict Whitelist
+    const whitelist = ['user_id', 'firebase_uid', 'label', 'name', 'full_name', 'phone', 'house', 'address_line1', 'street', 'address_line2', 'city', 'state', 'pincode', 'landmark', 'district', 'latitude', 'longitude', 'delivery_instructions', 'detail', 'is_default'];
+    const payload = {};
+    whitelist.forEach(k => { if (rawPayload[k] !== undefined) payload[k] = rawPayload[k]; });
+
+    let { data: updated, error } = await req.supabase.from('addresses').update(payload).eq('id', id).select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
 
     if (error && error.code === '42703') {
-      const cleanPayload = { ...payload };
-      ['firebase_uid', 'full_name', 'address_line1', 'address_line2', 'district', 'latitude', 'longitude', 'delivery_instructions', 'state'].forEach(k => delete cleanPayload[k]);
-      
-      const fallback = await req.supabase.from('addresses').update(cleanPayload).eq('id', id).select().maybeSingle();
+      // Extreme fallback
+      const basicPayload = { label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
+      const fallback = await req.supabase.from('addresses').update(basicPayload).eq('id', id).select('id, user_id, label, name, phone, house, street, city, pincode, detail, is_default').maybeSingle();
       updated = fallback.data;
       error = fallback.error;
     }
@@ -267,7 +266,7 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
        await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
     }
 
-    const payload = { 
+    const rawPayload = { 
       user_id: primaryId,
       firebase_uid: primaryUid,
       label, 
@@ -287,13 +286,17 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
       is_default: !!isDefault 
     };
 
-    let { data: newAddress, error } = await req.supabase.from('addresses').insert([payload]).select().maybeSingle();
+    // Strict Whitelist to prevent "user_email" or other non-existent column errors
+    const whitelist = ['user_id', 'firebase_uid', 'label', 'name', 'full_name', 'phone', 'house', 'address_line1', 'street', 'address_line2', 'city', 'state', 'pincode', 'landmark', 'district', 'latitude', 'longitude', 'delivery_instructions', 'detail', 'is_default'];
+    const payload = {};
+    whitelist.forEach(k => { if (rawPayload[k] !== undefined) payload[k] = rawPayload[k]; });
+
+    let { data: newAddress, error } = await req.supabase.from('addresses').insert([payload]).select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
 
     if (error && error.code === '42703') { 
-      const cleanPayload = { ...payload };
-      ['firebase_uid', 'full_name', 'address_line1', 'address_line2', 'district', 'latitude', 'longitude', 'delivery_instructions', 'state'].forEach(k => delete cleanPayload[k]);
-      
-      const fallback = await req.supabase.from('addresses').insert([cleanPayload]).select().maybeSingle();
+      // Extreme fallback: only very basic columns
+      const basicPayload = { user_id: primaryId, label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
+      const fallback = await req.supabase.from('addresses').insert([basicPayload]).select('id, user_id, label, name, phone, house, street, city, pincode, detail, is_default').maybeSingle();
       newAddress = fallback.data;
       error = fallback.error;
     }
@@ -476,4 +479,4 @@ httpServer.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
 
-// Trigger redeploy at 1780213000
+// Trigger redeploy at 1780238100
