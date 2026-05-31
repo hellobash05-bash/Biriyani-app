@@ -51,13 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V9.9)
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V10.0)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '9.9.0-ZERO-FRICTION', 
+    version: '10.0.0-ULTIMATE', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'ZERO-FRICTION IDENTITY AND AUTO-REPAIR ENABLED.'
+    msg: 'ULTIMATE VISIBILITY SYSTEM ONLINE.'
   });
 });
 
@@ -65,39 +65,39 @@ app.get('/api/version', (req, res) => {
 app.set('case sensitive routing', false);
 
 // --- RESILIENT IDENTITY RESOLVER ---
-const resolvePrimaryUserId = async (sb, email, uid = null) => {
+const resolvePrimaryUser = async (sb, email, uid = null) => {
   if (!email && !uid) return null;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
   
   // 1. Try to find existing
-  let { data: users } = await sb.from('users').select('id').or(`uid.eq.${uid},email.ilike.${normalizedEmail}`);
+  let { data: users } = await sb.from('users').select('id, email, uid').or(`uid.eq.${uid},email.ilike.${normalizedEmail}`);
   
-  // 2. If not found, AUTO-SYNC (Zero-Friction)
+  // 2. If not found, AUTO-SYNC
   if (!users || users.length === 0) {
-    console.log(`>>> [IDENTITY] Auto-syncing missing user: ${normalizedEmail}`);
+    console.log(`>>> [IDENTITY] Auto-syncing: ${normalizedEmail}`);
     const { data: newUser } = await sb.from('users').upsert({
       uid: uid || `shadow-${Date.now()}`,
       email: normalizedEmail,
       name: 'Royale Member',
       last_login: new Date().toISOString()
-    }, { onConflict: 'email' }).select('id').single();
-    return newUser?.id;
+    }, { onConflict: 'email' }).select('id, email, uid').single();
+    return newUser;
   }
   
-  return users[0].id;
+  return users[0];
 };
 
 // --- ROBUST HELPER ---
 const getFormattedAddresses = async (sb, email, uid = null) => {
-  const userId = await resolvePrimaryUserId(sb, email, uid);
-  if (!userId) return [];
+  const user = await resolvePrimaryUser(sb, email, uid);
+  if (!user) return [];
 
-  console.log(`>>> [HELPER] Fetching for User UUID: ${userId}`);
+  console.log(`>>> [HELPER] Fetching for User UUID: ${user.id} (${user.email})`);
 
   try {
     const { data, error } = await sb.from('addresses')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -108,7 +108,8 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
       id: addr.id,
       _id: addr.id,
       isDefault: !!addr.is_default,
-      detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`
+      detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`,
+      system_signature: `V10-${user.id.slice(0,4)}` 
     }));
   } catch (err) {
     console.error('❌ [HELPER] Crash:', err.message);
@@ -120,12 +121,12 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
 app.delete('/api/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email, uid } = req.query;
-  const userId = await resolvePrimaryUserId(req.supabase, email, uid);
+  const user = await resolvePrimaryUser(req.supabase, email, uid);
   
-  if (!userId) return res.status(404).json({ message: 'User verification failed' });
+  if (!user) return res.status(404).json({ message: 'User verification failed' });
 
   try {
-    const { error } = await req.supabase.from('addresses').delete().eq('id', id).eq('user_id', userId);
+    const { error } = await req.supabase.from('addresses').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
     res.json({ success: true, message: 'Destination removed' });
   } catch (err) {
@@ -137,18 +138,18 @@ app.delete('/api/address/:id', async (req, res) => {
 app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'], async (req, res) => {
   const { id } = req.params;
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  const userId = await resolvePrimaryUserId(req.supabase, email, uid);
+  const user = await resolvePrimaryUser(req.supabase, email, uid);
 
-  if (!userId) return res.status(404).json({ message: 'User not found' });
+  if (!user) return res.status(404).json({ message: 'User not found' });
 
   try {
-    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', userId);
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
     const { data: updated, error } = await req.supabase.from('addresses').update({
       label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
-      is_default: !!isDefault, user_id: userId
-    }).eq('id', id).eq('user_id', userId).select().maybeSingle();
+      is_default: !!isDefault, user_id: user.id
+    }).eq('id', id).eq('user_id', user.id).select().maybeSingle();
 
     if (error) throw error;
     res.json(updated);
@@ -168,19 +169,20 @@ app.get(['/api/users/address', '/api/user/address', '/api/address'], async (req,
 // POST Address
 app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req, res) => {
   const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
-  const userId = await resolvePrimaryUserId(req.supabase, email, uid);
+  const user = await resolvePrimaryUser(req.supabase, email, uid);
   
-  if (!userId) return res.status(404).json({ message: 'User lookup failed' });
+  if (!user) return res.status(404).json({ message: 'User lookup failed' });
 
   try {
-    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', userId);
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
 
-    const { data: newAddress, error } = await req.supabase.from('addresses').insert([{ 
-      user_id: userId, label, name,
-      phone, house, street, city, pincode, landmark, 
+    const insertData = { 
+      user_id: user.id, label, name, phone, house, street, city, pincode, landmark, 
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault 
-    }]).select().maybeSingle();
+    };
+
+    const { data: newAddress, error } = await req.supabase.from('addresses').insert([insertData]).select().maybeSingle();
 
     if (error) throw error;
     res.json(newAddress);
