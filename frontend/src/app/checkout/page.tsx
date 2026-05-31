@@ -120,16 +120,24 @@ export default function CheckoutPage() {
 
           <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-5 gap-12">
             {/* Delivery Details Section */}
-            <section className="lg:col-span-3 flex flex-col gap-8">
-               <h2 className="text-xl font-black text-foreground uppercase tracking-widest flex items-center gap-4">
-                 <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
-                 DELIVERY DETAILS
-               </h2>
+            <section className="lg:col-span-3 flex flex-col gap-10">
+               <div className="flex flex-col gap-2">
+                 <h2 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-4">
+                   <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
+                   Delivery Details
+                 </h2>
+                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-12 italic">Select your preferred delivery vault</p>
+               </div>
 
-               <CheckoutAddressSelector 
-                 onAddressSelect={(addr) => setSelectedAddress(addr)}
-                 selectedAddressId={selectedAddress?.id || selectedAddress?._id}
-               />
+               <div className="bg-white/30 dark:bg-stone-900/20 backdrop-blur-md rounded-[4rem] p-8 md:p-12 border border-stone-100 dark:border-white/5 shadow-2xl shadow-stone-900/5">
+                 <CheckoutAddressSelector 
+                   onAddressSelect={(addr) => {
+                     console.log('>>> [CHECKOUT] ADDRESS SELECTED:', addr.id);
+                     setSelectedAddress(addr);
+                   }}
+                   selectedAddressId={selectedAddress?.id || selectedAddress?._id}
+                 />
+               </div>
             </section>
 
             {/* Order Summary */}

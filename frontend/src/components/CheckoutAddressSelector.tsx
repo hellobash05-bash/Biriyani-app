@@ -26,19 +26,29 @@ export default function CheckoutAddressSelector({
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
   const loadAddresses = useCallback(async () => {
-    if (!user?.email || !user?.uid) return;
+    if (!user?.email || !user?.uid) {
+      console.warn('>>> [CHECKOUT] Cannot load addresses: User not authenticated');
+      setLoading(false);
+      return;
+    }
     
+    console.log(`>>> [CHECKOUT] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid}`);
     try {
       const data = await fetchAddresses(user.email, user.uid);
-      setAddresses(data || []);
+      console.log('>>> [CHECKOUT] ADDRESS DATA RECEIVED:', data);
       
-      // Prompt 3.1: If a 'Default' address exists, automatically fill the delivery form
-      if (!selectedAddressId && data && data.length > 0) {
-        const defaultAddr = data.find((a: any) => a.is_default || a.isDefault) || data[0];
+      const addrList = Array.isArray(data) ? data : [];
+      setAddresses(addrList);
+      
+      // Prompt 3.1: Automatically select default address
+      if (!selectedAddressId && addrList.length > 0) {
+        const defaultAddr = addrList.find((a: any) => a.is_default || a.isDefault) || addrList[0];
+        console.log('>>> [CHECKOUT] AUTO-SELECTING ADDRESS:', defaultAddr.id);
         onAddressSelect(defaultAddr);
       }
     } catch (error: any) {
-      console.error('Error fetching addresses during checkout:', error);
+      console.error('>>> [CHECKOUT] FETCH FAILED:', error.message);
+      toast.error('Failed to load saved destinations');
     } finally {
       setLoading(false);
     }
