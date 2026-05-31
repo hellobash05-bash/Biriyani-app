@@ -42,71 +42,85 @@ export default function AddressCard({
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className={`relative group rounded-[3rem] p-8 transition-all duration-500 border overflow-hidden ${
+      whileHover={{ y: -8 }}
+      className={`relative group rounded-[4rem] p-10 transition-all duration-700 border overflow-hidden backdrop-blur-3xl ${
         isSelected 
-          ? 'bg-orange-600/5 border-orange-500/50 shadow-2xl shadow-orange-600/10' 
-          : 'bg-white dark:bg-stone-900/40 border-stone-100 dark:border-white/5 hover:border-orange-500/20'
+          ? 'bg-orange-600/5 border-orange-500/50 shadow-2xl shadow-orange-600/20' 
+          : 'bg-white/60 dark:bg-stone-900/40 border-stone-200 dark:border-white/5 hover:border-orange-500/30 hover:bg-white/80 dark:hover:bg-stone-900/60 shadow-xl'
       }`}
     >
       {/* Background Decorative Gradient */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600/5 blur-[60px] rounded-full pointer-events-none group-hover:bg-orange-600/10 transition-colors" />
+      <div className="absolute top-0 right-0 w-48 h-48 bg-orange-600/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-orange-600/10 transition-colors duration-700" />
 
       {(address.is_default || address.isDefault) && (
-        <div className="absolute top-6 right-6 flex items-center gap-2">
-          <div className="bg-green-500/10 text-green-500 text-[8px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border border-green-500/20 flex items-center gap-1.5">
-            <CheckCircle2 size={10} /> Default Vault
+        <div className="absolute top-8 right-8 flex items-center gap-2">
+          <div className="bg-green-500/10 text-green-500 text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2 rounded-2xl border border-green-500/20 flex items-center gap-2 shadow-sm">
+            <CheckCircle2 size={12} /> Default Vault
           </div>
         </div>
       )}
       
       {isSelected && (
-        <div className="absolute -top-3 -right-3 w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-2xl shadow-orange-600/40 z-10 scale-110">
-          <CheckCircle2 size={24} />
+        <div className="absolute -top-4 -right-4 w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-2xl shadow-orange-600/40 z-10 scale-110 border-4 border-white dark:border-stone-900">
+          <CheckCircle2 size={32} />
         </div>
       )}
 
-      <div className="flex items-start gap-8">
-        <div className={`p-5 rounded-[2.2rem] shrink-0 shadow-lg transition-transform group-hover:scale-110 duration-500 ${getLabelColor(address.label)}`}>
+      <div className="flex flex-col md:flex-row items-start gap-8">
+        <div className={`p-6 rounded-[2.5rem] shrink-0 shadow-2xl transition-all group-hover:scale-110 group-hover:rotate-3 duration-700 ${getLabelColor(address.label)}`}>
           {getIcon(address.label)}
         </div>
         
-        <div className="flex-1 overflow-hidden">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60">
-              {address.label || 'Destination'}
-            </span>
-            {address.latitude && (
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" title="Coordinates Verified" />
-            )}
+        <div className="flex-1 overflow-hidden space-y-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500/60">
+                {address.label || 'Destination'}
+              </span>
+              {address.latitude && (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-[8px] font-black text-green-600 uppercase tracking-widest">Secured</span>
+                </div>
+              )}
+            </div>
+            
+            <h4 className="text-3xl font-black text-stone-900 dark:text-white uppercase tracking-tighter leading-none group-hover:text-orange-600 transition-colors duration-500 truncate">
+              {address.full_name || address.name || 'Royale Member'}
+            </h4>
           </div>
           
-          <h4 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-tight leading-none mb-2 truncate group-hover:text-orange-600 transition-colors">
-            {address.full_name || address.name || 'Royale Member'}
-          </h4>
-          
-          <div className="flex items-center gap-4 mb-6">
-            <p className="text-stone-500 dark:text-stone-400 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-              <Phone size={12} className="text-orange-600" /> {address.phone}
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="px-4 py-2 bg-stone-50 dark:bg-white/5 rounded-2xl border border-stone-100 dark:border-white/5 flex items-center gap-3">
+              <Phone size={14} className="text-orange-600" />
+              <span className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-widest leading-none">
+                {address.phone}
+              </span>
+            </div>
           </div>
           
-          <div className="relative">
-            <div className="absolute left-0 top-0 bottom-0 w-[1.5px] bg-gradient-to-b from-orange-600/40 via-stone-100 dark:via-white/5 to-transparent" />
-            <div className="pl-6 space-y-1 py-1">
-              <p className="text-sm font-bold text-stone-900 dark:text-white line-clamp-1 italic tracking-tight opacity-90">
+          <div className="relative pl-8 py-2">
+            <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-orange-600/60 via-stone-200 dark:via-white/10 to-transparent rounded-full" />
+            <div className="space-y-1">
+              <p className="text-base font-bold text-stone-900 dark:text-white italic tracking-tight opacity-95">
                 {address.house || address.address_line1}
               </p>
-              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 line-clamp-1">
+              <p className="text-sm font-medium text-stone-500 dark:text-stone-400 line-clamp-1">
                 {address.street || address.address_line2}
               </p>
-              <p className="uppercase tracking-[0.15em] text-[10px] font-black text-stone-400 mt-2">
-                {address.city}, {address.district ? `${address.district}, ` : ''}{address.state || ''} <span className="text-orange-600">{address.pincode}</span>
-              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-4">
+                <span className="uppercase tracking-[0.2em] text-[10px] font-black text-stone-400">
+                  {address.city}, {address.district ? `${address.district}, ` : ''}{address.state || ''}
+                </span>
+                <span className="px-3 py-1 bg-orange-600 text-white rounded-lg text-[10px] font-black tracking-widest shadow-lg shadow-orange-600/20">
+                  {address.pincode}
+                </span>
+              </div>
+              
               {address.delivery_instructions && (
-                <div className="mt-4 flex items-start gap-2 bg-stone-50 dark:bg-white/5 p-3 rounded-2xl border border-stone-100 dark:border-white/5">
-                  <Info size={12} className="text-orange-600 shrink-0 mt-0.5" />
-                  <p className="text-[10px] font-medium text-stone-500 dark:text-stone-400 leading-relaxed italic">
+                <div className="mt-6 flex items-start gap-3 bg-orange-600/5 p-4 rounded-[2rem] border border-orange-600/10 group-hover:bg-orange-600/10 transition-colors duration-500">
+                  <Info size={14} className="text-orange-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-stone-500 dark:text-stone-400 leading-relaxed italic">
                     "{address.delivery_instructions}"
                   </p>
                 </div>
@@ -116,34 +130,34 @@ export default function AddressCard({
         </div>
       </div>
 
-      <div className="mt-10 flex items-center justify-between gap-4 pt-8 border-t border-stone-100 dark:border-white/5">
+      <div className="mt-12 flex items-center justify-between gap-4 pt-10 border-t border-stone-100 dark:border-white/5">
         <div className="flex gap-4">
           <button
-            onClick={() => onEdit(address)}
-            className="w-14 h-14 rounded-3xl bg-stone-50 dark:bg-white/5 text-stone-400 hover:text-orange-600 hover:bg-orange-600/10 transition-all flex items-center justify-center shadow-sm group/btn"
+            onClick={(e) => { e.stopPropagation(); onEdit(address); }}
+            className="w-16 h-16 rounded-[2rem] bg-stone-50 dark:bg-white/5 text-stone-400 hover:text-orange-600 hover:bg-orange-600/10 transition-all flex items-center justify-center shadow-sm group/btn border border-transparent hover:border-orange-500/20"
             title="Edit Destination"
           >
-            <Edit3 size={18} className="group-hover/btn:scale-110 transition-transform" />
+            <Edit3 size={20} className="group-hover/btn:scale-110 group-hover/btn:rotate-12 transition-all" />
           </button>
           <button
-            onClick={() => onDelete(address.id || address._id)}
-            className="w-14 h-14 rounded-3xl bg-stone-50 dark:bg-white/5 text-stone-400 hover:text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center shadow-sm group/btn"
+            onClick={(e) => { e.stopPropagation(); onDelete(address.id || address._id); }}
+            className="w-16 h-16 rounded-[2rem] bg-stone-50 dark:bg-white/5 text-stone-400 hover:text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center shadow-sm group/btn border border-transparent hover:border-red-500/20"
             title="Remove Destination"
           >
-            <Trash2 size={18} className="group-hover/btn:scale-110 transition-transform" />
+            <Trash2 size={20} className="group-hover/btn:scale-110 group-hover/btn:-rotate-12 transition-all" />
           </button>
         </div>
 
         {showDeliverHere && (
           <button
-            onClick={() => onSelect?.(address)}
-            className={`px-10 py-5 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] transition-all shadow-xl ${
+            onClick={(e) => { e.stopPropagation(); onSelect?.(address); }}
+            className={`px-12 py-6 rounded-[2.5rem] font-black text-[10px] uppercase tracking-[0.4em] transition-all shadow-2xl ${
               isSelected
-                ? 'bg-orange-600 text-white shadow-orange-600/30 ring-4 ring-orange-500/10'
-                : 'bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:bg-orange-600 hover:text-white shadow-stone-900/10'
+                ? 'bg-orange-600 text-white shadow-orange-600/40 ring-4 ring-orange-500/10'
+                : 'bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:bg-orange-600 hover:text-white shadow-stone-900/20 scale-100 hover:scale-105'
             }`}
           >
-            {isSelected ? 'SELECTED' : 'DELIVER HERE'}
+            {isSelected ? 'SECURED' : 'SELECT VAULT'}
           </button>
         )}
       </div>

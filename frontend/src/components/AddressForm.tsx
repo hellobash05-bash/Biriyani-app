@@ -170,30 +170,37 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white dark:bg-stone-900/60 rounded-[3rem] p-10 shadow-2xl border border-stone-100 dark:border-white/5"
+      className="bg-white/60 dark:bg-stone-900/60 rounded-[4rem] p-12 shadow-2xl border border-stone-200 dark:border-white/5 backdrop-blur-3xl relative overflow-hidden"
     >
-      <header className="mb-10">
-        <h3 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-tighter">
-          {initialData ? 'Refine Destination' : 'New Destination'}
-        </h3>
-        <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] mt-1 italic">
-          Delivery details for your Royale Selection.
+      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/5 blur-[80px] -z-10" />
+      
+      <header className="mb-12">
+        <div className="flex items-center gap-4 mb-2">
+          <span className="w-10 h-1 bg-orange-600 rounded-full"></span>
+          <h3 className="text-3xl font-black text-stone-900 dark:text-white uppercase tracking-tighter">
+            {initialData ? 'Refine Vault' : 'New Sanctuary'}
+          </h3>
+        </div>
+        <p className="text-stone-500 font-bold uppercase tracking-[0.2em] text-[10px] ml-14 italic">
+          Delivery coordinates for your Royale Selection.
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="flex flex-col gap-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Label</label>
-          <div className="flex gap-2">
+      <form onSubmit={handleSubmit} className="space-y-10">
+        <div className="flex flex-col gap-4">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+            <Sparkles size={12} className="text-orange-600" /> Destination Label
+          </label>
+          <div className="flex gap-3">
             {['Home', 'Office', 'Other'].map((l) => (
               <button
                 key={l}
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, label: l }))}
-                className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`flex-1 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 border-2 ${
                   formData.label === l 
-                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' 
-                    : 'bg-stone-50 dark:bg-white/5 text-stone-400 border border-transparent'
+                    ? 'bg-orange-600 text-white border-orange-600 shadow-xl shadow-orange-600/20' 
+                    : 'bg-stone-50/50 dark:bg-white/5 text-stone-400 border-transparent hover:border-orange-500/20'
                 }`}
               >
                 {l}
@@ -203,27 +210,32 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
         </div>
 
         {/* Google Places Search */}
-        <div className="flex flex-col gap-2 relative">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-            <Search size={12} className="text-orange-600" /> Search Address
+        <div className="flex flex-col gap-3 relative">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+            <Search size={12} className="text-orange-600" /> Universal Search
           </label>
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search for your building, street, or area..."
-            className="w-full bg-orange-50/50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/10 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-xl shadow-orange-600/5"
-          />
-          {formData.latitude && (
-            <div className="absolute right-4 bottom-4 flex items-center gap-1 text-[8px] font-black text-green-500 uppercase tracking-widest">
-              <Compass size={10} /> Verified
-            </div>
-          )}
+          <div className="relative group">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search for your building, street, or area..."
+              className="w-full bg-orange-50/30 dark:bg-orange-500/5 border-2 border-orange-100/50 dark:border-orange-500/10 p-6 rounded-[2.5rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-xl shadow-orange-600/5 placeholder:text-stone-400"
+            />
+            {formData.latitude && (
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-full border border-green-500/20">
+                <Compass size={14} className="text-green-500 animate-spin-slow" />
+                <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Locked</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-              <User size={12} className="text-orange-600" /> Full Name
+        <div className="h-px bg-gradient-to-r from-stone-100 dark:from-white/5 to-transparent mx-4" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+              <User size={12} className="text-orange-600" /> Royale Name
             </label>
             <input
               type="text"
@@ -232,12 +244,12 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="E.g. John Wick"
-              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-              <Phone size={12} className="text-orange-600" /> Phone
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+              <Phone size={12} className="text-orange-600" /> Secure Contact
             </label>
             <input
               type="tel"
@@ -246,14 +258,14 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="+91 XXXXX XXXXX"
-              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-            <Building2 size={12} className="text-orange-600" /> House Number / Building
+        <div className="flex flex-col gap-3">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+            <Building2 size={12} className="text-orange-600" /> Mansion / Building
           </label>
           <input
             type="text"
@@ -261,14 +273,14 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
             value={formData.address_line1}
             onChange={handleChange}
             required
-            placeholder="E.g. Flat 402, Royale residency"
-            className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+            placeholder="E.g. Flat 402, Royale Residency"
+            className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-            <MapPin size={12} className="text-orange-600" /> Street / Area
+        <div className="flex flex-col gap-3">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+            <MapPin size={12} className="text-orange-600" /> Heritage Street
           </label>
           <input
             type="text"
@@ -276,14 +288,14 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
             value={formData.address_line2}
             onChange={handleChange}
             required
-            placeholder="E.g. Heritage Square, Downtown"
-            className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+            placeholder="E.g. Emerald Valley, Downtown"
+            className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">District</label>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6">District</label>
             <input
               type="text"
               name="district"
@@ -291,11 +303,11 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="E.g. Ernakulam"
-              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">City</label>
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6">City</label>
             <input
               type="text"
               name="city"
@@ -303,14 +315,14 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="Chennai"
-              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">State</label>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6">State</label>
             <input
               type="text"
               name="state"
@@ -318,11 +330,11 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="Kerala"
-              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4">Pincode</label>
+          <div className="flex flex-col gap-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6">Pincode</label>
             <input
               type="text"
               name="pincode"
@@ -330,66 +342,78 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               onChange={handleChange}
               required
               placeholder="600001"
-              className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
             />
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-            <Landmark size={12} className="text-orange-600" /> Landmark (Optional)
+        <div className="flex flex-col gap-3">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+            <Landmark size={12} className="text-orange-600" /> Royal Landmark
           </label>
           <input
             type="text"
             name="landmark"
             value={formData.landmark}
             onChange={handleChange}
-            placeholder="Nearby landmark"
-            className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+            placeholder="Nearby heritage point..."
+            className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 ml-4 flex items-center gap-2">
-            <Info size={12} className="text-orange-600" /> Delivery Instructions
+        <div className="flex flex-col gap-3">
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
+            <Info size={12} className="text-orange-600" /> Arrival Instructions
           </label>
           <input
             type="text"
             name="delivery_instructions"
             value={formData.delivery_instructions}
             onChange={handleChange}
-            placeholder="E.g. Ring the bell twice, leave at gate"
-            className="w-full bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/5 p-4 rounded-2xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+            placeholder="E.g. Ring the bell twice, announce arrival"
+            className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-5 rounded-3xl text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
           />
         </div>
 
-        <label className="flex items-center gap-4 cursor-pointer group p-2">
-          <input
-            type="checkbox"
-            name="is_default"
-            checked={formData.is_default}
-            onChange={handleChange}
-            className="w-6 h-6 accent-orange-600 rounded-xl"
-          />
-          <span className="text-[10px] font-black text-stone-500 group-hover:text-orange-600 transition-colors uppercase tracking-[0.2em]">
-            Set as default
-          </span>
+        <label className="flex items-center gap-5 cursor-pointer group p-3 bg-stone-50/50 dark:bg-white/5 rounded-3xl border-2 border-transparent hover:border-orange-500/20 transition-all">
+          <div className="relative">
+            <input
+              type="checkbox"
+              name="is_default"
+              checked={formData.is_default}
+              onChange={handleChange}
+              className="w-7 h-7 accent-orange-600 rounded-xl cursor-pointer"
+            />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[11px] font-black text-stone-500 group-hover:text-orange-600 transition-colors uppercase tracking-[0.2em]">
+              Primary Vault
+            </span>
+            <span className="text-[8px] font-bold text-stone-400 uppercase tracking-widest italic">Set as your default delivery sanctuary</span>
+          </div>
         </label>
 
-        <div className="flex gap-4 pt-6">
+        <div className="flex gap-6 pt-10">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-5 rounded-[2rem] font-black text-[10px] text-stone-400 hover:text-stone-600 transition-all uppercase tracking-widest"
+            className="flex-1 py-6 rounded-[2.5rem] font-black text-[10px] text-stone-400 hover:text-stone-600 transition-all uppercase tracking-[0.3em]"
           >
-            Cancel
+            Withdraw
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-[2] bg-stone-900 dark:bg-white text-white dark:text-stone-900 py-5 rounded-[2rem] font-black text-[10px] shadow-2xl shadow-stone-900/20 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 uppercase tracking-[0.2em]"
+            className="flex-[2] bg-stone-900 dark:bg-white text-white dark:text-stone-900 py-6 rounded-[2.5rem] font-black text-[11px] shadow-2xl shadow-stone-900/30 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 uppercase tracking-[0.3em] flex items-center justify-center gap-3 group/save"
           >
-            {loading ? 'Processing...' : initialData ? 'Update Address' : 'Save Address'}
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <Save size={18} className="group-hover/save:scale-110 transition-transform" />
+                {initialData ? 'Refine Vault' : 'Secure Vault'}
+              </>
+            )}
           </button>
         </div>
       </form>
