@@ -138,13 +138,19 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
     } catch (e) { console.warn('>>> [BRIDGE] UID Fetch skipped:', e.message); }
   }
 
-  // 3. SAFE FETCH BY EMAIL
+  // 3. SAFE FETCH BY EMAIL (Highly resilient check)
   if (searchEmails.length > 0) {
-    try {
-      // Try 'user_email' or fallback to 'email' column if it exists
-      const { data } = await sb.from('addresses').select('*').in('user_email', searchEmails);
-      (data || []).forEach(a => uniqueMap.set(a.id, a));
-    } catch (e) { console.warn('>>> [BRIDGE] Email Fetch skipped:', e.message); }
+    // Try 'email' column first
+    const { data: eData, error: eErr } = await sb.from('addresses').select('*').in('email', searchEmails);
+    if (!eErr && eData) {
+      eData.forEach(a => uniqueMap.set(a.id, a));
+    } else {
+      // Fallback: try 'user_email' only if 'email' failed (might be an older or different schema)
+      const { data: ueData, error: ueErr } = await sb.from('addresses').select('*').in('user_email', searchEmails);
+      if (!ueErr && ueData) {
+        ueData.forEach(a => uniqueMap.set(a.id, a));
+      }
+    }
   }
 
   const allResults = Array.from(uniqueMap.values());
@@ -264,7 +270,6 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
     const payload = { 
       user_id: primaryId,
       firebase_uid: primaryUid,
-      user_email: primaryEmail,
       label, 
       name,
       full_name: name,
@@ -286,7 +291,7 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
 
     if (error && error.code === '42703') { 
       const cleanPayload = { ...payload };
-      ['firebase_uid', 'user_email', 'full_name', 'address_line1', 'address_line2', 'district', 'latitude', 'longitude', 'delivery_instructions', 'state'].forEach(k => delete cleanPayload[k]);
+      ['firebase_uid', 'full_name', 'address_line1', 'address_line2', 'district', 'latitude', 'longitude', 'delivery_instructions', 'state'].forEach(k => delete cleanPayload[k]);
       
       const fallback = await req.supabase.from('addresses').insert([cleanPayload]).select().maybeSingle();
       newAddress = fallback.data;
