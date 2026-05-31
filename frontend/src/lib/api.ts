@@ -336,7 +336,6 @@ export async function deleteAddress(id: string, email: string, uid?: string) {
   try {
     const response = await fetch(url, {
       method: 'DELETE',
-...
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
