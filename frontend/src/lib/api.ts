@@ -18,16 +18,23 @@ if (isProd && rawBaseUrl.startsWith('/')) {
 
 export const API_BASE_URL = rawBaseUrl;
 
-// Helper to ensure path is lowercase and robust
+// Helper to ensure path is robust
 const getCleanUrl = (path: string) => {
   const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  // Lowercase both the base and the path for absolute consistency
-  const normalizedBase = base.toLowerCase();
-  const cleanPath = (path.startsWith('/') ? path : `/${path}`).toLowerCase();
-  const finalUrl = `${normalizedBase}${cleanPath}`;
   
+  // CRITICAL: DO NOT lowercase the path anymore, as IDs are case-sensitive
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  // Prevent /api/api duplication if base already includes it and path starts with it
+  let finalUrl = `${base}${cleanPath}`;
+  
+  // If base is https://.../api and path is /api/users... -> https://.../api/users...
+  if (base.toLowerCase().endsWith('/api') && cleanPath.toLowerCase().startsWith('/api/')) {
+    finalUrl = `${base.slice(0, -4)}${cleanPath}`;
+  }
+
   if (typeof window !== 'undefined') {
-    console.log('>>> [API URL] Normalized:', finalUrl);
+    console.log('>>> [API URL] Final:', finalUrl);
   }
   return finalUrl;
 };
