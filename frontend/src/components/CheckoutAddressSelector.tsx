@@ -26,10 +26,10 @@ export default function CheckoutAddressSelector({
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
   const loadAddresses = useCallback(async () => {
-    if (!user?.email) return;
+    if (!user?.email || !user?.uid) return;
     
     try {
-      const data = await fetchAddresses(user.email);
+      const data = await fetchAddresses(user.email, user.uid);
       setAddresses(data || []);
       
       // Prompt 3.1: If a 'Default' address exists, automatically fill the delivery form
@@ -38,7 +38,7 @@ export default function CheckoutAddressSelector({
         onAddressSelect(defaultAddr);
       }
     } catch (error: any) {
-      console.error('Error fetching addresses:', error);
+      console.error('Error fetching addresses during checkout:', error);
     } finally {
       setLoading(false);
     }
@@ -49,13 +49,14 @@ export default function CheckoutAddressSelector({
   }, [loadAddresses]);
 
   const handleDelete = async (id: string) => {
-    if (!user?.email) return;
+    if (!user?.email || !user?.uid) return;
+    if (!confirm('Remove this destination?')) return;
     try {
-      await deleteAddress(id, user.email);
-      toast.success('Address removed');
+      await deleteAddress(id, user.email, user.uid);
+      toast.success('Destination removed');
       loadAddresses();
     } catch (error: any) {
-      toast.error('Failed to remove address');
+      toast.error('Failed to remove');
     }
   };
 
