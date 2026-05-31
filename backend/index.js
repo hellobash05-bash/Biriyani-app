@@ -46,12 +46,13 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 const app = express();
 const httpServer = createServer(app);
 
-// ABSOLUTE TOP PRIORITY HEALTH CHECK
+// ABSOLUTE TOP PRIORITY HEALTH CHECK (V8 - FORCE SYNC)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '6.0.0-ABSOLUTE-FINAL', 
+    version: '8.0.0-FORCE-RELOAD', 
     timestamp: new Date().toISOString(),
-    msg: 'If you see this, the server IS UPDATED.'
+    unique_sync_id: 'SYNC-AT-' + Date.now(),
+    msg: 'If you see this, the server IS FULLY UPDATED.'
   });
 });
 
@@ -60,15 +61,6 @@ app.set('case sensitive routing', false);
 
 app.use(cors());
 app.use(express.json());
-
-// ABSOLUTE TOP PRIORITY HEALTH CHECK (V7)
-app.get('/api/version', (req, res) => {
-  res.status(200).send({ 
-    version: '7.0.0-NUCLEAR-FIX', 
-    timestamp: new Date().toISOString(),
-    msg: 'SERVER IS NOW FULLY UPDATED AND READY.'
-  });
-});
 
 // --- CRITICAL: HIGH-PRIORITY DELETE ROUTE ---
 app.delete('/api/address/:id', async (req, res) => {
