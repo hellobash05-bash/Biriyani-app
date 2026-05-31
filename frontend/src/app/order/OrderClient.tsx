@@ -55,6 +55,11 @@ export default function OrderTrackingPage() {
     };
     fetchOrder();
 
+    if (!supabase) {
+      console.warn('Supabase client not initialized. Realtime order tracking disabled.');
+      return;
+    }
+
     // 2. Setup Supabase Realtime for this order
     console.log(`--- SETTING UP REALTIME TRACKING FOR ORDER: ${orderId} ---`);
     

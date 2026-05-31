@@ -33,6 +33,11 @@ export default function AdminDeliveryPartners() {
   useEffect(() => {
     loadPartners();
 
+    if (!supabase) {
+      console.warn('Supabase client not initialized. Realtime partner updates disabled.');
+      return;
+    }
+
     console.log('--- SETTING UP PARTNER REALTIME SUBSCRIPTIONS ---');
 
     const channel = supabase
