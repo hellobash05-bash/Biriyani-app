@@ -82,19 +82,16 @@ app.get('/api/ultimate-test', (req, res) => {
   res.send('<h1>ROYALE-ULTIMATE-V6-SUCCESS</h1>');
 });
 
-// --- CASE-INSENSITIVE ADDRESS ROUTES (TOP PRIORITY) ---
-
-// Helper to handle address deletion logic
-const handleDeleteLogic = async (req, res) => {
-  // Use Express params for robust ID retrieval
-  const finalId = req.params.id || req.originalUrl.split('/').pop().split('?')[0];
+// --- ROBUST ADDRESS DELETE (SINGLE TRUTH) ---
+app.delete('/api/address/:id', async (req, res) => {
+  const { id } = req.params;
   const { email } = req.query;
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
-  console.log(`>>> [DELETE ATTEMPT] TargetID=${finalId}, Email=${normalizedEmail}`);
+  console.log(`>>> [Surgical Delete] TargetID=${id}, UserEmail=${normalizedEmail}`);
 
-  if (!finalId || finalId === 'address') {
-    return res.status(400).json({ message: 'Address ID is missing or invalid' });
+  if (!id) {
+    return res.status(400).json({ message: 'Address ID is required' });
   }
 
   try {
@@ -105,39 +102,34 @@ const handleDeleteLogic = async (req, res) => {
       .maybeSingle();
 
     if (userError || !user) {
-      console.error('❌ User not found for delete:', userError);
-      return res.status(404).json({ message: 'User not found.' });
+      console.error('❌ User not found for delete:', normalizedEmail);
+      return res.status(404).json({ message: 'Authentication verification failed.' });
     }
 
     // Surgical deletion restricted to the specific user and ID
     const { error } = await req.supabase
       .from('addresses')
       .delete()
-      .eq('id', finalId)
+      .eq('id', id)
       .or(`user_id.eq.${user.id},firebase_uid.eq.${user.uid}`);
 
     if (error) {
-      console.error('❌ Delete error:', error.message);
+      console.error('❌ Database Delete Error:', error.message);
       return res.status(400).json({ message: error.message });
     }
 
-    console.log(`✅ Address ${finalId} removed successfully`);
-    res.json({ message: 'Address removed successfully', id: finalId });
+    console.log(`✅ Success: Address ${id} removed`);
+    res.json({ success: true, message: 'Address removed successfully', id });
   } catch (err) {
-    console.error('💥 Delete crash:', err);
-    res.status(500).json({ message: err.message });
+    console.error('💥 Delete Crash:', err.message);
+    res.status(500).json({ message: 'Internal Server Error during deletion' });
   }
-};
+});
 
-// Catch-all DELETE for addresses using regex to ensure match
-app.delete([
-  '/api/users/address/:id', 
-  '/api/user/address/:id', 
-  '/api/address/:id',
-  /^\/api\/users\/address\/.+/i,
-  /^\/api\/user\/address\/.+/i,
-  /^\/api\/address\/.+/i
-], handleDeleteLogic);
+// Legacy aliases for backward compatibility if any
+app.delete(['/api/users/address/:id', '/api/user/address/:id'], (req, res) => {
+  res.redirect(307, `/api/address/${req.params.id}?email=${req.query.email}`);
+});
 
 // PUT Address - Multiple explicit routes
 const handleUpdateLogic = async (req, res) => {

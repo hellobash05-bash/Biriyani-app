@@ -315,40 +315,35 @@ export async function updateAddress(id: string, email: string, addressData: any)
 }
 
 export async function deleteAddress(id: string, email: string) {
-  // Use getCleanUrl to prevent /api/api duplication
-  const url = `${getCleanUrl(`/users/address/${id}`)}?email=${encodeURIComponent(email)}&t=${Date.now()}`;
+  // Ensure we have a clean ID
+  if (!id) throw new Error('Cannot delete: Missing address ID');
   
-  console.log('--- API: ATTEMPTING DELETE ---', { id, email, url });
+  // Use a simple, absolute path construction
+  const cleanId = id.trim();
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/address/${cleanId}?email=${encodeURIComponent(email)}`;
+  
+  console.log('>>> [API DELETE] Target URL:', url);
   
   try {
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       }
     });
     
-    console.log('--- API: DELETE RESPONSE STATUS ---', response.status);
-    
-    const text = await response.text();
-    console.log('--- API: DELETE RESPONSE TEXT ---', text);
-    
-    let errorData;
-    try {
-      errorData = JSON.parse(text);
-    } catch (e) {
-      errorData = { message: text || `Server returned ${response.status}` };
-    }
-    
     if (!response.ok) {
-      const msg = errorData.message || `Server returned ${response.status}`;
-      throw new Error(`[${url}] ${msg}`);
+      const errorText = await response.text();
+      let errorData;
+      try { errorData = JSON.parse(errorText); } catch(e) { errorData = { message: errorText }; }
+      throw new Error(errorData.message || `Server returned ${response.status}`);
     }
-    return errorData;
+    
+    return await response.json();
   } catch (err: any) {
-    console.error('--- API: DELETE CRASH ---', err);
-    throw new Error(`FAILED TO DELETE: ${err.message}`);
+    console.error('>>> [API DELETE] Failure:', err.message);
+    throw err;
   }
 }
 
