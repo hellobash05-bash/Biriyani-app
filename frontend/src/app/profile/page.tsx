@@ -293,7 +293,7 @@ export default function ProfilePage() {
               <div className="flex flex-col gap-8">
                 {showDebug && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-stone-950 p-6 rounded-3xl border border-orange-600/30 font-mono text-[10px] text-orange-500 overflow-x-auto">
-                    <p className="font-bold mb-2">>>> SYSTEM DIAGNOSTIC TERMINAL</p>
+                    <p className="font-bold mb-2">{" >>> "} SYSTEM DIAGNOSTIC TERMINAL</p>
                     <p>USER_EMAIL: {user?.email}</p>
                     <p>USER_UID: {user?.uid}</p>
                     <p>LOCAL_ADDR: {addresses.length}</p>
