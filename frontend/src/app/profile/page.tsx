@@ -377,7 +377,7 @@ export default function ProfilePage() {
                   </h2>
                   <div className="flex items-center gap-3 ml-12">
                     <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest italic">Manage your delivery vaults</p>
-                    <span className="text-[8px] font-black text-orange-600/40 uppercase tracking-widest bg-orange-600/5 px-2 py-0.5 rounded-full border border-orange-600/5">Core v9.6.0</span>
+                    <span className="text-[8px] font-black text-orange-600/40 uppercase tracking-widest bg-orange-600/5 px-2 py-0.5 rounded-full border border-orange-600/5">System v9.8.0</span>
                   </div>
                 </div>
                 <button 
@@ -398,11 +398,11 @@ export default function ProfilePage() {
                     <div className="inline-block w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-4">Accessing Vault...</p>
                   </div>
-                ) : addresses.length > 0 ? (
+                ) : (addresses.length > 0 || (profile?.addresses && profile.addresses.length > 0)) ? (
                   <div className="grid grid-cols-1 gap-6">
-                    {addresses.map((addr: any) => (
+                    {(addresses.length > 0 ? addresses : profile?.addresses || []).map((addr: any, idx: number) => (
                       <AddressCard
-                        key={addr.id || addr._id}
+                        key={addr.id || addr._id || idx}
                         address={addr}
                         onEdit={handleEditClick}
                         onDelete={handleDeleteAddress}
