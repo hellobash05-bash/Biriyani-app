@@ -7,6 +7,7 @@ import ws from 'ws';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Server } from 'socket.io';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +39,28 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 const app = express();
 const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"]
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('>>> [SOCKET] Client connected:', socket.id);
+  socket.on('disconnect', () => console.log('>>> [SOCKET] Client disconnected:', socket.id));
+});
+
+// Helper to broadcast
+const broadcastOrderUpdate = (order) => {
+  console.log('📢 [SOCKET] Broadcasting order update:', order.id || order._id);
+  io.emit('order-update', order);
+};
+
+const broadcastNewOrder = (order) => {
+  console.log('📢 [SOCKET] Broadcasting new order:', order.id || order._id);
+  io.emit('new-order', order);
+};
 
 // --- GLOBAL MIDDLEWARE ---
 app.use(cors());
@@ -415,7 +438,10 @@ app.post('/api/orders', async (req, res) => {
       })));
     }
 
-    res.status(201).json({ ...orderData, _id: orderData.id, items });
+    const finalOrder = { ...orderData, _id: orderData.id, items };
+    broadcastNewOrder(finalOrder);
+
+    res.status(201).json(finalOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -487,7 +513,10 @@ app.patch('/api/admin/orders/:id/status', async (req, res) => {
 
     if (fetchError) throw fetchError;
 
-    res.json(formatOrderForClient(order));
+    const formattedOrder = formatOrderForClient(order);
+    broadcastOrderUpdate(formattedOrder);
+
+    res.json(formattedOrder);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

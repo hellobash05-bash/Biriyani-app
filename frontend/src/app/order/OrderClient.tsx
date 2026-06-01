@@ -9,8 +9,9 @@ import BottomNav from '@/components/BottomNav';
 import ReviewForm from '@/components/ReviewForm';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { io } from 'socket.io-client';
 
-import { fetchOrderById, cancelOrder } from '@/lib/api';
+import { fetchOrderById, cancelOrder, SOCKET_URL } from '@/lib/api';
 
 const STATUS_STEPS = [
   { label: 'Pending', icon: '🕒' },
@@ -115,16 +116,38 @@ export default function OrderTrackingPage() {
     };
     fetchOrder();
 
-    if (!supabase) {
-      console.warn('Supabase client not initialized. Realtime order tracking disabled.');
-      return;
-    }
+    // --- SOCKET.IO TRACKING (Primary) ---
+    console.log('--- SETTING UP SOCKET TRACKING FOR ORDER:', orderId, '---');
+    const socket = io(SOCKET_URL);
 
-    // 2. Setup Supabase Realtime for this order
-    console.log(`--- SETTING UP REALTIME TRACKING FOR ORDER: ${orderId} ---`);
-    
-    const channel = supabase
-      .channel(`order-tracking-${orderId}`)
+    socket.on('order-update', (updated) => {
+      if ((updated._id || updated.id) !== orderId) return;
+      
+      console.log('📢 [SOCKET] Order Update Received:', updated.status);
+      const statusChanged = updated.status && updated.status !== latestStatusRef.current;
+      
+      if (statusChanged) {
+        playStatusChangeSound();
+        let message = `Status Update: ${updated.status}`;
+        let icon = '🔔';
+        if (updated.status === 'Preparing') { message = 'Chefs are preparing your feast!'; icon = '👨‍🍳'; }
+        if (updated.status === 'Packed') { message = 'Your order is packed and ready!'; icon = '📦'; }
+        if (updated.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
+        if (updated.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
+        toast.success(message, { icon, duration: 8000 });
+      }
+
+      setOrder(prev => ({ ...prev, ...updated, items: prev?.items || [] }));
+    });
+
+    // --- SUPABASE REALTIME (Backup) ---
+    if (!supabase) {
+      console.warn('Supabase client not initialized. Realtime backup disabled.');
+    } else {
+      console.log(`--- SETTING UP REALTIME TRACKING FOR ORDER: ${orderId} ---`);
+      
+      const channel = supabase
+        .channel(`order-tracking-${orderId}`)
       .on(
         'postgres_changes',
         {
@@ -175,9 +198,13 @@ export default function OrderTrackingPage() {
         }
       )
       .subscribe();
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      socket.disconnect();
+      if (supabase) {
+        supabase.removeAllChannels();
+      }
     };
   }, [orderId, authLoading, user?.email]);
 

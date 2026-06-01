@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners } from '@/lib/api';
+import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners, SOCKET_URL } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { Bike, CheckCircle2, Clock, MapPin, PackageCheck, Phone, RefreshCw, Radio, User, XCircle } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 const STATUS_OPTIONS = ['Pending', 'Preparing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
@@ -66,6 +67,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'live' | 'history'>('live');
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
   const ordersRef = useRef<any[]>([]);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
@@ -110,15 +112,47 @@ export default function AdminOrders() {
   useEffect(() => {
     loadData();
 
+    // --- SOCKET.IO SETUP (Primary) ---
+    console.log('--- SETTING UP ADMIN SOCKET.IO ---', SOCKET_URL);
+    const socket = io(SOCKET_URL);
+    
+    socket.on('connect', () => {
+      console.log('✅ [SOCKET] Connected to Royale Backend');
+      setIsSocketConnected(true);
+    });
+
+    socket.on('new-order', (newOrder) => {
+      console.log('📢 [SOCKET] New Order Received:', newOrder);
+      setOrders(prev => {
+        if (prev.some(order => (order._id || order.id) === (newOrder._id || newOrder.id))) return prev;
+        return [newOrder, ...prev];
+      });
+      toast.success(`NEW ORDER: #${(newOrder._id || newOrder.id).slice(-6)}`, { icon: '🥡', duration: 8000 });
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.play().catch(() => {});
+      scheduleOrdersRefresh();
+    });
+
+    socket.on('order-update', (updated) => {
+      console.log('📢 [SOCKET] Order Update Received:', updated);
+      setOrders(prev => prev.map(order => (
+        (order._id || order.id) === (updated._id || updated.id) ? updated : order
+      )));
+      scheduleOrdersRefresh();
+    });
+
+    socket.on('disconnect', () => {
+      console.log('❌ [SOCKET] Disconnected');
+      setIsSocketConnected(false);
+    });
+
+    // --- SUPABASE REALTIME SETUP (Backup) ---
     if (!supabase) {
-      console.warn('Supabase client not initialized. Realtime admin updates disabled.');
-      return;
-    }
-
-    console.log('--- SETTING UP ADMIN REALTIME SUBSCRIPTIONS ---');
-
-    const channel = supabase
-      .channel('admin-orders-channel')
+      console.warn('Supabase client not initialized. Realtime backup disabled.');
+    } else {
+      console.log('--- SETTING UP ADMIN REALTIME BACKUP ---');
+      const channel = supabase
+        .channel('admin-orders-channel')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'orders' },
@@ -192,10 +226,21 @@ export default function AdminOrders() {
         console.log('--- ADMIN REALTIME STATUS:', status, '---');
         setIsRealtimeConnected(status === 'SUBSCRIBED');
       });
+    }
+
+    // --- POLLING FALLBACK (Safety Net) ---
+    const pollInterval = setInterval(() => {
+      console.log('🔄 [POLLING] Refreshing orders...');
+      refreshOrders();
+    }, 30000); // 30 seconds
 
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+      socket.disconnect();
+      if (supabase) {
+        supabase.removeAllChannels();
+      }
     };
   }, []);
 
@@ -278,14 +323,18 @@ export default function AdminOrders() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-          {activeTab === 'live' && (
-            <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.1)] ${
-              isRealtimeConnected
-                ? 'text-green-500 bg-green-500/5 border border-green-500/10'
-                : 'text-amber-500 bg-amber-500/5 border border-amber-500/10'
-            }`}>
-              <Radio size={14} className={isRealtimeConnected ? 'animate-pulse' : ''} />
-              {isRealtimeConnected ? 'Live' : 'Connecting'}
+          <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg ${
+            isSocketConnected
+              ? 'text-green-500 bg-green-500/5 border border-green-500/10'
+              : 'text-amber-500 bg-amber-500/5 border border-amber-500/10'
+          }`}>
+            <Radio size={14} className={isSocketConnected ? 'animate-pulse' : ''} />
+            {isSocketConnected ? 'Socket Live' : 'Socket Connecting'}
+          </div>
+          {activeTab === 'live' && isRealtimeConnected && (
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full bg-blue-500/5 border border-blue-500/10 text-blue-500">
+              <Radio size={14} />
+              Realtime Backup
             </div>
           )}
           <button onClick={loadData} className="h-11 px-4 bg-foreground/5 rounded-2xl border border-glass-border hover:bg-foreground/10 transition-all font-black text-xs flex items-center gap-2 cursor-pointer">
