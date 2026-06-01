@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUserOrders, fetchAddresses as apiFetchAddresses, deleteAddress, updateProfile, uploadProfileImage } from '@/lib/api';
+import { fetchUserOrders, fetchAddresses as apiFetchAddresses, deleteAddress, updateProfile, uploadProfileImage, SOCKET_URL } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ import AddressCard from '@/components/AddressCard';
 import AddressModal from '@/components/AddressModal';
 import { Camera, Edit3, X, Save, User, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { io } from 'socket.io-client';
 
 const formatRealtimeOrder = (order: any, existingItems: any[] = []) => ({
   ...order,
@@ -189,7 +190,7 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
-    if (!user?.email || authLoading || !supabase) return;
+    if (!user?.email || authLoading) return;
 
     const refreshOrders = async () => {
       try {
@@ -201,54 +202,95 @@ export default function ProfilePage() {
       }
     };
 
-    const channel = supabase
-      .channel(`profile-orders-${user.email}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders',
-          filter: `user_email=eq.${user.email}`
-        },
-        () => {
-          refreshOrders();
-          toast.success('New order added to your history', { icon: '🧾' });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `user_email=eq.${user.email}`
-        },
-        (payload: any) => {
-          const updatedOrder = payload.new as any;
-          const previousOrders = latestOrdersRef.current;
-          const existingOrder = previousOrders.find(order => (order.id || order._id) === updatedOrder.id);
-          const statusChanged = existingOrder?.status && existingOrder.status !== updatedOrder.status;
+    // --- SOCKET.IO TRACKING (Primary) ---
+    console.log('--- SETTING UP PROFILE SOCKET.IO ---', SOCKET_URL);
+    const socket = io(SOCKET_URL);
+    
+    socket.on('new-order', (newOrder) => {
+      if (newOrder.user_email !== user.email) return;
+      console.log('📢 [SOCKET] New Personal Order Detected');
+      refreshOrders();
+      toast.success('New order added to your history', { icon: '🧾' });
+    });
 
-          if (!existingOrder) {
+    socket.on('order-update', (updated) => {
+      const email = updated.user_email || updated.userEmail;
+      if (email !== user.email) return;
+      
+      console.log('📢 [SOCKET] Personal Order Update Received:', updated.status);
+      const previousOrders = latestOrdersRef.current;
+      const existingOrder = previousOrders.find(order => (order.id || order._id) === (updated.id || updated._id));
+      const statusChanged = existingOrder?.status && existingOrder.status !== updated.status;
+
+      if (!existingOrder) {
+        refreshOrders();
+        return;
+      }
+
+      setOrders(prev => prev.map(order => {
+        if ((order.id || order._id) !== (updated.id || updated._id)) return order;
+        return { ...order, ...updated, _id: updated.id || updated._id };
+      }));
+
+      if (statusChanged) {
+        toast.success(`Order #${(updated.id || updated._id).slice(-6)} is now ${updated.status}`, { icon: '🔄' });
+      }
+    });
+
+    // --- SUPABASE REALTIME (Backup) ---
+    if (supabase) {
+      console.log('--- SETTING UP PROFILE REALTIME BACKUP ---');
+      const channel = supabase
+        .channel(`profile-orders-${user.email}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_email=eq.${user.email}`
+          },
+          () => {
             refreshOrders();
-            return;
           }
-
-          setOrders(prev => prev.map(order => {
-            if ((order.id || order._id) !== updatedOrder.id) return order;
-            return formatRealtimeOrder(updatedOrder, order.items || []);
-          }));
-
-          if (statusChanged) {
-            toast.success(`Order #${updatedOrder.id.slice(-6)} is now ${updatedOrder.status}`, { icon: '🔄' });
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_email=eq.${user.email}`
+          },
+          (payload: any) => {
+            const updatedOrder = payload.new as any;
+            const previousOrders = latestOrdersRef.current;
+            const existingOrder = previousOrders.find(order => (order.id || order._id) === updatedOrder.id);
+            if (!existingOrder) {
+              refreshOrders();
+              return;
+            }
+            setOrders(prev => prev.map(order => {
+              if ((order.id || order._id) !== updatedOrder.id) return order;
+              return formatRealtimeOrder(updatedOrder, order.items || []);
+            }));
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
+
+    // --- POLLING FALLBACK (Safety Net) ---
+    const pollInterval = setInterval(() => {
+      console.log('🔄 [POLLING] Refreshing user orders...');
+      refreshOrders();
+    }, 45000); // 45 seconds
 
     return () => {
-      supabase.removeChannel(channel);
+      socket.disconnect();
+      clearInterval(pollInterval);
+      if (supabase) {
+        supabase.removeAllChannels();
+      }
     };
   }, [user?.email, authLoading]);
 

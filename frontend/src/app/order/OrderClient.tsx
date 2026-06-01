@@ -200,8 +200,15 @@ export default function OrderTrackingPage() {
       .subscribe();
     }
 
+    // --- POLLING FALLBACK (Safety Net) ---
+    const pollInterval = setInterval(() => {
+      console.log('🔄 [POLLING] Refreshing order status...');
+      fetchOrder();
+    }, 20000); // 20 seconds
+
     return () => {
       socket.disconnect();
+      clearInterval(pollInterval);
       if (supabase) {
         supabase.removeAllChannels();
       }
