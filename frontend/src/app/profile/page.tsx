@@ -46,6 +46,8 @@ export default function ProfilePage() {
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', phone: '' });
   const latestOrdersRef = useRef<any[]>([]);
   const router = useRouter();
@@ -206,6 +208,11 @@ export default function ProfilePage() {
     console.log('--- SETTING UP PROFILE SOCKET.IO ---', SOCKET_URL);
     const socket = io(SOCKET_URL);
     
+    socket.on('connect', () => {
+      console.log('✅ [SOCKET] Connected to Royale Backend');
+      setIsSocketConnected(true);
+    });
+
     socket.on('new-order', (newOrder) => {
       if (newOrder.user_email !== user.email) return;
       console.log('📢 [SOCKET] New Personal Order Detected');
@@ -235,6 +242,11 @@ export default function ProfilePage() {
       if (statusChanged) {
         toast.success(`Order #${(updated.id || updated._id).slice(-6)} is now ${updated.status}`, { icon: '🔄' });
       }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('❌ [SOCKET] Disconnected');
+      setIsSocketConnected(false);
     });
 
     // --- SUPABASE REALTIME (Backup) ---
@@ -276,7 +288,10 @@ export default function ProfilePage() {
             }));
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('--- PROFILE REALTIME STATUS:', status, '---');
+          setIsRealtimeConnected(status === 'SUBSCRIBED');
+        });
     }
 
     // --- POLLING FALLBACK (Safety Net) ---
@@ -486,12 +501,17 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-4">
                     <span className="w-12 h-1.5 bg-orange-600 rounded-full"></span>
                     <h2 className="text-3xl md:text-4xl font-black text-stone-900 dark:text-white uppercase tracking-tighter">Culinary History</h2>
-                    {supabase && user?.email && (
-                      <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-600 border border-green-500/20 text-[9px] font-black uppercase tracking-widest">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        Live
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${isSocketConnected ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isSocketConnected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+                        {isSocketConnected ? 'Live' : 'Syncing'}
+                      </div>
+                      {isRealtimeConnected && (
+                        <div className="bg-blue-500/10 text-blue-600 border border-blue-500/20 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest">
+                          Supabase
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <p className="text-[11px] font-bold text-stone-400 uppercase tracking-[0.3em] ml-16 italic">Your journey through heritage spices</p>
                 </div>

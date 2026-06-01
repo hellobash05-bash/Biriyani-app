@@ -357,6 +357,7 @@ app.get('/api/menu', async (req, res) => {
 const formatOrderForClient = (order) => ({
   _id: order.id,
   id: order.id,
+  user_email: order.user_email,
   createdAt: order.created_at,
   status: order.status,
   totalAmount: order.total_amount,

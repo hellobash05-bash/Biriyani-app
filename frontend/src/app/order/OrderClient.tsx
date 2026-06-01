@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { io } from 'socket.io-client';
 
 import { fetchOrderById, cancelOrder, SOCKET_URL } from '@/lib/api';
+import { Radio } from 'lucide-react';
 
 const STATUS_STEPS = [
   { label: 'Pending', icon: '🕒' },
@@ -28,6 +29,8 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const latestItemsRef = useRef<any[]>([]);
   const latestStatusRef = useRef<string | null>(null);
@@ -120,6 +123,11 @@ export default function OrderTrackingPage() {
     console.log('--- SETTING UP SOCKET TRACKING FOR ORDER:', orderId, '---');
     const socket = io(SOCKET_URL);
 
+    socket.on('connect', () => {
+      console.log('✅ [SOCKET] Connected for order tracking');
+      setIsSocketConnected(true);
+    });
+
     socket.on('order-update', (updated) => {
       if ((updated._id || updated.id) !== orderId) return;
       
@@ -134,10 +142,20 @@ export default function OrderTrackingPage() {
         if (updated.status === 'Packed') { message = 'Your order is packed and ready!'; icon = '📦'; }
         if (updated.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
         if (updated.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
+        if (updated.status === 'Cancelled') { 
+          toast.error('Order Cancelled.', { icon: '✕', duration: 10000 });
+          setOrder(prev => ({ ...prev, ...updated, items: prev?.items || [] }));
+          return;
+        }
         toast.success(message, { icon, duration: 8000 });
       }
 
       setOrder(prev => ({ ...prev, ...updated, items: prev?.items || [] }));
+    });
+
+    socket.on('disconnect', () => {
+      console.log('❌ [SOCKET] Disconnected');
+      setIsSocketConnected(false);
     });
 
     // --- SUPABASE REALTIME (Backup) ---
@@ -197,7 +215,10 @@ export default function OrderTrackingPage() {
           setOrder(formattedOrder);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('--- ORDER REALTIME STATUS:', status, '---');
+        setIsRealtimeConnected(status === 'SUBSCRIBED');
+      });
     }
 
     // --- POLLING FALLBACK (Safety Net) ---
@@ -252,9 +273,19 @@ export default function OrderTrackingPage() {
         
         {/* Header */}
         <div className="text-center mb-4">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="inline-block bg-orange-500/10 text-orange-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
-            Live Tracking
-          </motion.div>
+          <div className="flex flex-wrap justify-center items-center gap-3 mb-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isSocketConnected ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isSocketConnected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+              {isSocketConnected ? 'Socket Live' : 'Connecting...'}
+            </motion.div>
+            
+            {isRealtimeConnected && (
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                Realtime Backup
+              </motion.div>
+            )}
+          </div>
           <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-1">Order #{order._id.slice(-6)}</h1>
           {order.status === 'Cancelled' ? (
             <p className="text-red-500 text-sm font-bold uppercase tracking-widest">Order Cancelled</p>
