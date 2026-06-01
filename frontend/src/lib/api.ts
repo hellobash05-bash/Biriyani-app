@@ -7,8 +7,14 @@ const isProd = typeof window !== 'undefined' && (
 );
 // Force absolute URL in production to bypass Vercel proxy issues
 const DEFAULT_PROD_URL = 'https://biriyani-backend.onrender.com/api';
-const SUPABASE_REST_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bfrhmbtqogrlrkiyquce.supabase.co';
-const SUPABASE_REST_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_n7eiiI_lHFrqewV5WR9iCQ_rYk4dSyG';
+const normalizeSupabaseUrl = (url: string) => {
+  const compactUrl = url.replace(/\s+/g, '');
+  const match = compactUrl.match(/^https:\/\/[a-z0-9-]+\.supabase\.co/i);
+  return match ? match[0] : compactUrl.replace(/\/+$/, '');
+};
+
+const SUPABASE_REST_URL = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bfrhmbtqogrlrkiyquce.supabase.co');
+const SUPABASE_REST_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_n7eiiI_lHFrqewV5WR9iCQ_rYk4dSyG').replace(/\s+/g, '');
 
 let rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || (isProd 
   ? DEFAULT_PROD_URL 
@@ -25,13 +31,34 @@ export const API_BASE_URL = rawBaseUrl;
 const formatOrderFromDatabase = (data: any) => ({
   ...data,
   _id: data.id,
+  createdAt: data.created_at,
   totalAmount: data.total_amount,
   estimatedDeliveryTime: data.estimated_delivery_time,
+  customer: {
+    name: data.customer_name,
+    phone: data.customer_phone,
+    address: {
+      house: data.address_house,
+      street: data.address_street,
+      city: data.address_city,
+      pincode: data.address_pincode,
+      landmark: data.address_landmark,
+      fullAddress: [
+        data.address_house,
+        data.address_street,
+        data.address_city && data.address_pincode
+          ? `${data.address_city} - ${data.address_pincode}`
+          : data.address_city || data.address_pincode,
+        data.address_landmark ? `Landmark: ${data.address_landmark}` : null
+      ].filter(Boolean).join(', ')
+    }
+  },
   deliveryPartner: data.delivery_partner_name ? {
     name: data.delivery_partner_name,
     phone: data.delivery_partner_phone,
     vehicleNumber: data.delivery_partner_vehicle
-  } : null
+  } : null,
+  items: data.order_items || []
 });
 
 // Helper to ensure path is robust
@@ -176,9 +203,29 @@ export async function fetchOrderById(id: string, email?: string | null) {
 }
 
 export async function fetchAdminOrders() {
-  const response = await fetch(`${API_BASE_URL}/admin/orders`);
-  if (response.ok) {
-    return await response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/orders`);
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (err) {
+    console.warn('Admin orders endpoint fetch failed.', err);
+  }
+
+  // Fallback to direct Supabase fetch for better reliability
+  if (supabase) {
+    console.log('>>> [API] Falling back to Supabase for admin orders');
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items (*)')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(formatOrderFromDatabase);
+    } catch (err) {
+      console.warn('Supabase fallback for admin orders failed:', err);
+    }
   }
 
   console.warn('Admin orders endpoint unavailable. Falling back to user orders feed.');

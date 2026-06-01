@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -20,8 +20,6 @@ const STATUS_STEPS = [
   { label: 'Delivered', icon: '🎉' }
 ];
 
-const NOTIFICATION_SOUND = 'https://cdn.pixabay.com/audio/2022/03/15/audio_5072705b4b.mp3';
-
 export default function OrderTrackingPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
@@ -29,14 +27,70 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const latestItemsRef = useRef<any[]>([]);
+  const latestStatusRef = useRef<string | null>(null);
 
-  const playNotificationSound = () => {
-    console.log('Playing status update sound...');
-    const audio = new Audio(NOTIFICATION_SOUND);
-    audio.play().catch(err => {
-      console.warn('Audio play blocked or failed.', err);
+  const getAudioContext = () => {
+    if (typeof window === 'undefined') return null;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return null;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextClass();
+    }
+
+    return audioContextRef.current;
+  };
+
+  const unlockStatusSound = () => {
+    const context = getAudioContext();
+    if (!context) return;
+
+    context.resume().catch(() => {});
+  };
+
+  const playStatusChangeSound = () => {
+    const context = getAudioContext();
+    if (!context) return;
+
+    context.resume().then(() => {
+      const now = context.currentTime;
+      const gain = context.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      gain.connect(context.destination);
+
+      [660, 880].forEach((frequency, index) => {
+        const oscillator = context.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, now + index * 0.16);
+        oscillator.connect(gain);
+        oscillator.start(now + index * 0.16);
+        oscillator.stop(now + index * 0.16 + 0.22);
+      });
+    }).catch(err => {
+      console.warn('Status sound blocked by browser until user interacts with the page.', err);
     });
   };
+
+  useEffect(() => {
+    latestItemsRef.current = order?.items || [];
+    latestStatusRef.current = order?.status || null;
+  }, [order?.items, order?.status]);
+
+  useEffect(() => {
+    window.addEventListener('pointerdown', unlockStatusSound, { once: true });
+    window.addEventListener('keydown', unlockStatusSound, { once: true });
+    window.addEventListener('touchstart', unlockStatusSound, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockStatusSound);
+      window.removeEventListener('keydown', unlockStatusSound);
+      window.removeEventListener('touchstart', unlockStatusSound);
+    };
+  }, []);
 
   useEffect(() => {
     if (authLoading) {
@@ -82,6 +136,7 @@ export default function OrderTrackingPage() {
         (payload: any) => {
           console.log('📢 Realtime Order Update Received:', payload.new);
           const updatedOrder = payload.new as any;
+          const statusChanged = updatedOrder.status && updatedOrder.status !== latestStatusRef.current;
           
           // Map snake_case from DB to camelCase expected by component
           const formattedOrder = {
@@ -95,10 +150,12 @@ export default function OrderTrackingPage() {
               vehicleNumber: updatedOrder.delivery_partner_vehicle
             } : null,
             // Items are not part of the order update usually, keep existing ones
-            items: order?.items || [] 
+            items: latestItemsRef.current
           };
 
-          playNotificationSound();
+          if (statusChanged) {
+            playStatusChangeSound();
+          }
           
           let message = `Status Update: ${formattedOrder.status}`;
           let icon = '🔔';
@@ -122,7 +179,7 @@ export default function OrderTrackingPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId, order?.items, authLoading, user?.email]);
+  }, [orderId, authLoading, user?.email]);
 
   const handleCancelOrder = async () => {
     if (!orderId) return;

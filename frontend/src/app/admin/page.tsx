@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { fetchAnalytics } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -33,6 +34,25 @@ export default function AdminDashboard() {
       }
     }
     loadStats();
+
+    if (!supabase) return;
+
+    // Real-time analytics update on order changes
+    const channel = supabase
+      .channel('admin-analytics-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          console.log('📢 Order change detected, refreshing analytics...');
+          loadStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading) {

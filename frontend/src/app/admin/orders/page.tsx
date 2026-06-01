@@ -1,22 +1,95 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
+import { Bike, CheckCircle2, Clock, MapPin, PackageCheck, Phone, RefreshCw, Radio, User, XCircle } from 'lucide-react';
 
 const STATUS_OPTIONS = ['Pending', 'Preparing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
+
+const STATUS_STYLES: Record<string, string> = {
+  Pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  Preparing: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  Packed: 'bg-violet-500/10 text-violet-600 border-violet-500/20',
+  'Out for Delivery': 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  Delivered: 'bg-green-500/10 text-green-600 border-green-500/20',
+  Cancelled: 'bg-red-500/10 text-red-600 border-red-500/20'
+};
+
+const getStatusIcon = (status: string) => {
+  if (status === 'Delivered') return CheckCircle2;
+  if (status === 'Cancelled') return XCircle;
+  if (status === 'Out for Delivery') return Bike;
+  if (status === 'Pending') return Clock;
+  return PackageCheck;
+};
+
+const formatRealtimeAdminOrder = (order: any, existingOrder?: any) => ({
+  ...existingOrder,
+  ...order,
+  _id: order.id,
+  createdAt: order.created_at,
+  totalAmount: order.total_amount,
+  estimatedDeliveryTime: order.estimated_delivery_time,
+  customer: {
+    name: order.customer_name,
+    phone: order.customer_phone,
+    address: {
+      house: order.address_house,
+      street: order.address_street,
+      city: order.address_city,
+      pincode: order.address_pincode,
+      landmark: order.address_landmark,
+      fullAddress: [
+        order.address_house,
+        order.address_street,
+        order.address_city && order.address_pincode
+          ? `${order.address_city} - ${order.address_pincode}`
+          : order.address_city || order.address_pincode,
+        order.address_landmark ? `Landmark: ${order.address_landmark}` : null
+      ].filter(Boolean).join(', ')
+    }
+  },
+  deliveryPartner: order.delivery_partner_name ? {
+    name: order.delivery_partner_name,
+    phone: order.delivery_partner_phone,
+    vehicleNumber: order.delivery_partner_vehicle
+  } : existingOrder?.deliveryPartner || null,
+  items: existingOrder?.items || []
+});
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'live' | 'history'>('live');
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const ordersRef = useRef<any[]>([]);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // State for partner assignment modal
   const [assigningOrder, setAssigningOrder] = useState<any>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  const refreshOrders = async () => {
+    const ordersData = await fetchAdminOrders();
+    setOrders(ordersData);
+  };
+
+  const scheduleOrdersRefresh = () => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      refreshOrders().catch(err => {
+        console.error('Failed to refresh live admin orders:', err);
+      });
+    }, 800);
+  };
 
   async function loadData() {
     try {
@@ -52,31 +125,17 @@ export default function AdminOrders() {
         (payload: any) => {
           console.log('📢 New Order Received via Realtime:', payload.new);
           const newOrder = payload.new as any;
-          
-          // Format for frontend
-          const formattedOrder = { 
-            ...newOrder, 
-            _id: newOrder.id, 
-            totalAmount: newOrder.total_amount,
-            customer: {
-              name: newOrder.customer_name,
-              phone: newOrder.customer_phone,
-              address: {
-                house: newOrder.address_house,
-                street: newOrder.address_street,
-                city: newOrder.address_city,
-                pincode: newOrder.address_pincode,
-                landmark: newOrder.address_landmark
-              }
-            },
-            items: [] // Items need a separate fetch or backend join if complex
-          };
+          const formattedOrder = formatRealtimeAdminOrder(newOrder);
 
-          setOrders(prev => [formattedOrder, ...prev]);
+          setOrders(prev => {
+            if (prev.some(order => order._id === formattedOrder._id)) return prev;
+            return [formattedOrder, ...prev];
+          });
           toast.success(`NEW ORDER RECEIVED: #${formattedOrder._id.slice(-6)}`, {
             duration: 8000,
             icon: '🥡',
           });
+          scheduleOrdersRefresh();
           
           const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
           audio.play().catch(() => {});
@@ -88,23 +147,54 @@ export default function AdminOrders() {
         (payload: any) => {
           console.log('📢 Order Update Received via Realtime:', payload.new);
           const updated = payload.new as any;
+          const existingOrder = ordersRef.current.find(order => order._id === updated.id);
           
-          setOrders(prev => prev.map(o => o._id === updated.id ? { 
-            ...o, 
-            status: updated.status,
-            deliveryPartner: updated.delivery_partner_name ? {
-              name: updated.delivery_partner_name,
-              phone: updated.delivery_partner_phone,
-              vehicleNumber: updated.delivery_partner_vehicle
-            } : o.deliveryPartner
-          } : o));
+          setOrders(prev => prev.map(order => (
+            order._id === updated.id
+              ? formatRealtimeAdminOrder(updated, order)
+              : order
+          )));
           
-          toast(`Order #${updated.id.slice(-6)} updated to ${updated.status}`, { icon: '🔄' });
+          if (existingOrder?.status !== updated.status) {
+            toast(`Order #${updated.id.slice(-6)} updated to ${updated.status}`, { icon: '🔄' });
+          }
+          scheduleOrdersRefresh();
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'orders' },
+        (payload: any) => {
+          console.log('📢 Order Deletion Received via Realtime:', payload.old);
+          const deletedId = payload.old.id;
+          setOrders(prev => prev.filter(order => order._id !== deletedId));
+          toast.error(`Order #${deletedId.slice(-6)} removed from system`, { icon: '🗑️' });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items' },
+        (payload: any) => {
+          console.log('📢 Order Items Change Received via Realtime:', payload.eventType);
+          // When order items change, we need to refresh the orders to get updated totals and items
+          scheduleOrdersRefresh();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'delivery_partners' },
+        (payload: any) => {
+          console.log('📢 Delivery Partners Change Received via Realtime:', payload.eventType);
+          fetchDeliveryPartners().then(data => setPartners(data)).catch(() => {});
+        }
+      )
+      .subscribe((status) => {
+        console.log('--- ADMIN REALTIME STATUS:', status, '---');
+        setIsRealtimeConnected(status === 'SUBSCRIBED');
+      });
 
     return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -156,50 +246,85 @@ export default function AdminOrders() {
   const liveOrders = orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status));
   const historyOrders = orders.filter(o => ['Delivered', 'Cancelled'].includes(o.status));
   const displayOrders = activeTab === 'live' ? liveOrders : historyOrders;
+  const pendingOrders = orders.filter(o => o.status === 'Pending').length;
+  const activeDeliveryOrders = orders.filter(o => o.status === 'Out for Delivery').length;
+  const completedToday = orders.filter(o => {
+    const createdAt = o.createdAt || o.created_at;
+    return ['Delivered', 'Cancelled'].includes(o.status) && createdAt && new Date(createdAt).toDateString() === new Date().toDateString();
+  }).length;
 
   if (loading) return (
-    <div className="flex flex-col gap-8 animate-pulse">
-      <div className="h-12 w-64 bg-foreground/5 rounded-2xl" />
+    <div className="flex flex-col gap-5 animate-pulse">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-24 bg-foreground/5 rounded-2xl" />
+        ))}
+      </div>
       {[1, 2, 3].map(i => (
-        <div key={i} className="h-64 bg-foreground/5 rounded-[3rem]" />
+        <div key={i} className="h-56 bg-foreground/5 rounded-2xl" />
       ))}
     </div>
   );
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8 relative">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+    <div className="flex flex-col gap-5 md:gap-6 relative">
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-5">
+        <div className="min-w-0">
           <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase mb-2 leading-none">
             {activeTab === 'live' ? 'Live Orders' : 'Order History'}
           </h1>
-          <p className="text-stone-500 font-medium italic text-xs uppercase tracking-widest">
-            {activeTab === 'live' ? 'Real-time management • Socket.IO enabled' : 'Record of completed & cancelled feasts'}
+          <p className="text-stone-500 font-bold text-[10px] sm:text-xs uppercase tracking-widest">
+            {activeTab === 'live' ? 'Real-time management • Supabase Realtime enabled' : 'Record of completed & cancelled feasts'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           {activeTab === 'live' && (
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-500 bg-green-500/5 border border-green-500/10 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.1)]">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Live
+            <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.1)] ${
+              isRealtimeConnected
+                ? 'text-green-500 bg-green-500/5 border border-green-500/10'
+                : 'text-amber-500 bg-amber-500/5 border border-amber-500/10'
+            }`}>
+              <Radio size={14} className={isRealtimeConnected ? 'animate-pulse' : ''} />
+              {isRealtimeConnected ? 'Live' : 'Connecting'}
             </div>
           )}
-          <button onClick={loadData} className="p-4 bg-foreground/5 rounded-2xl border border-glass-border hover:bg-foreground/10 transition-all font-black text-xs">
-             🔄
+          <button onClick={loadData} className="h-11 px-4 bg-foreground/5 rounded-2xl border border-glass-border hover:bg-foreground/10 transition-all font-black text-xs flex items-center gap-2 cursor-pointer">
+             <RefreshCw size={15} />
+             Refresh
           </button>
         </div>
       </header>
 
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        {[
+          { label: 'Live Queue', value: liveOrders.length, tone: 'text-orange-600', icon: Clock },
+          { label: 'Pending', value: pendingOrders, tone: 'text-amber-600', icon: PackageCheck },
+          { label: 'On Road', value: activeDeliveryOrders, tone: 'text-blue-600', icon: Bike },
+          { label: 'Closed Today', value: completedToday, tone: 'text-green-600', icon: CheckCircle2 }
+        ].map(({ label, value, tone, icon: Icon }) => (
+          <div key={label} className="rounded-2xl border border-glass-border bg-foreground/[0.025] p-4 sm:p-5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-widest text-stone-500 truncate">{label}</p>
+              <p className="text-3xl font-black tracking-tighter text-foreground mt-1">{value}</p>
+            </div>
+            <div className={`w-10 h-10 rounded-xl bg-background border border-glass-border flex items-center justify-center ${tone}`}>
+              <Icon size={18} />
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Tabs */}
-      <div className="flex gap-2 p-1.5 bg-foreground/5 rounded-[2rem] border border-glass-border self-start">
+      <div className="grid grid-cols-2 gap-2 p-1.5 bg-foreground/5 rounded-2xl border border-glass-border w-full sm:w-auto sm:self-start">
         <button 
           onClick={() => setActiveTab('live')}
-          className={`px-8 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'live' ? 'bg-orange-600 text-white shadow-lg' : 'text-stone-500 hover:text-foreground'}`}
+          className={`px-5 sm:px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === 'live' ? 'bg-orange-600 text-white shadow-lg' : 'text-stone-500 hover:text-foreground'}`}
         >
           Live ({liveOrders.length})
         </button>
         <button 
           onClick={() => setActiveTab('history')}
-          className={`px-8 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-stone-500 hover:text-foreground'}`}
+          className={`px-5 sm:px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === 'history' ? 'bg-orange-600 text-white shadow-lg' : 'text-stone-500 hover:text-foreground'}`}
         >
           History ({historyOrders.length})
         </button>
@@ -210,18 +335,18 @@ export default function AdminOrders() {
         {assigningOrder && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6"
+            className="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 sm:p-6"
           >
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-background border border-glass-border rounded-[3rem] p-10 shadow-2xl">
-              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-background border border-glass-border rounded-2xl p-6 sm:p-8 shadow-2xl">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-6">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
               <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-4">Select Partner</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Select Partner</label>
                   <select 
                     value={selectedPartnerId} 
                     onChange={e => setSelectedPartnerId(e.target.value)} 
                     required 
-                    className="w-full bg-input-bg text-input-text p-5 rounded-[2rem] text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all appearance-none cursor-pointer"
+                    className="w-full bg-input-bg text-input-text p-4 rounded-2xl text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all appearance-none cursor-pointer"
                   >
                     <option value="">Choose a delivery boy...</option>
                     {partners.filter(p => p.status === 'Available').map(p => (
@@ -237,9 +362,9 @@ export default function AdminOrders() {
                    </div>
                 )}
                 
-                <div className="flex gap-4 mt-4">
-                  <button type="button" onClick={() => { setAssigningOrder(null); setSelectedPartnerId(''); }} className="flex-1 py-5 rounded-[2rem] font-black uppercase tracking-widest text-[10px] text-stone-500 hover:text-stone-400 transition-colors">Cancel</button>
-                  <button type="submit" disabled={!selectedPartnerId} className="flex-[2] bg-orange-600 text-white py-5 rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20 disabled:opacity-50">Confirm Assignment</button>
+                <div className="flex gap-3 mt-2">
+                  <button type="button" onClick={() => { setAssigningOrder(null); setSelectedPartnerId(''); }} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-stone-500 hover:text-stone-400 transition-colors cursor-pointer">Cancel</button>
+                  <button type="submit" disabled={!selectedPartnerId} className="flex-[2] bg-orange-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20 disabled:opacity-50 cursor-pointer">Confirm</button>
                 </div>
               </form>
             </motion.div>
@@ -247,7 +372,7 @@ export default function AdminOrders() {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         <AnimatePresence mode='popLayout'>
           {displayOrders.map((order) => (
             <motion.div
@@ -256,74 +381,83 @@ export default function AdminOrders() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="premium-card rounded-[3rem] overflow-hidden group hover:border-orange-500/20 transition-all duration-500"
+              className="premium-card rounded-2xl overflow-hidden group hover:border-orange-500/30 transition-all duration-300"
             >
-              <div className="flex flex-col lg:flex-row">
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px]">
                  {/* Order Info */}
-                 <div className="flex-1 p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-glass-border">
-                    <div className="flex justify-between items-start mb-8">
-                       <div>
-                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">CULINARY ORDER</span>
-                         <div className="flex flex-col gap-1">
+                 <div className="p-5 sm:p-6 border-b xl:border-b-0 xl:border-r border-glass-border">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-5">
+                       <div className="min-w-0">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-2">Order</span>
+                         <div className="flex flex-col gap-1 min-w-0">
                            <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order._id.slice(-6)}</span>
-                           <span className="font-mono text-[9px] text-stone-400 select-all" title="Click to copy full ID">ID: {order._id}</span>
+                           <span className="font-mono text-[9px] text-stone-400 select-all truncate max-w-full" title="Click to copy full ID">ID: {order._id}</span>
                          </div>
                        </div>
-                       <div className="text-right">
-                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-2">ROYALE TOTAL</span>
-                         <span className="text-3xl font-black text-foreground tracking-tighter">₹{order.totalAmount}</span>
+                       <div className="sm:text-right">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-2">Total</span>
+                         <span className="text-3xl font-black text-foreground tracking-tighter">₹{order.totalAmount || 0}</span>
                        </div>
                     </div>
 
-                    <div className="flex flex-col gap-4 mb-10">
-                       {order.items.map((item: any, idx: number) => (
-                         <div key={idx} className="flex justify-between items-center text-sm">
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
+                      <div className="rounded-2xl bg-foreground/[0.025] border border-glass-border p-4">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-3">Items</span>
+                       <div className="flex flex-col gap-3">
+                       {order.items?.length ? order.items.map((item: any, idx: number) => (
+                         <div key={idx} className="flex justify-between items-center text-sm gap-3">
                            <span className="text-foreground font-bold leading-tight pr-4">
-                             <span className="font-black text-orange-600 mr-3 italic">{item.quantity}x</span>
+                             <span className="font-black text-orange-600 mr-2">{item.quantity}x</span>
                              {item.name}
                            </span>
                            <span className="font-black text-stone-500 shrink-0">₹{item.price * item.quantity}</span>
                          </div>
-                       ))}
-                    </div>
+                       )) : (
+                         <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Syncing items...</p>
+                       )}
+                       </div>
+                      </div>
 
-                    <div className="pt-10 border-t border-glass-border">
-                       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block mb-4">GUEST INFORMATION</span>
+                    <div className="rounded-2xl bg-foreground/[0.025] border border-glass-border p-4">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-3">Guest</span>
                        {order.customer ? (
-                         <>
-                           <p className="font-black text-2xl text-foreground uppercase tracking-tighter mb-2">{order.customer.name}</p>
-                           <div className="flex flex-col gap-2">
-                             <span className="text-sm font-bold text-orange-600 tracking-wide">{order.customer.phone}</span>
-                             <p className="text-xs text-stone-500 italic leading-relaxed max-w-md">
-                               "{order.customer.address?.fullAddress || order.customer.address || 'No address provided'}"
+                         <div className="space-y-3">
+                           <p className="font-black text-lg text-foreground uppercase tracking-tight flex items-center gap-2"><User size={16} className="text-orange-600 shrink-0" />{order.customer.name}</p>
+                           <div className="flex flex-col gap-2 text-xs font-bold text-stone-500">
+                             <span className="flex items-center gap-2 text-orange-600"><Phone size={14} />{order.customer.phone}</span>
+                             <p className="flex items-start gap-2 leading-relaxed">
+                               <MapPin size={14} className="mt-0.5 shrink-0 text-stone-400" />
+                               <span>{order.customer.address?.fullAddress || order.customer.address || 'No address provided'}</span>
                              </p>
                            </div>
-                         </>
+                         </div>
                        ) : (
                          <p className="text-xs text-stone-500 italic">Guest information unavailable</p>
                        )}
+                      </div>
                     </div>
                  </div>
 
                  {/* Status Control */}
-                 <div className="w-full lg:w-96 p-8 md:p-10 bg-foreground/5 flex flex-col justify-between gap-10">
+                 <div className="p-5 sm:p-6 bg-foreground/[0.035] flex flex-col justify-between gap-6">
                     <div>
-                       <div className="flex justify-between items-center mb-6">
-                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600">MISSION STATUS</span>
+                       <div className="flex justify-between items-center gap-3 mb-4">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-500">Status</span>
                          {order.deliveryPartner?.name && (
-                           <span className="text-[10px] font-black bg-orange-600/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20">
-                             🛵 {order.deliveryPartner.name}
+                           <span className="text-[10px] font-black bg-orange-600/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20 flex items-center gap-1.5 truncate max-w-[170px]">
+                             <Bike size={12} /> {order.deliveryPartner.name}
                            </span>
                          )}
                        </div>
-                       <div className={`inline-block px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl ${
-                         order.status === 'Delivered' ? 'bg-green-600 text-white' :
-                         order.status === 'Pending' ? 'bg-amber-600 text-white' : 
-                         order.status === 'Cancelled' ? 'bg-red-600 text-white' : 
-                         'bg-foreground text-background'
-                       }`}>
-                         {order.status}
-                       </div>
+                       {(() => {
+                         const StatusIcon = getStatusIcon(order.status);
+                         return (
+                           <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest border ${STATUS_STYLES[order.status] || 'bg-foreground/5 text-foreground border-glass-border'}`}>
+                             <StatusIcon size={15} />
+                             {order.status}
+                           </div>
+                         );
+                       })()}
                     </div>
 
                     <div className="flex flex-col gap-4">
@@ -331,34 +465,34 @@ export default function AdminOrders() {
                          <>
                            {order.status === 'Pending' ? (
                              <div className="flex flex-col gap-4">
-                               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">AUTHORIZATION</span>
-                               <div className="flex gap-4">
+                               <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block">Authorization</span>
+                               <div className="grid grid-cols-2 gap-3">
                                  <button 
                                    onClick={() => handleStatusChange(order._id, 'Preparing')}
-                                   className="flex-1 bg-green-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-green-600/20 hover:scale-[1.05] transition-all"
+                                   className="bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-green-600/20 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2"
                                  >
-                                   APPROVE
+                                   <CheckCircle2 size={15} /> Approve
                                  </button>
                                  <button 
                                    onClick={() => handleStatusChange(order._id, 'Cancelled')}
-                                   className="flex-1 bg-red-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-red-600/20 hover:scale-[1.05] transition-all"
+                                   className="bg-red-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-red-600/20 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2"
                                  >
-                                   CANCEL
+                                   <XCircle size={15} /> Cancel
                                  </button>
                                </div>
                              </div>
                            ) : (
                              <>
-                               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-600 block">TRANSITION TO</span>
-                               <div className="flex flex-wrap gap-2">
+                               <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block">Transition To</span>
+                               <div className="grid grid-cols-2 gap-2">
                                  {STATUS_OPTIONS.map(status => (
                                    <button
                                      key={status}
                                      onClick={() => handleStatusChange(order._id, status)}
                                      disabled={order.status === status}
-                                     className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                     className={`min-h-10 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${
                                        order.status === status 
-                                       ? 'bg-foreground/5 text-stone-700 pointer-events-none' 
+                                       ? 'bg-foreground/5 text-stone-500 pointer-events-none' 
                                        : 'bg-background text-foreground/60 border border-glass-border hover:bg-orange-600 hover:text-white hover:border-orange-500'
                                      }`}
                                    >
@@ -372,15 +506,16 @@ export default function AdminOrders() {
                            {!order.deliveryPartner?.name && !['Delivered', 'Cancelled', 'Pending'].includes(order.status) && (
                              <button 
                                onClick={() => setAssigningOrder(order)}
-                               className="mt-4 w-full py-5 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-2xl"
+                               className="mt-2 w-full py-4 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-xl cursor-pointer flex items-center justify-center gap-2"
                              >
-                               + ASSIGN DELIVERY PARTNER
+                               <Bike size={15} /> Assign Partner
                              </button>
                            )}
                          </>
                        ) : (
-                         <div className="pt-4 border-t border-glass-border">
-                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest italic">This order is archived and cannot be modified.</p>
+                         <div className="pt-4 border-t border-glass-border flex items-center gap-2">
+                            <CheckCircle2 size={16} className="text-stone-400" />
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Archived order</p>
                          </div>
                        )}
                     </div>
@@ -389,6 +524,17 @@ export default function AdminOrders() {
             </motion.div>
           ))}
         </AnimatePresence>
+        {displayOrders.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-glass-border bg-foreground/[0.025] p-10 sm:p-16 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-foreground/5 border border-glass-border flex items-center justify-center mx-auto mb-5 text-orange-600">
+              <PackageCheck size={24} />
+            </div>
+            <h3 className="text-xl font-black uppercase tracking-tight text-foreground mb-2">No orders here</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-stone-500">
+              {activeTab === 'live' ? 'New orders will appear here automatically.' : 'Completed and cancelled orders will move here.'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

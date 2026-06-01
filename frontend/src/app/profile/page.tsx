@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
@@ -13,6 +13,21 @@ import toast from 'react-hot-toast';
 import AddressCard from '@/components/AddressCard';
 import AddressModal from '@/components/AddressModal';
 import { Camera, Edit3, X, Save, User, Phone } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+
+const formatRealtimeOrder = (order: any, existingItems: any[] = []) => ({
+  ...order,
+  _id: order.id,
+  createdAt: order.created_at,
+  totalAmount: order.total_amount,
+  estimatedDeliveryTime: order.estimated_delivery_time,
+  deliveryPartner: order.delivery_partner_name ? {
+    name: order.delivery_partner_name,
+    phone: order.delivery_partner_phone,
+    vehicleNumber: order.delivery_partner_vehicle
+  } : null,
+  items: existingItems
+});
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
@@ -31,7 +46,12 @@ export default function ProfilePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', phone: '' });
+  const latestOrdersRef = useRef<any[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    latestOrdersRef.current = orders;
+  }, [orders]);
 
   useEffect(() => {
     if (profile || user) {
@@ -167,6 +187,70 @@ export default function ProfilePage() {
     
     loadUserData();
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.email || authLoading || !supabase) return;
+
+    const refreshOrders = async () => {
+      try {
+        const ordersData = await fetchUserOrders(user.email || undefined);
+        setOrders(Array.isArray(ordersData) ? ordersData : []);
+        setLoadingOrders(false);
+      } catch (err) {
+        console.error('Failed to refresh live orders:', err);
+      }
+    };
+
+    const channel = supabase
+      .channel(`profile-orders-${user.email}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_email=eq.${user.email}`
+        },
+        () => {
+          refreshOrders();
+          toast.success('New order added to your history', { icon: '🧾' });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_email=eq.${user.email}`
+        },
+        (payload: any) => {
+          const updatedOrder = payload.new as any;
+          const previousOrders = latestOrdersRef.current;
+          const existingOrder = previousOrders.find(order => (order.id || order._id) === updatedOrder.id);
+          const statusChanged = existingOrder?.status && existingOrder.status !== updatedOrder.status;
+
+          if (!existingOrder) {
+            refreshOrders();
+            return;
+          }
+
+          setOrders(prev => prev.map(order => {
+            if ((order.id || order._id) !== updatedOrder.id) return order;
+            return formatRealtimeOrder(updatedOrder, order.items || []);
+          }));
+
+          if (statusChanged) {
+            toast.success(`Order #${updatedOrder.id.slice(-6)} is now ${updatedOrder.status}`, { icon: '🔄' });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.email, authLoading]);
 
   const handleDeleteAddress = async (id: string) => {
     if (!user?.email || !user?.uid) return;
@@ -360,6 +444,12 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-4">
                     <span className="w-12 h-1.5 bg-orange-600 rounded-full"></span>
                     <h2 className="text-3xl md:text-4xl font-black text-stone-900 dark:text-white uppercase tracking-tighter">Culinary History</h2>
+                    {supabase && user?.email && (
+                      <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-600 border border-green-500/20 text-[9px] font-black uppercase tracking-widest">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        Live
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] font-bold text-stone-400 uppercase tracking-[0.3em] ml-16 italic">Your journey through heritage spices</p>
                 </div>
