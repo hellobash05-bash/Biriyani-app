@@ -221,11 +221,12 @@ export default function OrderTrackingPage() {
       });
     }
 
-    // --- POLLING FALLBACK (Safety Net) ---
+    // --- FAST POLLING FALLBACK (Safety Net) ---
+    // Keeps user tracking live even if Supabase Realtime or the backend socket is unavailable.
     const pollInterval = setInterval(() => {
       console.log('🔄 [POLLING] Refreshing order status...');
       refreshFullOrder();
-    }, 20000); // 20 seconds
+    }, 3000);
 
     return () => {
       socket.disconnect();

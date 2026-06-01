@@ -286,11 +286,12 @@ export default function ProfilePage() {
         });
     }
 
-    // --- POLLING FALLBACK (Safety Net) ---
+    // --- FAST POLLING FALLBACK (Safety Net) ---
+    // Keeps the user order list current even if Realtime or Socket.IO is unavailable.
     const pollInterval = setInterval(() => {
       console.log('🔄 [POLLING] Refreshing user orders...');
       refreshOrders();
-    }, 45000); // 45 seconds
+    }, 5000);
 
     return () => {
       socket.disconnect();
