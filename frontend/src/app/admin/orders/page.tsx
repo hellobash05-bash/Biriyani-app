@@ -386,81 +386,36 @@ export default function AdminOrders() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 sm:p-6"
           >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} 
-              className="w-full max-w-md bg-background border border-glass-border rounded-[2.5rem] overflow-hidden shadow-2xl"
-            >
-              <div className="bg-gradient-to-tr from-orange-600 to-amber-500 p-8 text-white">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
-                    <Bike size={20} />
-                  </div>
-                  <h2 className="text-2xl font-black uppercase tracking-tighter leading-none">Assign Hero</h2>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-background border border-glass-border rounded-2xl p-6 sm:p-8 shadow-2xl">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-6">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
+              <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Select Partner</label>
+                  <select 
+                    value={selectedPartnerId} 
+                    onChange={e => setSelectedPartnerId(e.target.value)} 
+                    required 
+                    className="w-full bg-input-bg text-input-text p-4 rounded-2xl text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Choose a delivery boy...</option>
+                    {partners.filter(p => p.status === 'Available').map(p => (
+                      <option key={p._id} value={p._id}>{p.name} ({p.vehicleNumber})</option>
+                    ))}
+                  </select>
                 </div>
-                <p className="text-white/80 text-[10px] font-black uppercase tracking-widest">Mission ID: <span className="text-white font-mono">#{assigningOrder._id.slice(-6)}</span></p>
-              </div>
-
-              <div className="p-8 sm:p-10">
-                <form onSubmit={handleAssignPartner} className="flex flex-col gap-8">
-                  <div className="flex flex-col gap-3">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-500 ml-2">Select Delivery Hero</label>
-                    <div className="relative group">
-                      <select 
-                        value={selectedPartnerId} 
-                        onChange={e => setSelectedPartnerId(e.target.value)} 
-                        required 
-                        className="w-full bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all appearance-none cursor-pointer pr-12"
-                      >
-                        <option value="">Choose a hero...</option>
-                        {partners.filter(p => p.status === 'Available').map(p => (
-                          <option key={p._id} value={p._id}>{p.name} • {p.vehicleNumber}</option>
-                        ))}
-                      </select>
-                      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400 group-focus-within:text-orange-600 transition-colors">
-                        <RefreshCw size={16} />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {selectedPartnerId && (
-                     <motion.div 
-                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                       className="p-5 bg-orange-500/5 rounded-2xl border border-orange-500/10"
-                     >
-                        <div className="flex items-center gap-3 mb-2">
-                           <div className="w-8 h-8 rounded-lg bg-orange-600/10 flex items-center justify-center text-orange-600">
-                             <Phone size={14} />
-                           </div>
-                           <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">Secure Line</p>
-                        </div>
-                        <p className="text-lg font-black text-foreground ml-11">{partners.find(p => p._id === selectedPartnerId)?.phone}</p>
-                     </motion.div>
-                  )}
-                  
-                  <div className="flex gap-4 pt-2">
-                    <button 
-                      type="button" 
-                      onClick={() => { setAssigningOrder(null); setSelectedPartnerId(''); }} 
-                      className="flex-1 py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] text-stone-500 hover:bg-foreground/5 transition-all cursor-pointer border border-transparent hover:border-glass-border"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      type="submit" 
-                      disabled={!selectedPartnerId} 
-                      className="flex-[2] bg-foreground text-background py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-stone-900/20 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-30 disabled:grayscale cursor-pointer group"
-                    >
-                      <span className="flex items-center justify-center gap-2">
-                        Deploy Hero <CheckCircle2 size={14} className="group-hover:scale-125 transition-transform" />
-                      </span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-              
-              <div className="px-8 py-4 bg-foreground/[0.02] border-t border-glass-border flex items-center justify-center">
-                 <span className="text-[8px] font-black uppercase tracking-[0.4em] text-stone-400">Ready for Deployment</span>
-              </div>
+                
+                {selectedPartnerId && (
+                   <div className="p-4 bg-orange-500/5 rounded-2xl border border-orange-500/10 animate-in fade-in slide-in-from-top-2">
+                      <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Partner Contact</p>
+                      <p className="text-sm font-bold text-foreground">{partners.find(p => p._id === selectedPartnerId)?.phone}</p>
+                   </div>
+                )}
+                
+                <div className="flex gap-3 mt-2">
+                  <button type="button" onClick={() => { setAssigningOrder(null); setSelectedPartnerId(''); }} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] text-stone-500 hover:text-stone-400 transition-colors cursor-pointer">Cancel</button>
+                  <button type="submit" disabled={!selectedPartnerId} className="flex-[2] bg-orange-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20 disabled:opacity-50 cursor-pointer">Confirm</button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
@@ -480,96 +435,55 @@ export default function AdminOrders() {
               <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px]">
                  {/* Order Info */}
                  <div className="p-5 sm:p-6 border-b xl:border-b-0 xl:border-r border-glass-border">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-                       <div className="flex items-center gap-4">
-                         <div className="w-12 h-12 rounded-xl bg-orange-600/10 flex items-center justify-center text-orange-600 shrink-0">
-                           <PackageCheck size={24} />
-                         </div>
-                         <div className="min-w-0">
-                           <div className="flex items-center gap-2 mb-1">
-                             <span className="text-[10px] font-black uppercase tracking-widest text-stone-500">Mission</span>
-                             <span className="px-2 py-0.5 bg-orange-600 text-white text-[9px] font-black rounded-md uppercase tracking-widest shadow-lg shadow-orange-600/20">Active</span>
-                           </div>
-                           <div className="flex flex-col gap-0.5">
-                             <span className="font-black text-xl text-foreground tracking-tighter uppercase leading-none">#{order._id.slice(-6)}</span>
-                             <span className="font-mono text-[8px] text-stone-400 select-all truncate max-w-[150px]" title="Copy Full ID">UID: {order._id}</span>
-                           </div>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-5">
+                       <div className="min-w-0">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-2">Order</span>
+                         <div className="flex flex-col gap-1 min-w-0">
+                           <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order._id.slice(-6)}</span>
+                           <span className="font-mono text-[9px] text-stone-400 select-all truncate max-w-full" title="Click to copy full ID">ID: {order._id}</span>
                          </div>
                        </div>
-                       
-                       <div className="bg-foreground/[0.03] px-6 py-3 rounded-2xl border border-glass-border flex flex-col items-end">
-                         <span className="text-[9px] font-black uppercase tracking-widest text-stone-500 mb-1">Total Valuation</span>
-                         <span className="text-3xl font-black text-foreground tracking-tighter leading-none flex items-center gap-1">
-                           <span className="text-sm font-bold text-stone-400 mt-1">₹</span>{order.totalAmount || 0}
-                         </span>
+                       <div className="sm:text-right">
+                         <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-2">Total</span>
+                         <span className="text-3xl font-black text-foreground tracking-tighter">₹{order.totalAmount || 0}</span>
                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
-                      <div className="rounded-2xl bg-foreground/[0.025] border border-glass-border p-5">
-                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-4 flex items-center gap-2">
-                         <RefreshCw size={12} className="text-orange-600" /> Manifest Items
-                       </span>
+                      <div className="rounded-2xl bg-foreground/[0.025] border border-glass-border p-4">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-3">Items</span>
                        <div className="flex flex-col gap-3">
                        {order.items?.length ? order.items.map((item: any, idx: number) => (
-                         <div key={idx} className="flex justify-between items-center text-sm gap-4 bg-background/50 p-2 rounded-xl border border-glass-border/50">
-                           <div className="flex items-center gap-3">
-                             <span className="w-6 h-6 rounded-md bg-orange-600/10 flex items-center justify-center text-[10px] font-black text-orange-600">
-                               {item.quantity}
-                             </span>
-                             <span className="text-foreground font-bold leading-tight line-clamp-1">
-                               {item.name}
-                             </span>
-                           </div>
-                           <span className="font-black text-stone-500 text-xs shrink-0">₹{item.price * item.quantity}</span>
+                         <div key={idx} className="flex justify-between items-center text-sm gap-3">
+                           <span className="text-foreground font-bold leading-tight pr-4">
+                             <span className="font-black text-orange-600 mr-2">{item.quantity}x</span>
+                             {item.name}
+                           </span>
+                           <span className="font-black text-stone-500 shrink-0">₹{item.price * item.quantity}</span>
                          </div>
                        )) : (
-                         <div className="flex flex-col items-center justify-center py-4 gap-2 opacity-50">
-                           <RefreshCw size={20} className="animate-spin text-stone-400" />
-                           <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest">Syncing Manifest...</p>
-                         </div>
+                         <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Syncing items...</p>
                        )}
                        </div>
                       </div>
 
-                    <div className="rounded-2xl bg-foreground/[0.025] border border-glass-border p-5 relative overflow-hidden group/guest">
-                       <div className="absolute top-0 right-0 p-3 opacity-5 group-hover/guest:opacity-10 transition-opacity">
-                         <User size={40} />
-                       </div>
-                       
-                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-4 flex items-center gap-2">
-                         <User size={12} className="text-orange-600" /> Guest Details
-                       </span>
-                       
+                    <div className="rounded-2xl bg-foreground/[0.025] border border-glass-border p-4">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-3">Guest</span>
                        {order.customer ? (
-                         <div className="space-y-4">
-                           <div>
-                             <p className="font-black text-xl text-foreground uppercase tracking-tight leading-none mb-1">{order.customer.name}</p>
-                             <a href={`tel:${order.customer.phone}`} className="inline-flex items-center gap-1.5 text-[10px] font-black text-orange-600 uppercase tracking-widest hover:underline">
-                               <Phone size={10} /> {order.customer.phone}
-                             </a>
-                           </div>
-                           
-                           <div className="pt-4 border-t border-dashed border-glass-border">
-                             <div className="flex items-start gap-3">
-                               <div className="w-8 h-8 rounded-lg bg-foreground/5 flex items-center justify-center shrink-0">
-                                 <MapPin size={14} className="text-stone-400" />
-                               </div>
-                               <div className="min-w-0">
-                                 <span className="text-[8px] font-black uppercase text-stone-400 block mb-1 tracking-widest">Delivery Vault</span>
-                                 <p className="text-xs font-bold text-stone-600 dark:text-stone-400 leading-relaxed">
-                                   {order.customer.address?.fullAddress || order.customer.address || 'No address provided'}
-                                 </p>
-                               </div>
-                             </div>
+                         <div className="space-y-3">
+                           <p className="font-black text-lg text-foreground uppercase tracking-tight flex items-center gap-2"><User size={16} className="text-orange-600 shrink-0" />{order.customer.name}</p>
+                           <div className="flex flex-col gap-2 text-xs font-bold text-stone-500">
+                             <span className="flex items-center gap-2 text-orange-600"><Phone size={14} />{order.customer.phone}</span>
+                             <p className="flex items-start gap-2 leading-relaxed">
+                               <MapPin size={14} className="mt-0.5 shrink-0 text-stone-400" />
+                               <span>{order.customer.address?.fullAddress || order.customer.address || 'No address provided'}</span>
+                             </p>
                            </div>
                          </div>
                        ) : (
-                         <div className="py-8 text-center">
-                           <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest italic">Guest Profile Restricted</p>
-                         </div>
+                         <p className="text-xs text-stone-500 italic">Guest information unavailable</p>
                        )}
-                    </div>
+                      </div>
                     </div>
                  </div>
 
@@ -579,12 +493,9 @@ export default function AdminOrders() {
                        <div className="flex justify-between items-center gap-3 mb-4">
                          <span className="text-[10px] font-black uppercase tracking-widest text-stone-500">Status</span>
                          {order.deliveryPartner?.name && (
-                           <div className="flex flex-col items-end gap-1">
-                             <span className="text-[9px] font-black bg-orange-600/10 text-orange-500 px-3 py-1 rounded-full border border-orange-500/20 flex items-center gap-1.5 truncate max-w-[170px]">
-                               <Bike size={11} /> {order.deliveryPartner.name}
-                             </span>
-                             <span className="text-[8px] font-bold text-stone-400 uppercase tracking-widest">{order.deliveryPartner.vehicleNumber}</span>
-                           </div>
+                           <span className="text-[10px] font-black bg-orange-600/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20 flex items-center gap-1.5 truncate max-w-[170px]">
+                             <Bike size={12} /> {order.deliveryPartner.name}
+                           </span>
                          )}
                        </div>
                        {(() => {
@@ -621,10 +532,7 @@ export default function AdminOrders() {
                              </div>
                            ) : (
                              <>
-                               <div className="flex items-center justify-between gap-2 mb-1">
-                                 <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block">Transition To</span>
-                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse"></span>
-                               </div>
+                               <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block">Transition To</span>
                                <div className="grid grid-cols-2 gap-2">
                                  {STATUS_OPTIONS.map(status => (
                                    <button
@@ -647,16 +555,16 @@ export default function AdminOrders() {
                            {!order.deliveryPartner?.name && !['Delivered', 'Cancelled', 'Pending'].includes(order.status) && (
                              <button 
                                onClick={() => setAssigningOrder(order)}
-                               className="mt-2 w-full py-4 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-xl cursor-pointer flex items-center justify-center gap-3 active:scale-95"
+                               className="mt-2 w-full py-4 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-xl cursor-pointer flex items-center justify-center gap-2"
                              >
-                               <Bike size={16} /> Assign Hero
+                               <Bike size={15} /> Assign Partner
                              </button>
                            )}
                          </>
                        ) : (
                          <div className="pt-4 border-t border-glass-border flex items-center gap-2">
                             <CheckCircle2 size={16} className="text-stone-400" />
-                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Archived Mission</p>
+                            <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Archived order</p>
                          </div>
                        )}
                     </div>
