@@ -403,21 +403,63 @@ export default function OrderTrackingPage() {
 
         {/* Delivery Partner Details */}
         {order.status !== 'Cancelled' && order.deliveryPartner && order.deliveryPartner.name && (
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="premium-card p-6 bg-gradient-to-r from-orange-500/10 to-amber-500/5 border border-orange-500/20">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4">Your Delivery Partner</h3>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-foreground text-background rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">
-                  🛵
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            transition={{ delay: 0.1 }} 
+            className="premium-card p-0 overflow-hidden bg-white dark:bg-stone-900/40 border border-orange-500/20 shadow-xl shadow-orange-500/5"
+          >
+            <div className="bg-gradient-to-r from-orange-600 to-amber-500 px-6 py-3 flex items-center justify-between">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-2">
+                <Bike size={14} /> Your Delivery Hero
+              </h3>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-white/20 rounded-full border border-white/10">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-[8px] font-black uppercase text-white tracking-widest">On Duty</span>
+              </div>
+            </div>
+            
+            <div className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-5 w-full sm:w-auto">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-500/10 rounded-2xl flex items-center justify-center font-black text-2xl shadow-inner border border-orange-500/10 shrink-0">
+                    🛵
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white dark:border-stone-900 rounded-full flex items-center justify-center text-[10px] text-white">
+                    ✓
+                  </div>
                 </div>
-                <div>
-                  <p className="font-black text-foreground text-lg uppercase tracking-tight">{order.deliveryPartner.name}</p>
-                  <p className="text-xs font-bold text-stone-500">{order.deliveryPartner.vehicleNumber}</p>
+                <div className="min-w-0">
+                  <p className="font-black text-foreground text-xl uppercase tracking-tighter leading-tight mb-1 truncate">
+                    {order.deliveryPartner.name}
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 bg-foreground/5 rounded-md border border-glass-border">{order.deliveryPartner.vehicleNumber}</span>
+                      • Verified Partner
+                    </p>
+                  </div>
                 </div>
               </div>
-              <a href={`tel:${order.deliveryPartner.phone}`} className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30 hover:scale-105 transition-transform">
-                📞
-              </a>
+              
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <a 
+                  href={`tel:${order.deliveryPartner.phone}`} 
+                  className="flex-1 sm:flex-none h-14 px-6 bg-foreground text-background dark:bg-white dark:text-stone-900 rounded-2xl flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest hover:bg-orange-600 hover:text-white dark:hover:bg-orange-600 dark:hover:text-white transition-all shadow-lg active:scale-95"
+                >
+                  <Phone size={16} />
+                  Call Hero
+                </a>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 bg-foreground/[0.02] border-t border-glass-border flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-600">
+                <MapPin size={14} />
+              </div>
+              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest leading-relaxed">
+                Picking up your feast from <span className="text-foreground">Royale Kitchen</span>
+              </p>
             </div>
           </motion.div>
         )}

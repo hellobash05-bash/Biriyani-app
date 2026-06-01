@@ -120,25 +120,48 @@ export default function CheckoutPage() {
 
           <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-5 gap-12">
             {/* Delivery Details Section */}
-            <section className="lg:col-span-3 flex flex-col gap-10">
-               <div className="flex flex-col gap-2">
-                 <h2 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-4">
-                   <span className="w-8 h-1 bg-orange-600 rounded-full"></span>
-                   Delivery Details
-                 </h2>
-                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-12 italic">Select your preferred delivery vault</p>
-               </div>
+             <section className="lg:col-span-3 flex flex-col gap-10">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-orange-600/20">
+                      <MapPin size={24} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-black text-foreground uppercase tracking-tighter leading-tight">
+                        Delivery Details
+                      </h2>
+                      <p className="text-[10px] font-black text-stone-500 uppercase tracking-[0.2em] italic">Where should we drop the feast?</p>
+                    </div>
+                  </div>
+                </div>
 
-               <div className="bg-white/30 dark:bg-stone-900/20 backdrop-blur-md rounded-[4rem] p-8 md:p-12 border border-stone-100 dark:border-white/5 shadow-2xl shadow-stone-900/5">
-                 <CheckoutAddressSelector 
-                   onAddressSelect={(addr) => {
-                     console.log('>>> [CHECKOUT] ADDRESS SELECTED:', addr.id);
-                     setSelectedAddress(addr);
-                   }}
-                   selectedAddressId={selectedAddress?.id || selectedAddress?._id}
-                 />
-               </div>
-            </section>
+                <div className="relative group">
+                  {/* Decorative background element */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-amber-500 rounded-[3rem] blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
+
+                  <div className="relative bg-white dark:bg-stone-900/40 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-10 border border-stone-100 dark:border-white/5 shadow-2xl">
+                    <div className="mb-8 flex items-center justify-between border-b border-glass-border pb-6">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Select Vault</span>
+                        <span className="text-sm font-bold text-stone-500">Choose from your saved addresses</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/5 border border-orange-500/10 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
+                        <span className="text-[9px] font-black uppercase text-orange-600 tracking-widest">Secured</span>
+                      </div>
+                    </div>
+
+                    <CheckoutAddressSelector
+                      onAddressSelect={(addr) => {
+                        console.log('>>> [CHECKOUT] ADDRESS SELECTED:', addr.id);
+                        setSelectedAddress(addr);
+                      }}
+                      selectedAddressId={selectedAddress?.id || selectedAddress?._id}
+                    />
+                  </div>
+                </div>
+             </section>
+
 
             {/* Order Summary */}
             <section className="lg:col-span-2 flex flex-col gap-8">

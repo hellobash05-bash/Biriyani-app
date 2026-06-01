@@ -107,11 +107,14 @@ export default function AdminDeliveryPartners() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div className="flex flex-col gap-10">
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase mb-2">Delivery Fleet</h1>
-          <p className="text-stone-500 font-medium italic">Manage your royale delivery partners.</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-1.5 h-8 bg-orange-600 rounded-full"></div>
+            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none">Delivery Fleet</h1>
+          </div>
+          <p className="text-stone-500 font-bold text-xs uppercase tracking-[0.3em] ml-5 italic">Managing Royale Logistics & Heroes</p>
         </div>
         <button 
           onClick={() => { 
@@ -119,126 +122,114 @@ export default function AdminDeliveryPartners() {
             setEditingItem(null); 
             setFormData({ name: '', phone: '', vehicleNumber: '', status: 'Available' });
           }}
-          className="w-full md:w-auto p-6 bg-orange-600 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl shadow-orange-600/20 hover:scale-105 transition-all"
+          className="group relative inline-flex items-center gap-3 px-8 py-4 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20 hover:scale-105 active:scale-95 transition-all overflow-hidden"
         >
-          Add Delivery Boy +
+          <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+          <span className="relative flex items-center gap-2">
+            <span className="text-lg">+</span> Register New Hero
+          </span>
         </button>
       </header>
 
-      {/* Form Overlay */}
-      <AnimatePresence>
-        {(isAdding || editingPartner) && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-6"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="w-full max-w-md bg-background rounded-[3rem] p-10 shadow-2xl border border-glass-border"
-            >
-              <h2 className="text-2xl font-black uppercase tracking-tighter text-foreground mb-8">
-                {editingPartner ? 'Update Partner' : 'New Delivery Boy'}
-              </h2>
+      {/* Stats Quick View */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Heroes', value: partners.length, icon: '👥', color: 'bg-blue-500/10 text-blue-500' },
+          { label: 'Available', value: partners.filter(p => p.status === 'Available').length, icon: '✅', color: 'bg-green-500/10 text-green-500' },
+          { label: 'On Mission', value: partners.filter(p => p.status === 'Busy').length, icon: '🛵', color: 'bg-amber-500/10 text-amber-500' },
+          { label: 'Offline', value: partners.filter(p => p.status === 'Offline').length, icon: '🌙', color: 'bg-stone-500/10 text-stone-500' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-foreground/[0.02] border border-glass-border rounded-2xl p-5 flex items-center justify-between">
+            <div>
+              <p className="text-[9px] font-black uppercase text-stone-500 tracking-widest mb-1">{stat.label}</p>
+              <p className="text-2xl font-black text-foreground">{stat.value}</p>
+            </div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${stat.color}`}>
+              {stat.icon}
+            </div>
+          </div>
+        ))}
+      </div>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Full Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Rahul Kumar" 
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                    required 
-                    className="w-full bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold outline-none border border-input-border focus:border-orange-500" 
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Phone Number</label>
-                  <input 
-                    type="tel" 
-                    placeholder="+91 98765 43210" 
-                    value={formData.phone}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
-                    required 
-                    className="w-full bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold outline-none border border-input-border focus:border-orange-500" 
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Vehicle Number</label>
-                  <input 
-                    type="text" 
-                    placeholder="KL 07 AB 1234" 
-                    value={formData.vehicleNumber}
-                    onChange={e => setFormData({...formData, vehicleNumber: e.target.value})}
-                    required 
-                    className="w-full bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold outline-none border border-input-border focus:border-orange-500" 
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Status</label>
-                  <select 
-                    value={formData.status}
-                    onChange={e => setFormData({...formData, status: e.target.value})}
-                    className="w-full bg-input-bg text-input-text p-5 rounded-2xl text-sm font-bold outline-none border border-input-border focus:border-orange-500"
-                  >
-                    <option value="Available">Available</option>
-                    <option value="Busy">Busy</option>
-                    <option value="Offline">Offline</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-4 mt-4">
-                  <button type="submit" className="flex-1 p-5 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-xs">
-                    {editingPartner ? 'Save Changes' : 'Register Boy'}
-                  </button>
-                  <button type="button" onClick={() => { setIsAdding(false); setEditingItem(null); }} className="px-8 p-5 bg-foreground/5 text-foreground rounded-2xl font-black uppercase tracking-widest text-xs">
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {partners.map((partner) => (
           <motion.div 
             key={partner._id} 
-            className="premium-card p-8 group relative overflow-hidden"
+            layout
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="group premium-card p-0 overflow-hidden hover:border-orange-500/30 transition-all duration-300 shadow-xl shadow-stone-900/5 dark:shadow-none"
           >
-            <div className="flex justify-between items-start mb-6">
-               <div className="w-12 h-12 bg-orange-600/10 rounded-2xl flex items-center justify-center text-orange-600 text-xl">
-                 🛵
-               </div>
-               <div className="flex gap-2">
-                 <button onClick={() => { setEditingItem(partner); setFormData({ name: partner.name, phone: partner.phone, vehicleNumber: partner.vehicleNumber, status: partner.status }); }} className="w-8 h-8 flex items-center justify-center bg-foreground/5 rounded-lg hover:bg-orange-500 hover:text-white transition-all text-xs">✏️</button>
-                 <button onClick={() => handleDelete(partner._id)} className="w-8 h-8 flex items-center justify-center bg-foreground/5 rounded-lg hover:bg-red-500 hover:text-white transition-all text-xs">🗑️</button>
-               </div>
-            </div>
+            <div className="p-6 sm:p-8">
+              <div className="flex justify-between items-start mb-6">
+                 <div className="relative">
+                   <div className="w-16 h-16 bg-foreground/5 rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-glass-border group-hover:bg-orange-600/10 transition-colors">
+                     🛵
+                   </div>
+                   <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-4 border-background flex items-center justify-center ${
+                     partner.status === 'Available' ? 'bg-green-500' :
+                     partner.status === 'Busy' ? 'bg-amber-500' : 'bg-stone-500'
+                   }`}></div>
+                 </div>
+                 <div className="flex gap-2">
+                   <button 
+                     onClick={() => { setEditingItem(partner); setFormData({ name: partner.name, phone: partner.phone, vehicleNumber: partner.vehicleNumber, status: partner.status }); }} 
+                     className="w-10 h-10 flex items-center justify-center bg-foreground/5 rounded-xl hover:bg-orange-600 hover:text-white transition-all text-xs border border-glass-border cursor-pointer"
+                   >
+                     ✏️
+                   </button>
+                   <button 
+                     onClick={() => handleDelete(partner._id)} 
+                     className="w-10 h-10 flex items-center justify-center bg-foreground/5 rounded-xl hover:bg-red-600 hover:text-white transition-all text-xs border border-glass-border cursor-pointer"
+                   >
+                     🗑️
+                   </button>
+                 </div>
+              </div>
 
-            <h3 className="text-xl font-black text-foreground uppercase tracking-tight mb-1">{partner.name}</h3>
-            <p className="text-sm font-bold text-orange-600 mb-4">{partner.phone}</p>
+              <div className="mb-6">
+                <h3 className="text-2xl font-black text-foreground uppercase tracking-tighter leading-tight mb-1">{partner.name}</h3>
+                <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
+                   Hero Contact: {partner.phone}
+                </p>
+              </div>
+              
+              <div className="space-y-4 pt-6 border-t border-glass-border">
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-foreground/[0.03] p-3 rounded-xl border border-glass-border">
+                     <span className="text-[8px] font-black uppercase text-stone-500 block mb-1">Vehicle ID</span>
+                     <span className="text-xs font-bold text-foreground font-mono">{partner.vehicleNumber}</span>
+                   </div>
+                   <div className="bg-foreground/[0.03] p-3 rounded-xl border border-glass-border">
+                     <span className="text-[8px] font-black uppercase text-stone-500 block mb-1">Status</span>
+                     <span className={`text-[10px] font-black uppercase tracking-widest ${
+                       partner.status === 'Available' ? 'text-green-500' :
+                       partner.status === 'Busy' ? 'text-amber-500' : 'text-stone-500'
+                     }`}>{partner.status}</span>
+                   </div>
+                 </div>
+
+                 <div className="bg-orange-500/5 border border-orange-500/10 p-4 rounded-xl flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-lg bg-orange-600/10 flex items-center justify-center text-orange-600 text-xs font-black">
+                        {partner.activeOrders || 0}
+                     </div>
+                     <span className="text-[9px] font-black uppercase text-orange-600 tracking-widest">Active Missions</span>
+                   </div>
+                   {partner.activeOrders > 0 && (
+                     <div className="flex gap-1">
+                        {[...Array(Math.min(3, partner.activeOrders))].map((_, i) => (
+                          <div key={i} className="w-1 h-3 bg-orange-600 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}></div>
+                        ))}
+                     </div>
+                   )}
+                 </div>
+              </div>
+            </div>
             
-            <div className="space-y-3 pt-4 border-t border-glass-border">
-               <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                  <span className="text-stone-400">Vehicle</span>
-                  <span className="text-foreground">{partner.vehicleNumber}</span>
-               </div>
-               <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                  <span className="text-stone-400">Status</span>
-                  <span className={`${
-                    partner.status === 'Available' ? 'text-green-500' :
-                    partner.status === 'Busy' ? 'text-amber-500' : 'text-stone-500'
-                  }`}>{partner.status}</span>
-               </div>
-               <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                  <span className="text-stone-400">Active Orders</span>
-                  <span className="text-foreground">{partner.activeOrders || 0}</span>
-               </div>
+            <div className="px-6 py-4 bg-foreground/5 flex items-center justify-center border-t border-glass-border group-hover:bg-orange-600/5 transition-colors">
+               <span className="text-[8px] font-black uppercase tracking-[0.3em] text-stone-500 group-hover:text-orange-600 transition-colors">Tracking Enabled • Secured Hero</span>
             </div>
           </motion.div>
         ))}
