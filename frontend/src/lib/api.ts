@@ -468,6 +468,17 @@ export async function deleteAddress(id: string, email: string, uid?: string) {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (response.ok) return response.json();
+  } catch (err) {
+    console.warn('Backend admin status route failed. Falling back to local route.', err);
+  }
+
   if (typeof window !== 'undefined') {
     const localResponse = await fetch(`/api/admin/orders/${orderId}/status`, {
       method: 'PATCH',
@@ -476,15 +487,8 @@ export async function updateOrderStatus(orderId: string, status: string) {
     });
 
     if (localResponse.ok) return localResponse.json();
-    console.warn('Local admin status route failed. Falling back to external APIs.');
+    console.warn('Local admin status route failed. Falling back to Supabase update.');
   }
-
-  const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
-  });
-  if (response.ok) return response.json();
 
   console.warn('Admin status endpoint unavailable. Falling back to Supabase update.');
 

@@ -83,10 +83,10 @@ app.use((req, res, next) => {
 // ABSOLUTE TOP PRIORITY HEALTH CHECK (V11.0)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '11.1.0-ADDRESS-SCHEMA-SAFE', 
+    version: '11.2.0-LIVE-ORDER-TRACKING', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'ADDRESS SCHEMA SAFE BUILD ONLINE.'
+    msg: 'LIVE ORDER TRACKING BUILD ONLINE.'
   });
 });
 

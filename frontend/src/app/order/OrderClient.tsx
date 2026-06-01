@@ -34,6 +34,7 @@ export default function OrderTrackingPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const latestItemsRef = useRef<any[]>([]);
   const latestStatusRef = useRef<string | null>(null);
+  const lastNotifiedStatusRef = useRef<string | null>(null);
 
   const getAudioContext = () => {
     if (typeof window === 'undefined') return null;
@@ -79,6 +80,67 @@ export default function OrderTrackingPage() {
     });
   };
 
+  const getStatusMessage = (status: string) => {
+    if (status === 'Preparing') return { message: 'Chefs are preparing your feast!', icon: '👨‍🍳' };
+    if (status === 'Packed') return { message: 'Your order is packed and ready!', icon: '📦' };
+    if (status === 'Out for Delivery') return { message: 'Your order is out for delivery!', icon: '🛵' };
+    if (status === 'Delivered') return { message: 'Order delivered successfully. Enjoy!', icon: '🎉' };
+    return { message: `Status Update: ${status}`, icon: '🔔' };
+  };
+
+  const formatLiveOrder = (updated: any, previousOrder: any) => ({
+    ...previousOrder,
+    ...updated,
+    _id: updated._id || updated.id || previousOrder?._id,
+    totalAmount: updated.totalAmount ?? updated.total_amount ?? previousOrder?.totalAmount,
+    estimatedDeliveryTime: updated.estimatedDeliveryTime ?? updated.estimated_delivery_time ?? previousOrder?.estimatedDeliveryTime,
+    deliveryPartner: updated.deliveryPartner || (updated.delivery_partner_name ? {
+      name: updated.delivery_partner_name,
+      phone: updated.delivery_partner_phone,
+      vehicleNumber: updated.delivery_partner_vehicle
+    } : previousOrder?.deliveryPartner || null),
+    items: previousOrder?.items || latestItemsRef.current
+  });
+
+  const refreshFullOrder = async (isSilent = true) => {
+    if (!orderId) return;
+
+    try {
+      const data = await fetchOrderById(orderId, user?.email);
+      setOrder(data);
+    } catch (err) {
+      console.error('Order live refresh failed:', err);
+      if (!isSilent) toast.error('Failed to refresh order status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLiveOrderUpdate = (updated: any) => {
+    if ((updated._id || updated.id) !== orderId) return;
+
+    const nextStatus = updated.status;
+    const previousStatus = latestStatusRef.current;
+    const statusChanged = nextStatus && nextStatus !== previousStatus;
+    const shouldNotify = statusChanged && lastNotifiedStatusRef.current !== nextStatus;
+
+    if (shouldNotify) {
+      lastNotifiedStatusRef.current = nextStatus;
+      playStatusChangeSound();
+
+      if (nextStatus === 'Cancelled') {
+        toast.error('Order Cancelled.', { icon: '✕', duration: 10000 });
+      } else {
+        const { message, icon } = getStatusMessage(nextStatus);
+        toast.success(message, { icon, duration: 8000 });
+      }
+    }
+
+    latestStatusRef.current = nextStatus || previousStatus;
+    setOrder(prev => formatLiveOrder(updated, prev));
+    refreshFullOrder().catch(() => {});
+  };
+
   useEffect(() => {
     latestItemsRef.current = order?.items || [];
     latestStatusRef.current = order?.status || null;
@@ -106,18 +168,7 @@ export default function OrderTrackingPage() {
       return;
     }
 
-    // 1. Fetch initial order data
-    const fetchOrder = async () => {
-      try {
-        const data = await fetchOrderById(orderId, user?.email);
-        setOrder(data);
-      } catch (err) {
-        console.error('Order fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrder();
+    refreshFullOrder(false);
 
     // --- SOCKET.IO TRACKING (Primary) ---
     console.log('--- SETTING UP SOCKET TRACKING FOR ORDER:', orderId, '---');
@@ -132,25 +183,7 @@ export default function OrderTrackingPage() {
       if ((updated._id || updated.id) !== orderId) return;
       
       console.log('📢 [SOCKET] Order Update Received:', updated.status);
-      const statusChanged = updated.status && updated.status !== latestStatusRef.current;
-      
-      if (statusChanged) {
-        playStatusChangeSound();
-        let message = `Status Update: ${updated.status}`;
-        let icon = '🔔';
-        if (updated.status === 'Preparing') { message = 'Chefs are preparing your feast!'; icon = '👨‍🍳'; }
-        if (updated.status === 'Packed') { message = 'Your order is packed and ready!'; icon = '📦'; }
-        if (updated.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
-        if (updated.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
-        if (updated.status === 'Cancelled') { 
-          toast.error('Order Cancelled.', { icon: '✕', duration: 10000 });
-          setOrder(prev => ({ ...prev, ...updated, items: prev?.items || [] }));
-          return;
-        }
-        toast.success(message, { icon, duration: 8000 });
-      }
-
-      setOrder(prev => ({ ...prev, ...updated, items: prev?.items || [] }));
+      handleLiveOrderUpdate(updated);
     });
 
     socket.on('disconnect', () => {
@@ -159,12 +192,15 @@ export default function OrderTrackingPage() {
     });
 
     // --- SUPABASE REALTIME (Backup) ---
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
     if (!supabase) {
       console.warn('Supabase client not initialized. Realtime backup disabled.');
+      setIsRealtimeConnected(false);
     } else {
       console.log(`--- SETTING UP REALTIME TRACKING FOR ORDER: ${orderId} ---`);
       
-      const channel = supabase
+      channel = supabase
         .channel(`order-tracking-${orderId}`)
       .on(
         'postgres_changes',
@@ -176,43 +212,7 @@ export default function OrderTrackingPage() {
         },
         (payload: any) => {
           console.log('📢 Realtime Order Update Received:', payload.new);
-          const updatedOrder = payload.new as any;
-          const statusChanged = updatedOrder.status && updatedOrder.status !== latestStatusRef.current;
-          
-          // Map snake_case from DB to camelCase expected by component
-          const formattedOrder = {
-            ...updatedOrder,
-            _id: updatedOrder.id,
-            totalAmount: updatedOrder.total_amount,
-            estimatedDeliveryTime: updatedOrder.estimated_delivery_time,
-            deliveryPartner: updatedOrder.delivery_partner_name ? {
-              name: updatedOrder.delivery_partner_name,
-              phone: updatedOrder.delivery_partner_phone,
-              vehicleNumber: updatedOrder.delivery_partner_vehicle
-            } : null,
-            // Items are not part of the order update usually, keep existing ones
-            items: latestItemsRef.current
-          };
-
-          if (statusChanged) {
-            playStatusChangeSound();
-          }
-          
-          let message = `Status Update: ${formattedOrder.status}`;
-          let icon = '🔔';
-          
-          if (formattedOrder.status === 'Preparing') { message = 'Chefs are preparing your feast!'; icon = '👨‍🍳'; }
-          if (formattedOrder.status === 'Packed') { message = 'Your order is packed and ready!'; icon = '📦'; }
-          if (formattedOrder.status === 'Out for Delivery') { message = 'Your order is out for delivery!'; icon = '🛵'; }
-          if (formattedOrder.status === 'Delivered') { message = 'Order delivered successfully. Enjoy!'; icon = '🎉'; }
-          if (formattedOrder.status === 'Cancelled') { 
-            toast.error('Order Cancelled.', { icon: '✕', duration: 10000 });
-            setOrder(formattedOrder);
-            return;
-          }
-          
-          toast.success(message, { icon, duration: 8000 });
-          setOrder(formattedOrder);
+          handleLiveOrderUpdate(payload.new);
         }
       )
       .subscribe((status) => {
@@ -224,15 +224,13 @@ export default function OrderTrackingPage() {
     // --- POLLING FALLBACK (Safety Net) ---
     const pollInterval = setInterval(() => {
       console.log('🔄 [POLLING] Refreshing order status...');
-      fetchOrder();
+      refreshFullOrder();
     }, 20000); // 20 seconds
 
     return () => {
       socket.disconnect();
       clearInterval(pollInterval);
-      if (supabase) {
-        supabase.removeAllChannels();
-      }
+      if (supabase && channel) supabase.removeChannel(channel);
     };
   }, [orderId, authLoading, user?.email]);
 

@@ -16,20 +16,6 @@ import { Camera, Edit3, X, Save, User, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { io } from 'socket.io-client';
 
-const formatRealtimeOrder = (order: any, existingItems: any[] = []) => ({
-  ...order,
-  _id: order.id,
-  createdAt: order.created_at,
-  totalAmount: order.total_amount,
-  estimatedDeliveryTime: order.estimated_delivery_time,
-  deliveryPartner: order.delivery_partner_name ? {
-    name: order.delivery_partner_name,
-    phone: order.delivery_partner_phone,
-    vehicleNumber: order.delivery_partner_vehicle
-  } : null,
-  items: existingItems
-});
-
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
@@ -50,6 +36,7 @@ export default function ProfilePage() {
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', phone: '' });
   const latestOrdersRef = useRef<any[]>([]);
+  const lastNotifiedOrderStatusRef = useRef<Record<string, string>>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -204,6 +191,35 @@ export default function ProfilePage() {
       }
     };
 
+    const handleLiveOrderUpdate = (updated: any) => {
+      const orderId = updated.id || updated._id;
+      const previousOrders = latestOrdersRef.current;
+      const existingOrder = previousOrders.find(order => (order.id || order._id) === orderId);
+      const statusChanged = existingOrder?.status && existingOrder.status !== updated.status;
+
+      if (!existingOrder) {
+        refreshOrders();
+        return;
+      }
+
+      setOrders(prev => prev.map(order => {
+        if ((order.id || order._id) !== orderId) return order;
+        return {
+          ...order,
+          ...updated,
+          _id: orderId,
+          totalAmount: updated.totalAmount ?? updated.total_amount ?? order.totalAmount,
+          estimatedDeliveryTime: updated.estimatedDeliveryTime ?? updated.estimated_delivery_time ?? order.estimatedDeliveryTime,
+          items: order.items || []
+        };
+      }));
+
+      if (statusChanged && lastNotifiedOrderStatusRef.current[orderId] !== updated.status) {
+        lastNotifiedOrderStatusRef.current[orderId] = updated.status;
+        toast.success(`Order #${orderId.slice(-6)} is now ${updated.status}`, { icon: '🔄' });
+      }
+    };
+
     // --- SOCKET.IO TRACKING (Primary) ---
     console.log('--- SETTING UP PROFILE SOCKET.IO ---', SOCKET_URL);
     const socket = io(SOCKET_URL);
@@ -225,23 +241,7 @@ export default function ProfilePage() {
       if (email !== user.email) return;
       
       console.log('📢 [SOCKET] Personal Order Update Received:', updated.status);
-      const previousOrders = latestOrdersRef.current;
-      const existingOrder = previousOrders.find(order => (order.id || order._id) === (updated.id || updated._id));
-      const statusChanged = existingOrder?.status && existingOrder.status !== updated.status;
-
-      if (!existingOrder) {
-        refreshOrders();
-        return;
-      }
-
-      setOrders(prev => prev.map(order => {
-        if ((order.id || order._id) !== (updated.id || updated._id)) return order;
-        return { ...order, ...updated, _id: updated.id || updated._id };
-      }));
-
-      if (statusChanged) {
-        toast.success(`Order #${(updated.id || updated._id).slice(-6)} is now ${updated.status}`, { icon: '🔄' });
-      }
+      handleLiveOrderUpdate(updated);
     });
 
     socket.on('disconnect', () => {
@@ -250,9 +250,11 @@ export default function ProfilePage() {
     });
 
     // --- SUPABASE REALTIME (Backup) ---
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
     if (supabase) {
       console.log('--- SETTING UP PROFILE REALTIME BACKUP ---');
-      const channel = supabase
+      channel = supabase
         .channel(`profile-orders-${user.email}`)
         .on(
           'postgres_changes',
@@ -275,17 +277,7 @@ export default function ProfilePage() {
             filter: `user_email=eq.${user.email}`
           },
           (payload: any) => {
-            const updatedOrder = payload.new as any;
-            const previousOrders = latestOrdersRef.current;
-            const existingOrder = previousOrders.find(order => (order.id || order._id) === updatedOrder.id);
-            if (!existingOrder) {
-              refreshOrders();
-              return;
-            }
-            setOrders(prev => prev.map(order => {
-              if ((order.id || order._id) !== updatedOrder.id) return order;
-              return formatRealtimeOrder(updatedOrder, order.items || []);
-            }));
+            handleLiveOrderUpdate(payload.new as any);
           }
         )
         .subscribe((status) => {
@@ -303,9 +295,7 @@ export default function ProfilePage() {
     return () => {
       socket.disconnect();
       clearInterval(pollInterval);
-      if (supabase) {
-        supabase.removeAllChannels();
-      }
+      if (supabase && channel) supabase.removeChannel(channel);
     };
   }, [user?.email, authLoading]);
 
