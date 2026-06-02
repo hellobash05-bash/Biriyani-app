@@ -54,6 +54,40 @@ export default function ProfilePage() {
   const lastNotifiedOrderStatusRef = useRef<Record<string, string>>({});
   const router = useRouter();
 
+  const getAddressCacheKey = () => {
+    const identity = user?.uid || user?.email?.toLowerCase();
+    return identity ? `profile-addresses:${identity}` : null;
+  };
+
+  const readCachedAddresses = () => {
+    if (typeof window === 'undefined') return [];
+
+    const cacheKey = getAddressCacheKey();
+    if (!cacheKey) return [];
+
+    try {
+      const cached = window.localStorage.getItem(cacheKey);
+      const parsed = cached ? JSON.parse(cached) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.warn('>>> [PROFILE] Address cache read failed:', err);
+      return [];
+    }
+  };
+
+  const writeCachedAddresses = (nextAddresses: any[]) => {
+    if (typeof window === 'undefined') return;
+
+    const cacheKey = getAddressCacheKey();
+    if (!cacheKey) return;
+
+    try {
+      window.localStorage.setItem(cacheKey, JSON.stringify(nextAddresses));
+    } catch (err) {
+      console.warn('>>> [PROFILE] Address cache write failed:', err);
+    }
+  };
+
   useEffect(() => {
     latestOrdersRef.current = orders;
   }, [orders]);
@@ -109,7 +143,18 @@ export default function ProfilePage() {
       return;
     }
 
-    if (!isSilent) setLoadingAddresses(true);
+    const cachedAddresses = readCachedAddresses();
+
+    if (!isSilent) {
+      setLoadingAddresses(true);
+
+      if (cachedAddresses.length > 0) {
+        setAddresses(cachedAddresses);
+        setLatestAddressPreview(cachedAddresses[0] as AddressPreview);
+        setLoadingAddresses(false);
+      }
+    }
+
     console.log(`>>> [PROFILE] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid} (Silent: ${isSilent})`);
 
     try {
@@ -118,15 +163,26 @@ export default function ProfilePage() {
       console.log('>>> [PROFILE] ADDRESS DATA RECEIVED:', data);
 
       if (Array.isArray(data)) {
-        // Silent refreshes can resolve before Supabase returns the newly saved row.
-        // Preserve the current optimistic card instead of replacing it with an empty list.
         setAddresses((current) => {
-          if (isSilent && data.length === 0 && current.length > 0) {
-            console.warn('>>> [PROFILE] Server returned empty, but we have optimistic data. Keeping optimistic state.');
+          if (data.length > 0) {
+            writeCachedAddresses(data);
+            setLatestAddressPreview(data[0] as AddressPreview);
+            return data;
+          }
+
+          if (current.length > 0) {
+            console.warn('>>> [PROFILE] Server returned empty. Keeping current address cache visible.');
+            writeCachedAddresses(current);
             return current;
           }
 
-          return data;
+          if (cachedAddresses.length > 0) {
+            console.warn('>>> [PROFILE] Server returned empty. Restoring cached address list.');
+            setLatestAddressPreview(cachedAddresses[0] as AddressPreview);
+            return cachedAddresses;
+          }
+
+          return [];
         });
         
         if (data.length === 0) {
@@ -134,10 +190,17 @@ export default function ProfilePage() {
         }
       } else {
         console.error('>>> [PROFILE] RECEIVED INVALID DATA FORMAT:', data);
-        if (!isSilent) setAddresses([]);
+        if (cachedAddresses.length > 0) {
+          setAddresses(cachedAddresses);
+          setLatestAddressPreview(cachedAddresses[0] as AddressPreview);
+        }
       }
     } catch (err: any) {
       console.error('>>> [PROFILE] FETCH FAILED:', err.message);
+      if (cachedAddresses.length > 0) {
+        setAddresses(cachedAddresses);
+        setLatestAddressPreview(cachedAddresses[0] as AddressPreview);
+      }
       if (!isSilent) toast.error('Failed to sync addresses');
     } finally {
       setLoadingAddresses(false);
@@ -155,6 +218,8 @@ export default function ProfilePage() {
     if (addresses.length === 0 && profile?.addresses?.length > 0) {
       console.log('>>> [PROFILE] SYNCING ADDRESSES FROM PROFILE STATE');
       setAddresses(profile.addresses);
+      setLatestAddressPreview(profile.addresses[0] as AddressPreview);
+      writeCachedAddresses(profile.addresses);
     }
   }, [profile, addresses.length]);
 
@@ -329,7 +394,12 @@ export default function ProfilePage() {
     setIsRefreshing(true);
     try {
       // Optimistic delete
-      setAddresses(prev => prev.filter(a => (a.id || a._id) !== id));
+      setAddresses(prev => {
+        const next = prev.filter(a => (a.id || a._id) !== id);
+        writeCachedAddresses(next);
+        setLatestAddressPreview((next[0] || null) as AddressPreview | null);
+        return next;
+      });
       toast.success(`"${label}" removed from vault`);
       
       await deleteAddress(id, user.email, user.uid);
@@ -765,14 +835,20 @@ export default function ProfilePage() {
           // Optimistically update the UI immediately so the user sees the result
           setLatestAddressPreview(savedAddress as AddressPreview);
           if (editingAddress) {
-            setAddresses((prev) =>
-              prev.map((a) =>
+            setAddresses((prev) => {
+              const next = prev.map((a) =>
                 (a.id === savedAddress.id || a._id === savedAddress._id) ? savedAddress : a
-              )
-            );
+              );
+              writeCachedAddresses(next);
+              return next;
+            });
             toast.success('Address updated');
           } else {
-            setAddresses((prev) => [savedAddress, ...prev]);
+            setAddresses((prev) => {
+              const next = [savedAddress, ...prev];
+              writeCachedAddresses(next);
+              return next;
+            });
             toast.success('Address saved');
           }
           // Then refresh from server silently to ensure everything is in sync
