@@ -27,6 +27,8 @@ const NAV_ITEMS = [
   )}
 ];
 
+import { playSound } from '@/lib/sounds';
+
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -41,6 +43,7 @@ export default function BottomNav() {
   }, [pathname]);
 
   const handleNav = (id: string) => {
+    playSound('click');
     if (id === 'home') router.push('/');
     else if (id === 'menu') router.push('/menu');
     else if (id === 'orders') router.push('/profile'); // Orders is inside profile for now

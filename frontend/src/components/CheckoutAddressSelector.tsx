@@ -8,6 +8,7 @@ import AddressForm from './AddressForm';
 import { Plus, MapPin, Home, Briefcase, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { playSound } from '@/lib/sounds';
 
 interface CheckoutAddressSelectorProps {
   onAddressSelect: (address: any) => void;
@@ -133,6 +134,7 @@ export default function CheckoutAddressSelector({
 
   const handleDelete = async (id: string) => {
     if (!user?.email || !user?.uid) return;
+    playSound('pop');
     if (!confirm('Remove this destination?')) return;
     try {
       // Optimistic delete
@@ -152,11 +154,13 @@ export default function CheckoutAddressSelector({
   };
 
   const handleEdit = (addr: any) => {
+    playSound('click');
     setEditingAddress(addr);
     setShowForm(true);
   };
 
   const handleFormSuccess = (newAddress?: any) => {
+    playSound('success');
     setShowForm(false);
     setEditingAddress(null);
     
@@ -182,6 +186,7 @@ export default function CheckoutAddressSelector({
   };
 
   const handleFormCancel = () => {
+    playSound('click');
     setShowForm(false);
     setEditingAddress(null);
   };
@@ -217,7 +222,11 @@ export default function CheckoutAddressSelector({
           </h3>
           {!showForm && (
             <button
-              onClick={() => { setEditingAddress(null); setShowForm(true); }}
+              onClick={() => { 
+                playSound('click');
+                setEditingAddress(null); 
+                setShowForm(true); 
+              }}
               className="bg-orange-600/10 text-orange-600 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-orange-600 hover:text-white transition-all shadow-lg shadow-orange-600/5"
             >
               <Plus size={14} strokeWidth={3} /> Add New
@@ -228,7 +237,10 @@ export default function CheckoutAddressSelector({
         {addresses.length > 0 && !showForm && (
           <div className="flex gap-3 overflow-x-auto no-scrollbar px-2 pb-2">
             <button
-              onClick={() => setActiveLabel(null)}
+              onClick={() => {
+                playSound('click');
+                setActiveLabel(null);
+              }}
               className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
                 !activeLabel 
                   ? 'bg-stone-900 dark:bg-white text-white dark:text-stone-900 border-transparent shadow-xl' 
@@ -240,7 +252,10 @@ export default function CheckoutAddressSelector({
             {labels.map((label) => (
               <button
                 key={label}
-                onClick={() => setActiveLabel(label)}
+                onClick={() => {
+                  playSound('click');
+                  setActiveLabel(label);
+                }}
                 className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border flex items-center gap-2 ${
                   activeLabel === label 
                     ? 'bg-orange-600 text-white border-transparent shadow-xl shadow-orange-600/20' 
@@ -295,7 +310,11 @@ export default function CheckoutAddressSelector({
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => { setEditingAddress(null); setShowForm(true); }}
+                onClick={() => { 
+                  playSound('click');
+                  setEditingAddress(null); 
+                  setShowForm(true); 
+                }}
                 className="relative group rounded-[3rem] p-8 border-4 border-dashed border-stone-100 dark:border-white/5 hover:border-orange-500/30 transition-all duration-500 bg-stone-50/50 dark:bg-stone-950/20 flex items-center gap-8 min-h-[160px]"
               >
                 <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-[1.8rem] flex items-center justify-center text-3xl text-stone-300 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl group-hover:shadow-orange-600/30 shrink-0">

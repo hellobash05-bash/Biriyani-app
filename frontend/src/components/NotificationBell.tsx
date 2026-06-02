@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications } from '@/context/NotificationContext';
+import { playSound } from '@/lib/sounds';
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead } = useNotifications();
@@ -19,11 +20,24 @@ export function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleToggle = () => {
+    playSound(isOpen ? 'click' : 'pop');
+    setIsOpen(!isOpen);
+    if (!isOpen && unreadCount > 0) {
+      playSound('notification');
+    }
+  };
+
+  const handleMarkRead = (id: string) => {
+    playSound('click');
+    markAsRead(id);
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <motion.button
         whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-foreground/5 text-foreground/80 hover:text-orange-500 transition-colors relative"
         aria-label="Notifications"
       >
@@ -56,7 +70,7 @@ export function NotificationBell() {
                   {notifications.map((n) => (
                     <div 
                       key={n._id}
-                      onClick={() => !n.isRead && markAsRead(n._id)}
+                      onClick={() => !n.isRead && handleMarkRead(n._id)}
                       className={`p-6 border-b border-glass-border hover:bg-foreground/2 transition-colors cursor-pointer relative ${!n.isRead ? 'bg-orange-500/5' : ''}`}
                     >
                       {!n.isRead && (

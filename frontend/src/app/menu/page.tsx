@@ -11,6 +11,7 @@ import { toggleFavorite, saveProject } from '@/lib/api';
 import toast from 'react-hot-toast';
 import SaveProjectModal from '@/components/SaveProjectModal';
 import { Heart, Plus, Save, Search, ShoppingBag, Sparkles, Star, Timer } from 'lucide-react';
+import { playSound } from '@/lib/sounds';
 
 const CATEGORIES = ['All', 'Chicken', 'Mutton', 'Veg'];
 
@@ -25,6 +26,7 @@ export default function MenuPage() {
 
   const handleSaveProject = async (projectInfo: { name: string; description: string }) => {
     if (!user) return;
+    playSound('success');
     if (cart.length === 0) {
       toast.error('Add items to your selection before saving!');
       return;
@@ -50,6 +52,7 @@ export default function MenuPage() {
   const handleToggleFavorite = async (e: React.MouseEvent, foodId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    playSound('pop');
     if (!user?.email) {
       toast.error('Please login to save favorites');
       return;
@@ -60,6 +63,16 @@ export default function MenuPage() {
     } catch (err) {
       toast.error('Failed to update favorites');
     }
+  };
+
+  const handleAddToCart = (item: any) => {
+    playSound('cart');
+    addToCart(item);
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    playSound('click');
+    setActiveCategory(cat);
   };
 
   const isFavorite = (foodId: string) => {
@@ -158,7 +171,7 @@ export default function MenuPage() {
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => handleCategoryChange(cat)}
                   className={[
                     'whitespace-nowrap rounded-2xl border px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all',
                     activeCategory === cat
@@ -177,8 +190,11 @@ export default function MenuPage() {
           <motion.button
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            onClick={() => setIsSaveModalOpen(true)}
-            className="w-fit rounded-2xl border border-orange-500/20 bg-orange-600/10 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 shadow-lg shadow-orange-600/5 transition-all hover:bg-orange-600 hover:text-white active:scale-95"
+            onClick={() => {
+              playSound('click');
+              setIsSaveModalOpen(true);
+            }}
+            className="w-fit rounded-2xl border border-orange-500/20 bg-orange-600/10 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 shadow-lg shadow-orange-600/5 transition-all hover:bg-orange-600 hover:text-white active:scale-95 premium-button"
           >
             <span className="inline-flex items-center gap-2"><Save size={14} /> Save Selection</span>
           </motion.button>
@@ -270,14 +286,14 @@ export default function MenuPage() {
 
                       <div className="mt-auto flex items-center gap-3">
                         <button
-                          onClick={() => addToCart(item)}
-                          className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-stone-950 px-5 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-xl shadow-stone-950/15 transition-all hover:bg-orange-600 hover:shadow-orange-600/25 active:scale-[0.98] dark:bg-white dark:text-stone-950 dark:hover:bg-orange-600 dark:hover:text-white"
+                          onClick={() => handleAddToCart(item)}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-stone-950 px-5 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-xl shadow-stone-950/15 transition-all hover:bg-orange-600 hover:shadow-orange-600/25 active:scale-[0.98] dark:bg-white dark:text-stone-950 dark:hover:bg-orange-600 dark:hover:text-white premium-button"
                         >
                           <Plus size={16} strokeWidth={3} /> Add
                         </button>
                         <button
-                          onClick={() => addToCart(item)}
-                          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-stone-200 bg-white text-orange-600 transition-all hover:border-orange-500/30 hover:bg-orange-600 hover:text-white dark:border-white/10 dark:bg-white/[0.04]"
+                          onClick={() => handleAddToCart(item)}
+                          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-stone-200 bg-white text-orange-600 transition-all hover:border-orange-500/30 hover:bg-orange-600 hover:text-white dark:border-white/10 dark:bg-white/[0.04] premium-button"
                           aria-label="Add to cart"
                         >
                           <ShoppingBag size={18} />
@@ -319,8 +335,11 @@ export default function MenuPage() {
                 </div>
               </div>
               <button
-                onClick={() => setIsCartOpen(true)}
-                className="shrink-0 rounded-2xl bg-white px-5 py-4 text-[10px] font-black uppercase tracking-widest text-stone-950 transition-all hover:bg-orange-600 hover:text-white active:scale-95 sm:px-7"
+                onClick={() => {
+                  playSound('pop');
+                  setIsCartOpen(true);
+                }}
+                className="shrink-0 rounded-2xl bg-white px-5 py-4 text-[10px] font-black uppercase tracking-widest text-stone-950 transition-all hover:bg-orange-600 hover:text-white active:scale-95 sm:px-7 premium-button"
               >
                 Checkout
               </button>

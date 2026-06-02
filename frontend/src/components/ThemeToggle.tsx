@@ -4,6 +4,8 @@ import * as React from 'react';
 import { useTheme } from './ThemeProvider';
 import { motion } from 'framer-motion';
 
+import { playSound } from '@/lib/sounds';
+
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
@@ -12,6 +14,11 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
+  const handleToggle = () => {
+    playSound('click');
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
   if (!mounted) {
     return <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-foreground/5 animate-pulse" />;
   }
@@ -19,7 +26,7 @@ export function ThemeToggle() {
   return (
     <motion.button
       whileTap={{ scale: 0.9 }}
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={handleToggle}
       className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-foreground/5 text-foreground/80 hover:text-orange-500 transition-colors"
       aria-label="Toggle Theme"
     >

@@ -113,9 +113,30 @@
 }
 
 @utility glass {
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px) saturate(180%);
   background-color: var(--glass-bg);
   border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(28, 25, 23, 0.05);
+}
+
+@utility glass-dark {
+  backdrop-filter: blur(20px) saturate(180%);
+  background-color: rgba(14, 13, 12, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility text-gradient {
+  background: linear-gradient(135deg, var(--foreground) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility text-gradient-orange {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 @utility premium-card {
@@ -125,16 +146,55 @@
   padding: 1.5rem;
   box-shadow: 0 30px 60px -12px rgba(28, 25, 23, 0.12);
   border: 1px solid var(--card-border);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.05) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
 
   .dark & {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
 
   &:hover {
-    transform: translateY(-4px);
+    transform: translateY(-8px) scale(1.01);
     border-color: rgba(249, 115, 22, 0.3);
-    box-shadow: 0 40px 80px -15px rgba(28, 25, 23, 0.15);
+    box-shadow: 0 40px 80px -15px rgba(28, 25, 23, 0.2);
+    
+    &::before {
+      opacity: 1;
+    }
+  }
+}
+
+@utility premium-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300%;
+    height: 300%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%;
+    transition: transform 0.6s ease;
+  }
+
+  &:active::after {
+    transform: translate(-50%, -50%) scale(1);
+    transition: transform 0s;
   }
 }
 

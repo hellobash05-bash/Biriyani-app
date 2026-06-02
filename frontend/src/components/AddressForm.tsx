@@ -6,6 +6,7 @@ import { addAddress, updateAddress } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, User, Landmark, Building2, Search, Compass, Info, Sparkles, Home, Briefcase, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { playSound } from '@/lib/sounds';
 
 interface AddressFormProps {
   initialData?: any;
@@ -253,7 +254,10 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                 <button
                   key={l.label}
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, label: l.label }))}
+                  onClick={() => {
+                    playSound('pop');
+                    setFormData(prev => ({ ...prev, label: l.label }));
+                  }}
                   className={`flex-1 py-6 rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 border-2 flex flex-col items-center gap-2 ${
                     formData.label === l.label 
                       ? 'bg-orange-600 text-white border-orange-600 shadow-2xl shadow-orange-600/30 scale-105' 

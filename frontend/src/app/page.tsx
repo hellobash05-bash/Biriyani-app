@@ -27,6 +27,8 @@ const itemVariants = {
     }
   };
 
+import { playSound } from '@/lib/sounds';
+
 export default function Home() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
@@ -38,13 +40,15 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
+  const handleButtonClick = (sound: any) => playSound(sound);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full"
+          animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full shadow-[0_0_30px_rgba(249,115,22,0.2)]"
         />
       </div>
     );
@@ -58,19 +62,21 @@ export default function Home() {
           animate={{ 
             x: [0, 100, 0], 
             y: [0, 50, 0],
-            scale: [1, 1.2, 1] 
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3]
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-20 -left-20 w-[40rem] h-[40rem] bg-orange-600/5 blur-[120px] rounded-full"
+          className="absolute -top-20 -left-20 w-[40rem] h-[40rem] bg-orange-600/10 blur-[120px] rounded-full"
         />
         <motion.div 
           animate={{ 
             x: [0, -80, 0], 
             y: [0, 120, 0], 
-            scale: [1, 1.3, 1] 
+            scale: [1, 1.3, 1],
+            opacity: [0.2, 0.4, 0.2]
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute top-1/2 -right-20 w-[35rem] h-[35rem] bg-orange-500/5 blur-[100px] rounded-full"
+          className="absolute top-1/2 -right-20 w-[35rem] h-[35rem] bg-orange-500/10 blur-[100px] rounded-full"
         />
       </div>
 
@@ -88,12 +94,15 @@ export default function Home() {
             className="flex flex-col gap-8 items-center relative"
           >
             <motion.div variants={itemVariants} className="flex flex-col gap-4">
-               <span className="inline-block px-4 py-2 bg-orange-600/10 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-2 border border-orange-500/10">
+               <motion.span 
+                whileHover={{ scale: 1.1, letterSpacing: "0.6em" }}
+                className="inline-block px-6 py-2 bg-orange-600/10 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-2 border border-orange-500/20 backdrop-blur-sm cursor-default transition-all"
+               >
                  ESTD 1984 • The Original
-               </span>
+               </motion.span>
                <h1 className="text-4xl xs:text-6xl sm:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.8] text-foreground uppercase">
                 Taste the <br />
-                <span className="text-orange-600 italic relative inline-block">
+                <span className="text-gradient-orange italic relative inline-block">
                    Legacy
                 </span>.
               </h1>
@@ -105,20 +114,22 @@ export default function Home() {
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-4 sm:mt-8 w-full sm:w-auto px-6 sm:px-0">
-               <Link href="/signup" className="w-full sm:w-auto">
+               <Link href="/signup" className="w-full sm:w-auto" onClick={() => handleButtonClick('pop')}>
                  <motion.button 
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.05, y: -5 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-foreground text-background px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm shadow-2xl hover:bg-orange-600 hover:text-white transition-all w-full sm:min-w-[240px]"
+                  onMouseEnter={() => playSound('click')}
+                  className="bg-foreground text-background px-10 sm:px-16 py-6 sm:py-7 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm shadow-[0_20px_60px_rgba(0,0,0,0.3)] hover:bg-orange-600 hover:text-white transition-all w-full sm:min-w-[280px] premium-button"
                  >
                    Start Your Order
                  </motion.button>
                </Link>
-               <Link href="/login" className="w-full sm:w-auto">
+               <Link href="/login" className="w-full sm:w-auto" onClick={() => handleButtonClick('click')}>
                  <motion.button 
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.05, y: -5 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-foreground/5 backdrop-blur-xl border border-glass-border text-foreground/80 px-8 sm:px-12 py-5 sm:py-6 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-foreground/10 transition-all w-full sm:min-w-[240px]"
+                  onMouseEnter={() => playSound('click')}
+                  className="bg-foreground/5 backdrop-blur-xl border border-glass-border text-foreground/80 px-10 sm:px-16 py-6 sm:py-7 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-foreground/10 transition-all w-full sm:min-w-[280px]"
                  >
                    Login to Account
                  </motion.button>

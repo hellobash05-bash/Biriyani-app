@@ -15,6 +15,7 @@ import AddressModal from '@/components/AddressModal';
 import { Camera, Edit3, X, Save, User, Phone, MapPin, Home, Briefcase, Navigation } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { io } from 'socket.io-client';
+import { playSound } from '@/lib/sounds';
 
 type AddressPreview = {
   id?: string;
@@ -104,10 +105,12 @@ export default function ProfilePage() {
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.uid) return;
+    playSound('click');
     
     setIsRefreshing(true);
     try {
       await updateProfile(user.uid, editFormData);
+      playSound('success');
       toast.success('Profile updated');
       setIsProfileModalOpen(false);
       refreshProfile();
@@ -121,12 +124,14 @@ export default function ProfilePage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user?.uid) return;
+    playSound('pop');
 
     setIsUploading(true);
     const id = toast.loading('Uploading photo...');
     try {
       const { publicUrl } = await uploadProfileImage(user.uid, file);
       await updateProfile(user.uid, { photo_url: publicUrl });
+      playSound('success');
       toast.success('Photo updated', { id });
       refreshProfile();
     } catch (err: any) {
@@ -417,6 +422,7 @@ export default function ProfilePage() {
 
   const handleManualRefresh = async () => {
     if (!user) return;
+    playSound('click');
     setIsRefreshing(true);
     console.log('>>> [PROFILE] TRIGGERING ULTIMATE RESCUE SYNC...');
     
@@ -439,6 +445,7 @@ export default function ProfilePage() {
       await refreshProfile();
       await loadAddresses(false); // Full refresh
       
+      playSound('success');
       toast.success('Vault System Reset & Synced');
     } catch (err) {
       console.error('>>> [PROFILE] Sync failed:', err);
@@ -449,6 +456,7 @@ export default function ProfilePage() {
   };
 
   const handleEditClick = (addr: any) => {
+    playSound('click');
     setEditingAddress(addr);
     setIsAddressModalOpen(true);
   };
@@ -468,6 +476,7 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
+    playSound('pop');
     try {
       await signOut(auth);
       router.push('/');
@@ -550,8 +559,11 @@ export default function ProfilePage() {
                   
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-4">
                     <button 
-                      onClick={() => setIsProfileModalOpen(true)}
-                      className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-orange-600 hover:text-white transition-all shadow-xl shadow-stone-900/10 group/btn"
+                      onClick={() => {
+                        playSound('click');
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-orange-600 hover:text-white transition-all shadow-xl shadow-stone-900/10 group/btn premium-button"
                     >
                       <Edit3 size={16} className="group-hover/btn:rotate-12 transition-transform" /> Edit Vault Credentials
                     </button>
@@ -766,7 +778,10 @@ export default function ProfilePage() {
                           key={addr.id || addr._id || idx}
                           address={addr}
                           onEdit={handleEditClick}
-                          onDelete={handleDeleteAddress}
+                          onDelete={(id) => {
+                            playSound('pop');
+                            handleDeleteAddress(id);
+                          }}
                         />
                       ))}
                       
@@ -774,7 +789,11 @@ export default function ProfilePage() {
                       <motion.button
                         whileHover={{ y: -8, scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => { setEditingAddress(null); setIsAddressModalOpen(true); }}
+                        onClick={() => { 
+                          playSound('click');
+                          setEditingAddress(null); 
+                          setIsAddressModalOpen(true); 
+                        }}
                         className="relative group rounded-[4rem] p-10 border-4 border-dashed border-stone-200 dark:border-white/5 hover:border-orange-500/30 transition-all duration-700 bg-white/40 dark:bg-stone-950/20 flex flex-col items-center justify-center gap-8 min-h-[350px] shadow-xl hover:shadow-2xl overflow-hidden"
                       >
                         <div className="w-24 h-24 bg-white dark:bg-white/5 rounded-[2.5rem] flex items-center justify-center text-5xl text-stone-300 group-hover:bg-orange-600 group-hover:text-white transition-all duration-500 shadow-2xl group-hover:shadow-orange-600/40 z-10">
@@ -810,7 +829,7 @@ export default function ProfilePage() {
           <section className="pt-16">
              <button 
               onClick={handleLogout} 
-              className="flex justify-between items-center p-10 rounded-[3.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group w-full text-left overflow-hidden relative"
+              className="flex justify-between items-center p-10 rounded-[3.5rem] bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all group w-full text-left overflow-hidden relative premium-button"
              >
                 <div className="absolute inset-0 bg-red-500/5 translate-x-full group-hover:translate-x-0 transition-transform duration-700 -z-10" />
                 <div className="flex flex-col gap-1">
