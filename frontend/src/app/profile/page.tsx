@@ -12,15 +12,30 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import AddressCard from '@/components/AddressCard';
 import AddressModal from '@/components/AddressModal';
-import { Camera, Edit3, X, Save, User, Phone } from 'lucide-react';
+import { Camera, Edit3, X, Save, User, Phone, MapPin, Home, Briefcase, Navigation } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { io } from 'socket.io-client';
+
+type AddressPreview = {
+  id?: string;
+  _id?: string;
+  label?: string;
+  detail?: string;
+  house?: string;
+  address_line1?: string;
+  street?: string;
+  address_line2?: string;
+  landmark?: string;
+  city?: string;
+  pincode?: string;
+};
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
+  const [latestAddressPreview, setLatestAddressPreview] = useState<AddressPreview | null>(null);
   const [lastFetchRaw, setLastFetchRaw] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -365,6 +380,20 @@ export default function ProfilePage() {
     setIsAddressModalOpen(true);
   };
 
+  const profileAddressPreview = latestAddressPreview || addresses[0];
+
+  const getAddressPreviewIcon = (label?: string) => {
+    switch (label?.toLowerCase()) {
+      case 'home':
+        return <Home size={18} />;
+      case 'office':
+      case 'work':
+        return <Briefcase size={18} />;
+      default:
+        return <Navigation size={18} />;
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -460,6 +489,44 @@ export default function ProfilePage() {
                       </span>
                     </div>
                   </div>
+
+                  {profileAddressPreview && (
+                    <motion.div
+                      key={profileAddressPreview.id || profileAddressPreview._id || profileAddressPreview.detail || 'address-preview'}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-6 max-w-2xl rounded-[2rem] border border-orange-500/15 bg-orange-500/5 p-5 text-left shadow-inner"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-600 text-white shadow-lg shadow-orange-600/20">
+                          {getAddressPreviewIcon(profileAddressPreview.label)}
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-orange-600">
+                              {profileAddressPreview.label || 'Delivery Spot'}
+                            </span>
+                            <span className="rounded-full bg-white/70 px-3 py-1 text-[8px] font-black uppercase tracking-widest text-stone-400 dark:bg-white/5">
+                              Latest Address
+                            </span>
+                          </div>
+                          <p className="truncate text-sm font-black uppercase tracking-tight text-stone-900 dark:text-white">
+                            {profileAddressPreview.house || profileAddressPreview.address_line1 || 'Address saved'}
+                          </p>
+                          <p className="line-clamp-2 text-xs font-bold leading-relaxed text-stone-500 dark:text-stone-400">
+                            {[
+                              profileAddressPreview.street || profileAddressPreview.address_line2,
+                              profileAddressPreview.landmark,
+                              profileAddressPreview.city && profileAddressPreview.pincode
+                                ? `${profileAddressPreview.city} - ${profileAddressPreview.pincode}`
+                                : profileAddressPreview.city || profileAddressPreview.pincode
+                            ].filter(Boolean).join(', ')}
+                          </p>
+                        </div>
+                        <MapPin size={18} className="mt-1 shrink-0 text-orange-600" />
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 
@@ -693,6 +760,7 @@ export default function ProfilePage() {
         }}
         onSave={(savedAddress) => {
           // Optimistically update the UI immediately so the user sees the result
+          setLatestAddressPreview(savedAddress as AddressPreview);
           if (editingAddress) {
             setAddresses((prev) =>
               prev.map((a) =>

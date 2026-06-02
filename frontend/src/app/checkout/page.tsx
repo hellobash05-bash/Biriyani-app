@@ -12,6 +12,7 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import toast from 'react-hot-toast';
 import CheckoutAddressSelector from '@/components/CheckoutAddressSelector';
+import { MapPin } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { cart, total, clearCart, setIsCartOpen } = useCart();
