@@ -25,6 +25,48 @@ export default function CheckoutAddressSelector({
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
+  const getAddressCacheKey = useCallback(() => {
+    const identity = user?.uid || user?.email?.toLowerCase();
+    return identity ? `profile-addresses:${identity}` : null;
+  }, [user?.uid, user?.email]);
+
+  const readCachedAddresses = useCallback(() => {
+    if (typeof window === 'undefined') return [];
+
+    const cacheKey = getAddressCacheKey();
+    if (!cacheKey) return [];
+
+    try {
+      const cached = window.localStorage.getItem(cacheKey);
+      const parsed = cached ? JSON.parse(cached) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.warn('>>> [CHECKOUT] Address cache read failed:', err);
+      return [];
+    }
+  }, [getAddressCacheKey]);
+
+  const writeCachedAddresses = useCallback((nextAddresses: any[]) => {
+    if (typeof window === 'undefined') return;
+
+    const cacheKey = getAddressCacheKey();
+    if (!cacheKey) return;
+
+    try {
+      window.localStorage.setItem(cacheKey, JSON.stringify(nextAddresses));
+    } catch (err) {
+      console.warn('>>> [CHECKOUT] Address cache write failed:', err);
+    }
+  }, [getAddressCacheKey]);
+
+  const selectDefaultAddress = useCallback((addrList: any[]) => {
+    if (!selectedAddressId && addrList.length > 0) {
+      const defaultAddr = addrList.find((a: any) => a.is_default || a.isDefault) || addrList[0];
+      console.log('>>> [CHECKOUT] AUTO-SELECTING ADDRESS:', defaultAddr.id || defaultAddr._id);
+      onAddressSelect(defaultAddr);
+    }
+  }, [selectedAddressId, onAddressSelect]);
+
   const loadAddresses = useCallback(async (isSilent = false) => {
     if (!user?.email || !user?.uid) {
       console.warn('>>> [CHECKOUT] Cannot load addresses: User not authenticated');
@@ -32,7 +74,18 @@ export default function CheckoutAddressSelector({
       return;
     }
     
-    if (!isSilent) setLoading(true);
+    const cachedAddresses = readCachedAddresses();
+
+    if (!isSilent) {
+      setLoading(true);
+
+      if (cachedAddresses.length > 0) {
+        setAddresses(cachedAddresses);
+        selectDefaultAddress(cachedAddresses);
+        setLoading(false);
+      }
+    }
+
     console.log(`>>> [CHECKOUT] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid} (Silent: ${isSilent})`);
     try {
       const data = await fetchAddresses(user.email, user.uid);
@@ -40,37 +93,54 @@ export default function CheckoutAddressSelector({
       
       const addrList = Array.isArray(data) ? data : [];
       
-      // Protect optimistic state from race conditions if server returns empty temporarily
-      if (addrList.length === 0 && addresses.length > 0 && isSilent) {
-        console.warn('>>> [CHECKOUT] Server returned empty, but we have local data. Keeping local state.');
-      } else {
-        setAddresses(addrList);
-        
-        // Prompt 3.1: Automatically select default address
-        if (!selectedAddressId && addrList.length > 0) {
-          const defaultAddr = addrList.find((a: any) => a.is_default || a.isDefault) || addrList[0];
-          console.log('>>> [CHECKOUT] AUTO-SELECTING ADDRESS:', defaultAddr.id);
-          onAddressSelect(defaultAddr);
+      setAddresses((current) => {
+        if (addrList.length > 0) {
+          writeCachedAddresses(addrList);
+          selectDefaultAddress(addrList);
+          return addrList;
         }
-      }
+
+        if (current.length > 0) {
+          console.warn('>>> [CHECKOUT] Server returned empty. Keeping current saved destinations visible.');
+          writeCachedAddresses(current);
+          selectDefaultAddress(current);
+          return current;
+        }
+
+        if (cachedAddresses.length > 0) {
+          console.warn('>>> [CHECKOUT] Server returned empty. Restoring cached saved destinations.');
+          selectDefaultAddress(cachedAddresses);
+          return cachedAddresses;
+        }
+
+        return [];
+      });
     } catch (error: any) {
       console.error('>>> [CHECKOUT] FETCH FAILED:', error.message);
+      if (cachedAddresses.length > 0) {
+        setAddresses(cachedAddresses);
+        selectDefaultAddress(cachedAddresses);
+      }
       if (!isSilent) toast.error('Failed to load saved destinations');
     } finally {
       setLoading(false);
     }
-  }, [user, selectedAddressId, onAddressSelect, addresses.length]);
+  }, [user?.email, user?.uid, readCachedAddresses, selectDefaultAddress, writeCachedAddresses]);
 
   useEffect(() => {
     loadAddresses();
-  }, []); // Only run once on mount
+  }, [loadAddresses]);
 
   const handleDelete = async (id: string) => {
     if (!user?.email || !user?.uid) return;
     if (!confirm('Remove this destination?')) return;
     try {
       // Optimistic delete
-      setAddresses(prev => prev.filter(a => (a.id || a._id) !== id));
+      setAddresses(prev => {
+        const next = prev.filter(a => (a.id || a._id) !== id);
+        writeCachedAddresses(next);
+        return next;
+      });
       toast.success('Destination removed');
       
       await deleteAddress(id, user.email, user.uid);
@@ -93,9 +163,17 @@ export default function CheckoutAddressSelector({
     if (newAddress) {
       // Optimistic add/update
       if (editingAddress) {
-        setAddresses(prev => prev.map(a => (a.id === newAddress.id || a._id === newAddress._id) ? newAddress : a));
+        setAddresses(prev => {
+          const next = prev.map(a => (a.id === newAddress.id || a._id === newAddress._id) ? newAddress : a);
+          writeCachedAddresses(next);
+          return next;
+        });
       } else {
-        setAddresses(prev => [newAddress, ...prev]);
+        setAddresses(prev => {
+          const next = [newAddress, ...prev];
+          writeCachedAddresses(next);
+          return next;
+        });
       }
       onAddressSelect(newAddress);
     }
