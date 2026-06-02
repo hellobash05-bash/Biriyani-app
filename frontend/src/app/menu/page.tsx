@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toggleFavorite, saveProject } from '@/lib/api';
 import toast from 'react-hot-toast';
 import SaveProjectModal from '@/components/SaveProjectModal';
+import { Heart, Plus, Save, Search, ShoppingBag, Sparkles, Star, Timer } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Chicken', 'Mutton', 'Veg'];
 
@@ -74,8 +75,7 @@ export default function MenuPage() {
           data = await fetchMenu();
         }
         setMenuItems(data);
-        
-        // Fetch ratings for each item
+
         data.forEach(async (item: any) => {
           try {
             const reviewData = await fetchReviews(item._id);
@@ -96,216 +96,234 @@ export default function MenuPage() {
     loadMenu();
   }, []);
 
-  const filteredItems = (activeCategory === 'All' 
-    ? menuItems 
+  const filteredItems = (activeCategory === 'All'
+    ? menuItems
     : menuItems.filter(item => item.category === activeCategory)
   ).filter(item => item.isAvailable !== false);
 
   return (
-    <div className="flex flex-col w-full min-h-screen pb-24 md:pb-0 selection:bg-orange-200 relative overflow-hidden bg-background">
-      <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern" />
-      
+    <div className="flex min-h-screen w-full flex-col overflow-hidden bg-background pb-24 selection:bg-orange-200 md:pb-0">
+      <div className="fixed inset-0 pointer-events-none -z-10 biriyani-pattern opacity-[0.035] dark:opacity-[0.06]" />
+
       <Navbar />
 
-      <main className="relative flex-1 w-full px-6 sm:px-12 pt-12 pb-20 max-w-7xl mx-auto">
-        <header className="mb-12 text-center">
-           <motion.span 
-             initial={{ opacity: 0, y: -10 }}
-             animate={{ opacity: 1, y: 0 }}
-             className="inline-block px-6 py-2 bg-orange-600/10 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-[0.4em] mb-4 border border-orange-500/10"
-           >
-             The Collection
-           </motion.span>
-           <motion.h1 
-             initial={{ opacity: 0, scale: 0.95 }}
-             animate={{ opacity: 1, scale: 1 }}
-             className="text-5xl sm:text-7xl md:text-8xl font-black text-foreground tracking-tighter uppercase leading-[0.8] mb-2"
-           >
-             The Royale <br />
-             <span className="text-orange-600 italic">Menu</span>
-           </motion.h1>
+      <main className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-4 pb-24 pt-8 sm:px-8 md:px-12 md:pt-12">
+        <section className="overflow-hidden rounded-[2rem] border border-stone-200/80 bg-white/75 p-5 shadow-2xl shadow-stone-950/5 backdrop-blur-2xl sm:p-8 lg:p-10 dark:border-white/10 dark:bg-stone-900/70">
+          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2 rounded-full border border-orange-500/15 bg-orange-600/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-orange-600">
+                  <Sparkles size={13} /> Fresh Today
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-stone-500 dark:border-white/10 dark:bg-white/5 dark:text-stone-300">
+                  <Timer size={13} /> Fast Delivery
+                </span>
+              </div>
 
-           {itemCount > 0 && (
-             <motion.button
-               initial={{ opacity: 0, scale: 0.8 }}
-               animate={{ opacity: 1, scale: 1 }}
-               onClick={() => setIsSaveModalOpen(true)}
-               className="mt-8 px-8 py-3 bg-purple-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-purple-600/20 hover:bg-purple-500 transition-all active:scale-95"
-             >
-               💾 Save This Selection
-             </motion.button>
-           )}
-        </header>
+              <div className="space-y-4">
+                <h1 className="max-w-4xl text-4xl font-black uppercase leading-[0.9] tracking-tight text-stone-950 sm:text-6xl lg:text-7xl dark:text-white">
+                  Order Your <span className="text-orange-600">Royale</span> Feast
+                </h1>
+                <p className="max-w-2xl text-sm font-semibold leading-relaxed text-stone-500 sm:text-base dark:text-stone-400">
+                  Signature biriyani, curated combos, and chef-picked favorites built for quick ordering and fresh delivery.
+                </p>
+              </div>
+            </div>
 
-        {/* Category Filter */}
-        <section className="sticky top-24 z-40 mb-12 py-4 bg-background/50 backdrop-blur-xl -mx-6 px-6 overflow-x-auto no-scrollbar border-y border-glass-border">
-          <div className="flex gap-3 min-w-max justify-center">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                  activeCategory === cat 
-                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20 scale-105' 
-                    : 'bg-foreground/5 text-stone-500 hover:text-orange-500 border border-glass-border'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            <div className="grid grid-cols-3 gap-3 rounded-[1.5rem] border border-stone-200/70 bg-stone-50/80 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="rounded-2xl bg-white p-4 text-center shadow-sm dark:bg-stone-950/40">
+                <p className="text-2xl font-black text-stone-950 dark:text-white">{menuItems.length}</p>
+                <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-stone-400">Dishes</p>
+              </div>
+              <div className="rounded-2xl bg-white p-4 text-center shadow-sm dark:bg-stone-950/40">
+                <p className="text-2xl font-black text-orange-600">{itemCount}</p>
+                <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-stone-400">In Cart</p>
+              </div>
+              <div className="rounded-2xl bg-white p-4 text-center shadow-sm dark:bg-stone-950/40">
+                <p className="text-2xl font-black text-stone-950 dark:text-white">₹{total}</p>
+                <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-stone-400">Total</p>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Menu Grid */}
+        <section className="sticky top-20 z-40 -mx-4 border-y border-stone-200/70 bg-background/90 px-4 py-4 backdrop-blur-2xl sm:-mx-8 sm:px-8 md:-mx-12 md:px-12 dark:border-white/10">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3 rounded-2xl border border-stone-200/80 bg-white/80 px-4 py-3 text-stone-400 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+              <Search size={18} className="shrink-0 text-orange-600" />
+              <span className="text-[10px] font-black uppercase tracking-[0.22em]">Browse Royale Menu</span>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto no-scrollbar lg:justify-end">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={[
+                    'whitespace-nowrap rounded-2xl border px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all',
+                    activeCategory === cat
+                      ? 'border-orange-600 bg-orange-600 text-white shadow-xl shadow-orange-600/20'
+                      : 'border-stone-200 bg-white/70 text-stone-500 hover:border-orange-500/30 hover:text-orange-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-stone-300'
+                  ].join(' ')}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {itemCount > 0 && (
+          <motion.button
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => setIsSaveModalOpen(true)}
+            className="w-fit rounded-2xl border border-orange-500/20 bg-orange-600/10 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 shadow-lg shadow-orange-600/5 transition-all hover:bg-orange-600 hover:text-white active:scale-95"
+          >
+            <span className="inline-flex items-center gap-2"><Save size={14} /> Save Selection</span>
+          </motion.button>
+        )}
+
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-[30rem] bg-foreground/5 animate-pulse rounded-[3rem]" />
+              <div key={i} className="h-[28rem] animate-pulse rounded-[2rem] bg-foreground/5" />
             ))}
           </div>
         ) : (
-          <motion.div 
+          <motion.div
             layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12"
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
           >
-            <AnimatePresence mode='popLayout'>
-              {filteredItems.map((item) => (
-                <motion.div
-                  key={item._id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="group flex flex-col relative overflow-hidden premium-card !p-0 hover:border-orange-500/20 transition-all duration-500"
-                >
-                  {/* Image Section */}
-                  <div className="h-72 w-full relative overflow-hidden bg-stone-100 dark:bg-stone-900 flex items-center justify-center">
-                    {/* Ambient Glow / Placeholder behind image */}
-                    <div className="absolute inset-0 z-0 flex items-center justify-center opacity-20">
-                       <span className="text-4xl">🥘</span>
-                    </div>
+            <AnimatePresence mode="popLayout">
+              {filteredItems.map((item) => {
+                const itemRating = ratings[item._id];
+                const displayPrice = item.offerPrice || item.price;
 
-                    <img 
-                      src={item.image || 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=800&auto=format&fit=crop'} 
-                      alt={item.name}
-                      onLoad={() => console.log(`Image loaded successfully for: ${item.name}`)}
-                      onError={(e) => {
-                        console.error(`Image failed to load for: ${item.name}. URL: ${item.image}`);
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600&auto=format&fit=crop';
-                      }}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 z-10"
-                    />
+                return (
+                  <motion.article
+                    key={item._id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    className="group overflow-hidden rounded-[2rem] border border-stone-200/80 bg-white/85 shadow-xl shadow-stone-950/5 transition-all duration-300 hover:-translate-y-1 hover:border-orange-500/30 hover:shadow-2xl hover:shadow-orange-600/10 dark:border-white/10 dark:bg-stone-900/75"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden bg-stone-100 dark:bg-stone-950">
+                      <img
+                        src={item.image || 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=800&auto=format&fit=crop'}
+                        alt={item.name}
+                        onLoad={() => console.log('Image loaded successfully for:', item.name)}
+                        onError={(e) => {
+                          console.error('Image failed to load for:', item.name, 'URL:', item.image);
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600&auto=format&fit=crop';
+                        }}
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/75 via-stone-950/10 to-transparent" />
 
-                    {/* Subtle Gradient Overlay - Only at the bottom */}
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
-
-                    {/* Heart Button */}
-                    <button
-                      onClick={(e) => handleToggleFavorite(e, item._id)}
-                      className="absolute top-6 left-6 z-30 w-10 h-10 bg-background/80 backdrop-blur-md rounded-full flex items-center justify-center border border-glass-border shadow-xl hover:scale-110 active:scale-90 transition-all"
-                    >
-                      <motion.span
-                        initial={false}
-                        animate={{ scale: isFavorite(item._id) ? [1, 1.2, 1] : 1 }}
-                        className={`text-xl ${isFavorite(item._id) ? 'text-red-500' : 'text-stone-400'}`}
+                      <button
+                        onClick={(e) => handleToggleFavorite(e, item._id)}
+                        className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 bg-white/90 text-stone-500 shadow-xl backdrop-blur-md transition-all hover:scale-105 hover:text-red-500 active:scale-95 dark:bg-stone-950/80"
+                        aria-label="Toggle favorite"
                       >
-                        {isFavorite(item._id) ? '❤️' : '🤍'}
-                      </motion.span>
-                    </button>
-                    
-                    {item.offerPrice && (
-                      <div className="absolute top-6 right-6 bg-orange-600 text-white text-[10px] font-black uppercase px-4 py-2 rounded-xl shadow-2xl shadow-orange-600/30 rotate-6 z-30 border border-white/10">
-                        {item.discountPercentage}% OFF
-                      </div>
-                    )}
+                        <Heart size={19} fill={isFavorite(item._id) ? 'currentColor' : 'none'} className={isFavorite(item._id) ? 'text-red-500' : ''} />
+                      </button>
 
-                    {/* Quick Rating Badge */}
-                    {ratings[item._id]?.total > 0 && (
-                      <div className="absolute bottom-6 left-6 bg-background/90 backdrop-blur-md text-foreground px-3 py-1.5 rounded-full border border-glass-border flex items-center gap-1.5 shadow-xl z-30">
-                        <span className="text-orange-500">★</span>
-                        <span className="text-[10px] font-black">{ratings[item._id].average}</span>
-                        <span className="text-[8px] text-stone-500 font-bold">({ratings[item._id].total})</span>
-                      </div>
-                    )}
-                  </div>
+                      {item.offerPrice && (
+                        <div className="absolute right-4 top-4 rounded-2xl bg-orange-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-orange-600/25">
+                          {item.discountPercentage}% Off
+                        </div>
+                      )}
 
-                  <div className="p-10 -mt-8 relative z-10">
-                    <div className="flex justify-between items-start mb-6">
-                       <span className="text-[9px] font-black uppercase tracking-[0.2em] text-orange-500/60 border border-orange-500/20 px-3 py-1.5 rounded-full bg-orange-500/5">
-                         {item.category}
-                       </span>
-                       <div className="flex flex-col items-end leading-none">
-                         {item.offerPrice ? (
-                           <>
-                             <span className="text-3xl font-black text-orange-600">
-                               ₹{item.offerPrice}
-                             </span>
-                             <span className="text-xs font-bold text-stone-500 line-through mt-1">
-                               ₹{item.price}
-                             </span>
-                           </>
-                         ) : (
-                           <span className="text-3xl font-black text-foreground">
-                             ₹{item.price}
-                           </span>
-                         )}
-                       </div>
+                      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                        <span className="rounded-full border border-white/20 bg-white/90 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-orange-600 backdrop-blur-md dark:bg-stone-950/80">
+                          {item.category}
+                        </span>
+                        {itemRating?.total > 0 && (
+                          <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/90 px-3 py-1.5 text-stone-950 backdrop-blur-md dark:bg-stone-950/80 dark:text-white">
+                            <Star size={13} fill="currentColor" className="text-orange-500" />
+                            <span className="text-[10px] font-black">{itemRating.average}</span>
+                            <span className="text-[8px] font-bold text-stone-500">({itemRating.total})</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    
-                    <h3 className="text-3xl font-black text-foreground mb-4 tracking-tighter uppercase leading-tight group-hover:text-orange-500 transition-colors">
-                      {item.name}
-                    </h3>
-                    
-                    <p className="text-stone-500 dark:text-stone-400 text-sm font-medium leading-relaxed italic mb-10 line-clamp-3">
-                      "{item.description}"
-                    </p>
 
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => addToCart(item)}
-                      className="w-full bg-foreground text-background py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 shadow-xl group-hover:bg-orange-600 group-hover:text-white"
-                    >
-                      ADD TO FEAST
-                      <span className="text-lg font-light opacity-40 group-hover:opacity-100">+</span>
-                    </motion.button>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex min-h-[18rem] flex-col p-5 sm:p-6">
+                      <div className="mb-4 flex items-start justify-between gap-4">
+                        <h3 className="text-xl font-black uppercase leading-tight tracking-tight text-stone-950 transition-colors group-hover:text-orange-600 dark:text-white">
+                          {item.name}
+                        </h3>
+                        <div className="shrink-0 text-right leading-none">
+                          <p className="text-2xl font-black text-orange-600">₹{displayPrice}</p>
+                          {item.offerPrice && (
+                            <p className="mt-1 text-xs font-bold text-stone-400 line-through">₹{item.price}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="mb-6 line-clamp-3 text-sm font-medium leading-relaxed text-stone-500 dark:text-stone-400">
+                        {item.description}
+                      </p>
+
+                      <div className="mt-auto flex items-center gap-3">
+                        <button
+                          onClick={() => addToCart(item)}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-stone-950 px-5 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-xl shadow-stone-950/15 transition-all hover:bg-orange-600 hover:shadow-orange-600/25 active:scale-[0.98] dark:bg-white dark:text-stone-950 dark:hover:bg-orange-600 dark:hover:text-white"
+                        >
+                          <Plus size={16} strokeWidth={3} /> Add
+                        </button>
+                        <button
+                          onClick={() => addToCart(item)}
+                          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-stone-200 bg-white text-orange-600 transition-all hover:border-orange-500/30 hover:bg-orange-600 hover:text-white dark:border-white/10 dark:bg-white/[0.04]"
+                          aria-label="Add to cart"
+                        >
+                          <ShoppingBag size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.article>
+                );
+              })}
             </AnimatePresence>
           </motion.div>
         )}
       </main>
 
       <BottomNav />
-      
-      <SaveProjectModal 
-        isOpen={isSaveModalOpen} 
-        onClose={() => setIsSaveModalOpen(false)} 
-        onSave={handleSaveProject} 
+
+      <SaveProjectModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSave={handleSaveProject}
       />
-      
-      {/* Floating Cart Indicator */}
+
       <AnimatePresence>
         {(itemCount > 0 && !isCartOpen) && (
-          <motion.div 
+          <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md"
+            className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 md:bottom-8"
           >
-            <div className="bg-orange-600 p-5 rounded-[2.5rem] shadow-2xl shadow-orange-600/30 flex justify-between items-center text-white">
-               <div className="flex flex-col ml-2">
-                  <span className="text-[9px] font-black uppercase tracking-widest opacity-70">Your Selection</span>
-                  <span className="text-lg font-black tracking-tight">{itemCount} Items • ₹{total}</span>
-               </div>
-               <button 
+            <div className="flex items-center justify-between gap-4 rounded-[1.75rem] border border-white/15 bg-stone-950/95 p-4 text-white shadow-2xl shadow-stone-950/30 backdrop-blur-2xl">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-600 text-white shadow-lg shadow-orange-600/25">
+                  <ShoppingBag size={20} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/50">Cart Ready</p>
+                  <p className="truncate text-sm font-black sm:text-base">{itemCount} items • ₹{total}</p>
+                </div>
+              </div>
+              <button
                 onClick={() => setIsCartOpen(true)}
-                className="bg-white text-orange-600 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-lg active:scale-95"
-               >
-                 CHECKOUT →
-               </button>
+                className="shrink-0 rounded-2xl bg-white px-5 py-4 text-[10px] font-black uppercase tracking-widest text-stone-950 transition-all hover:bg-orange-600 hover:text-white active:scale-95 sm:px-7"
+              >
+                Checkout
+              </button>
             </div>
           </motion.div>
         )}
