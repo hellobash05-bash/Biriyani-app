@@ -118,13 +118,16 @@ export default function ProfilePage() {
       console.log('>>> [PROFILE] ADDRESS DATA RECEIVED:', data);
 
       if (Array.isArray(data)) {
-        // If we just saved an address optimistically, and the fetch returns empty,
-        // it might be a race condition. Let's keep the optimistic data if it's there.
-        if (data.length === 0 && addresses.length > 0 && isSilent) {
-          console.warn('>>> [PROFILE] Server returned empty, but we have optimistic data. Keeping optimistic state.');
-        } else {
-          setAddresses(data);
-        }
+        // Silent refreshes can resolve before Supabase returns the newly saved row.
+        // Preserve the current optimistic card instead of replacing it with an empty list.
+        setAddresses((current) => {
+          if (isSilent && data.length === 0 && current.length > 0) {
+            console.warn('>>> [PROFILE] Server returned empty, but we have optimistic data. Keeping optimistic state.');
+            return current;
+          }
+
+          return data;
+        });
         
         if (data.length === 0) {
           console.log('>>> [PROFILE] NO ADDRESSES FOUND IN VAULT');
