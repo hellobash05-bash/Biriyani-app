@@ -149,14 +149,14 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
 
   // 1. SAFE FETCH BY INTERNAL ID
   try {
-    const { data } = await sb.from('addresses').select('id, user_id, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('user_id', userIds);
+    const { data } = await sb.from('addresses').select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('user_id', userIds);
     (data || []).forEach(a => uniqueMap.set(a.id, a));
   } catch (e) { console.warn('>>> [BRIDGE] ID Fetch skipped:', e.message); }
 
   // 2. SAFE FETCH BY FIREBASE UID
   if (firebaseUids.length > 0) {
     try {
-      const { data } = await sb.from('addresses').select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('firebase_uid', firebaseUids);
+      const { data } = await sb.from('addresses').select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('firebase_uid', firebaseUids);
       (data || []).forEach(a => uniqueMap.set(a.id, a));
     } catch (e) { console.warn('>>> [BRIDGE] UID Fetch skipped:', e.message); }
   }
@@ -164,7 +164,7 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   // 3. SAFE FETCH BY EMAIL
   if (searchEmails.length > 0) {
     try {
-      const { data, error } = await sb.from('addresses').select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('email', searchEmails);
+      const { data, error } = await sb.from('addresses').select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('email', searchEmails);
       if (!error && data) {
         data.forEach(a => uniqueMap.set(a.id, a));
       }
@@ -217,6 +217,7 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
   if (identities.length === 0) return res.status(404).json({ message: 'User not found' });
   const primaryId = identities[0].id;
   const primaryUid = identities[0].uid || uid;
+  const primaryEmail = (identities[0].email || email || '').toLowerCase().trim();
 
   try {
     if (isDefault) {
@@ -240,15 +241,17 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
       detail: detail || `${house}, ${street}, ${city} - ${pincode}`, 
       is_default: !!isDefault, 
       user_id: primaryId,
-      firebase_uid: primaryUid
+      firebase_uid: primaryUid,
+      email: primaryEmail,
+      user_email: primaryEmail
     };
 
     // Strict Whitelist
-    const whitelist = ['user_id', 'firebase_uid', 'label', 'name', 'full_name', 'phone', 'house', 'address_line1', 'street', 'address_line2', 'city', 'state', 'pincode', 'landmark', 'district', 'latitude', 'longitude', 'delivery_instructions', 'detail', 'is_default'];
+    const whitelist = ['user_id', 'firebase_uid', 'email', 'user_email', 'label', 'name', 'full_name', 'phone', 'house', 'address_line1', 'street', 'address_line2', 'city', 'state', 'pincode', 'landmark', 'district', 'latitude', 'longitude', 'delivery_instructions', 'detail', 'is_default'];
     const payload = {};
     whitelist.forEach(k => { if (rawPayload[k] !== undefined) payload[k] = rawPayload[k]; });
 
-    let { data: updated, error } = await req.supabase.from('addresses').update(payload).eq('id', id).select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
+    let { data: updated, error } = await req.supabase.from('addresses').update(payload).eq('id', id).select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
 
     if (error && error.code === '42703') {
       // Extreme fallback
@@ -282,7 +285,7 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
   if (identities.length === 0) return res.status(404).json({ message: 'User lookup failed' });
   const primaryId = identities[0].id;
   const primaryUid = identities[0].uid || uid;
-  const primaryEmail = identities[0].email || email;
+  const primaryEmail = (identities[0].email || email || '').toLowerCase().trim();
 
   try {
     if (isDefault) {
@@ -292,6 +295,8 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
     const rawPayload = { 
       user_id: primaryId,
       firebase_uid: primaryUid,
+      email: primaryEmail,
+      user_email: primaryEmail,
       label, 
       name,
       full_name: name,
@@ -310,11 +315,11 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
     };
 
     // Strict Whitelist to prevent "user_email" or other non-existent column errors
-    const whitelist = ['user_id', 'firebase_uid', 'label', 'name', 'full_name', 'phone', 'house', 'address_line1', 'street', 'address_line2', 'city', 'state', 'pincode', 'landmark', 'district', 'latitude', 'longitude', 'delivery_instructions', 'detail', 'is_default'];
+    const whitelist = ['user_id', 'firebase_uid', 'email', 'user_email', 'label', 'name', 'full_name', 'phone', 'house', 'address_line1', 'street', 'address_line2', 'city', 'state', 'pincode', 'landmark', 'district', 'latitude', 'longitude', 'delivery_instructions', 'detail', 'is_default'];
     const payload = {};
     whitelist.forEach(k => { if (rawPayload[k] !== undefined) payload[k] = rawPayload[k]; });
 
-    let { data: newAddress, error } = await req.supabase.from('addresses').insert([payload]).select('id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
+    let { data: newAddress, error } = await req.supabase.from('addresses').insert([payload]).select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
 
     if (error && error.code === '42703') { 
       // Extreme fallback: only very basic columns
