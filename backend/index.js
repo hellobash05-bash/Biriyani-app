@@ -134,6 +134,40 @@ const resolveAllUserIds = async (sb, email, uid = null) => {
   }
 };
 
+
+const ADDRESS_SELECT_WITH_EMAIL = 'id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at';
+const ADDRESS_SELECT_WITH_UID = 'id, user_id, firebase_uid, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at';
+const ADDRESS_SELECT_BASIC = 'id, user_id, firebase_uid, label, name, phone, house, street, city, pincode, detail, is_default';
+const ADDRESS_SELECT_LEGACY = 'id, user_id, label, name, phone, house, street, city, pincode, detail, is_default';
+
+const runAddressSelect = async (queryBuilder) => {
+  let result = await queryBuilder(ADDRESS_SELECT_WITH_EMAIL);
+  if (result.error?.code === '42703') {
+    result = await queryBuilder(ADDRESS_SELECT_WITH_UID);
+  }
+  if (result.error?.code === '42703') {
+    result = await queryBuilder(ADDRESS_SELECT_BASIC);
+  }
+  if (result.error?.code === '42703') {
+    result = await queryBuilder(ADDRESS_SELECT_LEGACY);
+  }
+  return result;
+};
+
+const runAddressMutation = async (mutationBuilder, fullPayload, uidPayload, basicPayload, legacyPayload) => {
+  let result = await mutationBuilder(fullPayload, ADDRESS_SELECT_WITH_EMAIL);
+  if (result.error?.code === '42703') {
+    result = await mutationBuilder(uidPayload, ADDRESS_SELECT_WITH_UID);
+  }
+  if (result.error?.code === '42703') {
+    result = await mutationBuilder(basicPayload, ADDRESS_SELECT_BASIC);
+  }
+  if (result.error?.code === '42703') {
+    result = await mutationBuilder(legacyPayload, ADDRESS_SELECT_LEGACY);
+  }
+  return result;
+};
+
 // --- ULTIMATE INDESTRUCTIBLE BRIDGE (v15.0) ---
 const getFormattedAddresses = async (sb, email, uid = null) => {
   const identities = await resolveAllUserIds(sb, email, uid);
@@ -149,14 +183,16 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
 
   // 1. SAFE FETCH BY INTERNAL ID
   try {
-    const { data } = await sb.from('addresses').select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('user_id', userIds);
+    const { data, error } = await runAddressSelect((columns) => sb.from('addresses').select(columns).in('user_id', userIds));
+    if (error) throw error;
     (data || []).forEach(a => uniqueMap.set(a.id, a));
   } catch (e) { console.warn('>>> [BRIDGE] ID Fetch skipped:', e.message); }
 
   // 2. SAFE FETCH BY FIREBASE UID
   if (firebaseUids.length > 0) {
     try {
-      const { data } = await sb.from('addresses').select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('firebase_uid', firebaseUids);
+      const { data, error } = await runAddressSelect((columns) => sb.from('addresses').select(columns).in('firebase_uid', firebaseUids));
+      if (error) throw error;
       (data || []).forEach(a => uniqueMap.set(a.id, a));
     } catch (e) { console.warn('>>> [BRIDGE] UID Fetch skipped:', e.message); }
   }
@@ -164,7 +200,7 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   // 3. SAFE FETCH BY EMAIL
   if (searchEmails.length > 0) {
     try {
-      const { data, error } = await sb.from('addresses').select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').in('email', searchEmails);
+      const { data, error } = await runAddressSelect((columns) => sb.from('addresses').select(columns).in('email', searchEmails));
       if (!error && data) {
         data.forEach(a => uniqueMap.set(a.id, a));
       }
@@ -251,15 +287,19 @@ app.put(['/api/users/address/:id', '/api/user/address/:id', '/api/address/:id'],
     const payload = {};
     whitelist.forEach(k => { if (rawPayload[k] !== undefined) payload[k] = rawPayload[k]; });
 
-    let { data: updated, error } = await req.supabase.from('addresses').update(payload).eq('id', id).select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
+    const uidPayload = { ...payload };
+    delete uidPayload.email;
+    delete uidPayload.user_email;
+    const basicPayload = { user_id: primaryId, firebase_uid: primaryUid, label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
+    const legacyPayload = { user_id: primaryId, label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
 
-    if (error && error.code === '42703') {
-      // Extreme fallback
-      const basicPayload = { label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
-      const fallback = await req.supabase.from('addresses').update(basicPayload).eq('id', id).select('id, user_id, label, name, phone, house, street, city, pincode, detail, is_default').maybeSingle();
-      updated = fallback.data;
-      error = fallback.error;
-    }
+    const { data: updated, error } = await runAddressMutation(
+      (mutationPayload, columns) => req.supabase.from('addresses').update(mutationPayload).eq('id', id).select(columns).maybeSingle(),
+      payload,
+      uidPayload,
+      basicPayload,
+      legacyPayload
+    );
 
     if (error) throw error;
     res.json(updated);
@@ -319,15 +359,19 @@ app.post(['/api/users/address', '/api/user/address', '/api/address'], async (req
     const payload = {};
     whitelist.forEach(k => { if (rawPayload[k] !== undefined) payload[k] = rawPayload[k]; });
 
-    let { data: newAddress, error } = await req.supabase.from('addresses').insert([payload]).select('id, user_id, firebase_uid, email, user_email, label, name, full_name, phone, house, address_line1, street, address_line2, city, state, pincode, landmark, district, latitude, longitude, delivery_instructions, detail, is_default, created_at').maybeSingle();
+    const uidPayload = { ...payload };
+    delete uidPayload.email;
+    delete uidPayload.user_email;
+    const basicPayload = { user_id: primaryId, firebase_uid: primaryUid, label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
+    const legacyPayload = { user_id: primaryId, label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
 
-    if (error && error.code === '42703') { 
-      // Extreme fallback: only very basic columns
-      const basicPayload = { user_id: primaryId, label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault };
-      const fallback = await req.supabase.from('addresses').insert([basicPayload]).select('id, user_id, label, name, phone, house, street, city, pincode, detail, is_default').maybeSingle();
-      newAddress = fallback.data;
-      error = fallback.error;
-    }
+    const { data: newAddress, error } = await runAddressMutation(
+      (mutationPayload, columns) => req.supabase.from('addresses').insert([mutationPayload]).select(columns).maybeSingle(),
+      payload,
+      uidPayload,
+      basicPayload,
+      legacyPayload
+    );
 
     if (error) throw error;
     res.json(newAddress);
