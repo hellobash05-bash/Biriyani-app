@@ -87,9 +87,9 @@ export default function CheckoutAddressSelector({
       }
     }
 
-    console.log(`>>> [CHECKOUT] FETCHING ADDRESSES FOR: Email=${user.email}, UID=${user.uid} (Silent: ${isSilent})`);
+    console.log(`>>> [CHECKOUT] FETCHING ADDRESSES FOR: Email=${user?.email}, UID=${user?.uid} (Silent: ${isSilent})`);
     try {
-      const data = await fetchAddresses(user.email, user.uid);
+      const data = await fetchAddresses(user?.email || '', user?.uid);
       console.log('>>> [CHECKOUT] ADDRESS DATA RECEIVED:', data);
       
       const addrList = Array.isArray(data) ? data : [];
@@ -133,7 +133,7 @@ export default function CheckoutAddressSelector({
   }, [loadAddresses]);
 
   const handleDelete = async (id: string) => {
-    if (!user?.email || !user?.uid) return;
+    if (!user?.email && !user?.uid) return;
     playSound('pop');
     if (!confirm('Remove this destination?')) return;
     try {
@@ -145,7 +145,7 @@ export default function CheckoutAddressSelector({
       });
       toast.success('Destination removed');
       
-      await deleteAddress(id, user.email, user.uid);
+      await deleteAddress(id, user?.email || '', user?.uid);
       loadAddresses(true); // Silent refresh
     } catch (error: any) {
       toast.error('Failed to remove');

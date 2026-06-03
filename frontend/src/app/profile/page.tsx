@@ -58,10 +58,10 @@ export default function ProfilePage() {
   }, [profile, user]);
 
   const loadAddresses = async (isSilent = false) => {
-    if (!user?.email) return;
+    if (!user?.email && !user?.uid) return;
     if (!isSilent) setLoadingAddresses(true);
     try {
-      const data = await apiFetchAddresses(user.email, user.uid);
+      const data = await apiFetchAddresses(user?.email || '', user?.uid);
       setAddresses(Array.isArray(data) ? data : []);
     } catch (err) {
       if (!isSilent) toast.error('Failed to sync vault');
@@ -118,11 +118,11 @@ export default function ProfilePage() {
   };
 
   const handleDeleteAddress = async (id: string) => {
-    if (!user?.email) return;
+    if (!user?.email && !user?.uid) return;
     if (!confirm('Remove this destination?')) return;
     setIsRefreshing(true);
     try {
-      await deleteAddress(id, user.email, user.uid);
+      await deleteAddress(id, user?.email || '', user?.uid);
       toast.success('Vault entry removed');
       loadAddresses(true);
     } catch (err) {

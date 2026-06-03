@@ -171,8 +171,8 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.email) {
-      toast.error('Session expired.');
+    if (!user?.email && !user?.uid) {
+      toast.error('Session expired. Please log in again.');
       return;
     }
 
@@ -199,10 +199,10 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
 
       let result;
       if (initialData?.id || initialData?._id) {
-        result = await updateAddress(initialData.id || initialData._id, user.email, addressData, user.uid);
+        result = await updateAddress(initialData.id || initialData._id, user?.email || '', addressData, user?.uid);
         toast.success('Address updated');
       } else {
-        result = await addAddress(user.email, addressData, user.uid);
+        result = await addAddress(user?.email || '', addressData, user?.uid);
         toast.success('Address added');
       }
       onSuccess(result);

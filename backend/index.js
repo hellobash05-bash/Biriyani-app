@@ -203,8 +203,24 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
       const { data, error } = await runAddressSelect((columns) => sb.from('addresses').select(columns).in('email', searchEmails));
       if (!error && data) {
         data.forEach(a => uniqueMap.set(a.id, a));
+      } else if (error && error.code === '42703') {
+         // Fallback if 'email' column doesn't exist but 'user_email' does
+         const { data: data2, error: err2 } = await runAddressSelect((columns) => sb.from('addresses').select(columns).in('user_email', searchEmails));
+         if (!err2 && data2) {
+           data2.forEach(a => uniqueMap.set(a.id, a));
+         }
       }
     } catch (e) { console.warn('>>> [BRIDGE] Email Fetch skipped:', e.message); }
+  }
+
+  // 4. SAFE FETCH BY USER_EMAIL (Extra layer of safety for old schema)
+  if (searchEmails.length > 0) {
+    try {
+      const { data, error } = await runAddressSelect((columns) => sb.from('addresses').select(columns).in('user_email', searchEmails));
+      if (!error && data) {
+        data.forEach(a => uniqueMap.set(a.id, a));
+      }
+    } catch (e) { console.warn('>>> [BRIDGE] User_Email Fetch skipped:', e.message); }
   }
 
   const allResults = Array.from(uniqueMap.values());
@@ -594,10 +610,13 @@ app.get('/api/user/orders', async (req, res) => {
 app.get('/api/profile', async (req, res) => {
   const { email, uid } = req.query;
   try {
-    let query = req.supabase.from('users').select('*, user_favorites(menu_item_id)');
-    if (email) query = query.ilike('email', email);
-    if (uid) query = query.eq('uid', uid);
-    const { data: users, error } = await query;
+    const filters = [];
+    if (uid) filters.push(`uid.eq.${uid}`);
+    if (email) filters.push(`email.ilike.${email}`);
+
+    if (filters.length === 0) return res.status(400).json({ message: 'Email or UID required' });
+
+    const { data: users, error } = await req.supabase.from('users').select('*, user_favorites(menu_item_id)').or(filters.join(','));
     if (error) throw error;
     if (!users || users.length === 0) return res.status(404).json({ message: 'Not found' });
     const user = users[0];
@@ -611,8 +630,23 @@ app.get('/api/profile', async (req, res) => {
 app.post('/api/users/sync', async (req, res) => {
   const { uid, name, email, photoURL, phone } = req.body;
   try {
+    const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+    // Try linking to existing email first
+    if (normalizedEmail) {
+      const { data: existingUsers } = await req.supabase.from('users').select('id, uid').ilike('email', normalizedEmail);
+      if (existingUsers && existingUsers.length > 0) {
+        // Link all records with this email to the current UID
+        await req.supabase.from('users').update({ uid, name, photo_url: photoURL, phone, last_login: new Date().toISOString() }).ilike('email', normalizedEmail);
+        
+        const { data: updatedUser, error } = await req.supabase.from('users').select().eq('uid', uid).single();
+        if (error) throw error;
+        return res.json({ ...updatedUser, _id: updatedUser.id });
+      }
+    }
+
     const { data: user, error } = await req.supabase.from('users').upsert({ 
-      uid, name, email, photo_url: photoURL, phone, last_login: new Date().toISOString()
+      uid, name, email: normalizedEmail, photo_url: photoURL, phone, last_login: new Date().toISOString()
     }, { onConflict: 'uid' }).select().single();
     if (error) throw error;
     res.json({ ...user, _id: user.id });

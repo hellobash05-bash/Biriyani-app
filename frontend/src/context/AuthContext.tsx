@@ -24,10 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUserProfile = async (firebaseUser: FirebaseUser) => {
-    if (!firebaseUser.email) {
-       console.warn('--- AUTH: No email found for user ---', firebaseUser.uid);
-       return;
-    }
     try {
       const syncedProfile = await syncUser({
         uid: firebaseUser.uid,
@@ -41,12 +37,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Log a "Login" activity
       try {
+        const identifier = firebaseUser.email || firebaseUser.phoneNumber || firebaseUser.uid;
         await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/activities`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             firebaseUid: firebaseUser.uid, 
-            activity: `User logged in: ${firebaseUser.email}` 
+            activity: `User logged in: ${identifier}` 
           }),
         });
       } catch (actErr) {
@@ -56,8 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('--- AUTH: SYNC ERROR ---', error);
       try {
-        const profileData = await fetchProfileByEmail(firebaseUser.email);
-        setProfile(profileData);
+        // Fallback: Fetch profile by UID if sync fails
+        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/profile`);
+        url.searchParams.append('uid', firebaseUser.uid);
+        if (firebaseUser.email) url.searchParams.append('email', firebaseUser.email);
+        
+        const response = await fetch(url.toString());
+        if (response.ok) {
+          const profileData = await response.json();
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
       } catch (fetchError) {
         console.error('--- AUTH: FALLBACK FETCH FAILED ---', fetchError);
         setProfile(null);

@@ -352,11 +352,14 @@ export async function fetchAnalytics() {
   return await response.json();
 }
 
-export async function fetchAddresses(email: string, uid?: string) {
-  // Use dedicated /address endpoint with cache busting and dual-key (Email + UID)
-  let url = `${API_BASE_URL.replace(/\/$/, '')}/address?email=${encodeURIComponent(email)}`;
-  if (uid) url += `&uid=${encodeURIComponent(uid)}`;
-  url += `&t=${Date.now()}`;
+export async function fetchAddresses(email: string | null | undefined, uid?: string) {
+  let url = `${API_BASE_URL.replace(/\/$/, '')}/address?`;
+  const params = new URLSearchParams();
+  if (email) params.append('email', email);
+  if (uid) params.append('uid', uid);
+  params.append('t', Date.now().toString());
+  
+  url += params.toString();
   
   console.log('>>> [API] FETCHING ADDRESSES:', url);
   
@@ -375,12 +378,12 @@ export async function fetchAddresses(email: string, uid?: string) {
   }
 }
 
-export async function addAddress(email: string, addressData: any, uid?: string) {
+export async function addAddress(email: string | null | undefined, addressData: any, uid?: string) {
   const url = `${API_BASE_URL.replace(/\/$/, '')}/address`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, uid, ...addressData }),
+    body: JSON.stringify({ email: email || '', uid, ...addressData }),
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -389,12 +392,12 @@ export async function addAddress(email: string, addressData: any, uid?: string) 
   return response.json();
 }
 
-export async function updateAddress(id: string, email: string, addressData: any, uid?: string) {
+export async function updateAddress(id: string, email: string | null | undefined, addressData: any, uid?: string) {
   const url = `${API_BASE_URL.replace(/\/$/, '')}/address/${id}`;
   const response = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, uid, ...addressData }),
+    body: JSON.stringify({ email: email || '', uid, ...addressData }),
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -433,14 +436,17 @@ export async function uploadProfileImage(uid: string, file: File) {
   }
   return response.json();
 }
-export async function deleteAddress(id: string, email: string, uid?: string) {
+export async function deleteAddress(id: string, email: string | null | undefined, uid?: string) {
   // Ensure we have a clean ID
   if (!id) throw new Error('Cannot delete: Missing address ID');
 
   // Use a simple, absolute path construction
   const cleanId = id.trim();
-  let url = `${API_BASE_URL.replace(/\/$/, '')}/address/${cleanId}?email=${encodeURIComponent(email)}`;
-  if (uid) url += `&uid=${encodeURIComponent(uid)}`;
+  let url = `${API_BASE_URL.replace(/\/$/, '')}/address/${cleanId}?`;
+  const params = new URLSearchParams();
+  if (email) params.append('email', email);
+  if (uid) params.append('uid', uid);
+  url += params.toString();
 
   console.log('>>> [API DELETE] Target URL:', url);
 
