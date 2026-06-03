@@ -404,7 +404,9 @@ app.get('/api/restaurants', async (req, res) => {
 });
 
 app.get('/api/menu', async (req, res) => {
-  const { data, error } = await req.supabase.from('menu_items').select('*').eq('is_available', true);
+  // Return all items for admin, only available items for normal users. We'll simplify by returning all here for admin page to work, and frontend can filter for normal users.
+  // Actually, let's keep GET /api/menu returning all items, since frontend filters by isAvailable for normal users.
+  const { data, error } = await req.supabase.from('menu_items').select('*');
   if (error) return res.status(500).json({ message: error.message });
   res.json(data.map(item => ({
     _id: item.id,
@@ -417,6 +419,61 @@ app.get('/api/menu', async (req, res) => {
     image: item.image,
     isAvailable: item.is_available
   })));
+});
+
+// Admin Menu Management Endpoints
+app.post('/api/admin/menu', async (req, res) => {
+  const { name, description, price, offerPrice, discountPercentage, category, image, isAvailable } = req.body;
+  try {
+    const { data, error } = await req.supabase.from('menu_items').insert([{
+      name,
+      description,
+      price,
+      offer_price: offerPrice,
+      discount_percentage: discountPercentage,
+      category,
+      image,
+      is_available: isAvailable !== false // default to true
+    }]).select().single();
+    
+    if (error) throw error;
+    res.json({ ...data, _id: data.id });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.patch('/api/admin/menu/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, offerPrice, discountPercentage, category, image, isAvailable } = req.body;
+  try {
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = price;
+    if (offerPrice !== undefined) updateData.offer_price = offerPrice;
+    if (discountPercentage !== undefined) updateData.discount_percentage = discountPercentage;
+    if (category !== undefined) updateData.category = category;
+    if (image !== undefined) updateData.image = image;
+    if (isAvailable !== undefined) updateData.is_available = isAvailable;
+
+    const { data, error } = await req.supabase.from('menu_items').update(updateData).eq('id', id).select().single();
+    if (error) throw error;
+    res.json({ ...data, _id: data.id });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.delete('/api/admin/menu/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await req.supabase.from('menu_items').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 const formatOrderForClient = (order) => ({
