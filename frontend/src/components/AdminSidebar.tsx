@@ -5,14 +5,26 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, 
+  ShoppingBag, 
+  Utensils, 
+  Truck, 
+  Users, 
+  Star, 
+  Home, 
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/admin', icon: '📊' },
-  { label: 'Orders', path: '/admin/orders', icon: '🛍️' },
-  { label: 'Menu', path: '/admin/menu', icon: '🍽️' },
-  { label: 'Delivery Fleet', path: '/admin/delivery-partners', icon: '🛵' },
-  { label: 'Customers', path: '/admin/customers', icon: '👥' },
-  { label: 'Reviews', path: '/admin/reviews', icon: '⭐' },
+  { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+  { label: 'Orders', path: '/admin/orders', icon: ShoppingBag },
+  { label: 'Menu', path: '/admin/menu', icon: Utensils },
+  { label: 'Delivery Fleet', path: '/admin/delivery-partners', icon: Truck },
+  { label: 'Customers', path: '/admin/customers', icon: Users },
+  { label: 'Reviews', path: '/admin/reviews', icon: Star },
 ];
 
 export default function AdminSidebar() {
@@ -21,7 +33,6 @@ export default function AdminSidebar() {
   const { logout, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Close sidebar on mobile when route changes
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
@@ -33,24 +44,19 @@ export default function AdminSidebar() {
 
   const SidebarContent = () => (
     <>
-      <div className="flex items-center gap-3 mb-10 px-2">
-        <div className="w-10 h-10 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-orange-600/20 shrink-0">
-          B
-        </div>
-        <div>
-          <h2 className="font-black tracking-tighter text-lg uppercase italic text-foreground leading-none">Royale</h2>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Administrator</span>
-        </div>
+      <div className="flex flex-col mb-10 px-2">
+        <span className="text-xl font-serif font-bold tracking-tight text-foreground">Biriyani</span> 
+        <span className="text-primary font-sans font-medium text-[0.6em] uppercase tracking-[0.2em] -mt-0.5">Admin Portal</span>
       </div>
 
-      <div className="mb-8 px-4 py-4 bg-foreground/5 rounded-2xl border border-glass-border backdrop-blur-sm">
+      <div className="mb-8 px-4 py-3 bg-muted rounded-md border border-border">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-9 h-9 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0">
             {profile?.name?.charAt(0) || 'A'}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{profile?.name || 'Admin'}</p>
-            <p className="text-[10px] text-stone-500 truncate">{profile?.email}</p>
+            <p className="text-xs font-bold text-foreground truncate">{profile?.name || 'Admin'}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{profile?.email}</p>
           </div>
         </div>
       </div>
@@ -58,17 +64,18 @@ export default function AdminSidebar() {
       <nav className="flex flex-col gap-1 flex-1">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.path;
+          const Icon = item.icon;
           return (
             <Link key={item.path} href={item.path}>
               <motion.div
-                whileHover={{ x: 5 }}
-                className={`flex items-center gap-4 p-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${
+                whileHover={{ x: 4 }}
+                className={`flex items-center gap-3 p-3 rounded-md font-medium text-xs uppercase tracking-wider transition-all ${
                   isActive 
-                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' 
-                    : 'text-stone-400 hover:text-foreground hover:bg-foreground/5'
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
-                <span className="text-base">{item.icon}</span>
+                <Icon size={18} />
                 {item.label}
               </motion.div>
             </Link>
@@ -76,18 +83,18 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-2 pt-6 border-t border-glass-border">
+      <div className="mt-auto flex flex-col gap-1 pt-6 border-t border-border">
         <Link href="/">
-          <div className="flex items-center gap-4 p-4 rounded-2xl font-bold text-xs uppercase tracking-widest text-stone-400 hover:text-foreground hover:bg-foreground/5 transition-all">
-            <span>🏠</span>
+          <div className="flex items-center gap-3 p-3 rounded-md font-medium text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
+            <Home size={18} />
             Storefront
           </div>
         </Link>
         <button 
           onClick={handleLogout}
-          className="flex items-center gap-4 p-4 rounded-2xl font-bold text-xs uppercase tracking-widest text-red-500 hover:bg-red-500/10 transition-all w-full text-left"
+          className="flex items-center gap-3 p-3 rounded-md font-medium text-xs uppercase tracking-wider text-destructive hover:bg-destructive/5 transition-all w-full text-left"
         >
-          <span>🚪</span>
+          <LogOut size={18} />
           Logout
         </button>
       </div>
@@ -97,21 +104,21 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Mobile Top Bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b border-glass-border flex items-center justify-between px-6 z-[60] backdrop-blur-md bg-opacity-90">
-        <div className="flex items-center gap-2">
-           <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-black text-xs">B</div>
-           <span className="font-black text-foreground uppercase italic text-sm tracking-tighter">Royale Admin</span>
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b border-border flex items-center justify-between px-6 z-[60] backdrop-blur-md bg-opacity-90">
+        <div className="flex flex-col leading-tight">
+          <span className="text-lg font-serif font-bold text-foreground">Biriyani</span> 
+          <span className="text-primary font-sans font-medium text-[0.55em] uppercase tracking-[0.1em]">Admin</span>
         </div>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="w-10 h-10 flex items-center justify-center text-foreground text-2xl"
+          className="p-2 rounded-md text-foreground"
         >
-          {isOpen ? '✕' : '☰'}
+          {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 h-screen bg-background border-r border-glass-border flex-col p-6 fixed left-0 top-0 z-50">
+      <aside className="hidden lg:flex w-64 h-screen bg-background border-r border-border flex-col p-6 fixed left-0 top-0 z-50">
         <SidebarContent />
       </aside>
 
@@ -124,14 +131,14 @@ export default function AdminSidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[70]"
+              className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
             />
             <motion.aside 
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-background z-[80] p-6 flex flex-col shadow-2xl border-r border-glass-border"
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-background z-[80] p-6 flex flex-col shadow-2xl border-r border-border"
             >
               <SidebarContent />
             </motion.aside>
@@ -141,3 +148,4 @@ export default function AdminSidebar() {
     </>
   );
 }
+

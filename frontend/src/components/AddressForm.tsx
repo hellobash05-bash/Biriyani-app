@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { addAddress, updateAddress } from '@/lib/api';
 import { motion } from 'framer-motion';
-import { MapPin, Phone, User, Landmark, Building2, Search, Compass, Info, Sparkles, Home, Briefcase, Save } from 'lucide-react';
+import { MapPin, Phone, User, Landmark, Building2, Search, Compass, Info, Sparkles, Home, Briefcase, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { playSound } from '@/lib/sounds';
 
@@ -60,7 +60,6 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
     }
   }, [initialData]);
 
-  // Google Places Autocomplete Integration
   useEffect(() => {
     const loadGoogleMaps = () => {
       if (window.google) {
@@ -128,13 +127,12 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
       return;
     }
 
-    const toastId = toast.loading('Locating your position...');
+    const toastId = toast.loading('Locating...');
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         setFormData(prev => ({ ...prev, latitude, longitude }));
         
-        // Reverse Geocoding via Google Maps
         if (window.google) {
           const geocoder = new window.google.maps.Geocoder();
           geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
@@ -160,23 +158,21 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               }));
               toast.success('Location found!', { id: toastId });
             } else {
-              toast.error('Could not fetch address details', { id: toastId });
+              toast.error('Could not fetch address', { id: toastId });
             }
           });
         } else {
-          toast.success('Coordinates captured!', { id: toastId });
+          toast.success('Position captured!', { id: toastId });
         }
       },
-      (error) => {
-        toast.error('Permission denied or location unavailable', { id: toastId });
-      }
+      () => toast.error('Location unavailable', { id: toastId })
     );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.email) {
-      toast.error('Session expired. Please login again.');
+      toast.error('Session expired.');
       return;
     }
 
@@ -204,15 +200,14 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
       let result;
       if (initialData?.id || initialData?._id) {
         result = await updateAddress(initialData.id || initialData._id, user.email, addressData, user.uid);
-        toast.success('Address updated successfully');
+        toast.success('Address updated');
       } else {
         result = await addAddress(user.email, addressData, user.uid);
-        toast.success('Address added successfully');
+        toast.success('Address added');
       }
       onSuccess(result);
     } catch (error: any) {
-      console.error('Error saving address:', error);
-      toast.error(error.message || 'Failed to save address');
+      toast.error(error.message || 'Failed to save');
     } finally {
       setLoading(false);
     }
@@ -220,32 +215,35 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-white/70 dark:bg-stone-900/70 rounded-[4rem] p-10 md:p-14 shadow-2xl border border-stone-200 dark:border-white/5 backdrop-blur-3xl relative overflow-hidden"
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card border border-border rounded-md shadow-2xl overflow-hidden relative"
     >
-      <div className="absolute top-0 right-0 w-80 h-80 bg-orange-600/5 blur-[100px] -z-10" />
-      
-      <header className="mb-12">
-        <div className="flex items-center gap-4 mb-2">
-          <span className="w-12 h-1.5 bg-orange-600 rounded-full shadow-lg shadow-orange-600/20"></span>
-          <h3 className="text-3xl md:text-4xl font-black text-stone-900 dark:text-white uppercase tracking-tighter">
-            {initialData ? 'Update Delivery Spot' : 'New Delivery Spot'}
-          </h3>
-        </div>
-        <p className="text-stone-500 font-bold uppercase tracking-[0.2em] text-[10px] ml-16 italic">
-          Pinpoint your sanctuary for the Royale Feast.
-        </p>
-      </header>
+      <div className="p-8 md:p-10">
+        <header className="flex justify-between items-start mb-10">
+          <div>
+            <h3 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-1">
+              {initialData ? 'Edit Destination' : 'New Destination'}
+            </h3>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+              Set your delivery coordinates
+            </p>
+          </div>
+          <button 
+            onClick={onCancel}
+            className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+          >
+            <X size={20} />
+          </button>
+        </header>
 
-      <form onSubmit={handleSubmit} className="space-y-12">
-        {/* Step 1: Location & Label */}
-        <section className="space-y-8">
-          <div className="flex flex-col gap-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
-              <Sparkles size={12} className="text-orange-600" /> Save address as
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Label Selection */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+              Save as
             </label>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {[
                 { label: 'Home', icon: <Home size={16} /> },
                 { label: 'Office', icon: <Briefcase size={16} /> },
@@ -258,10 +256,10 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                     playSound('pop');
                     setFormData(prev => ({ ...prev, label: l.label }));
                   }}
-                  className={`flex-1 py-6 rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 border-2 flex flex-col items-center gap-2 ${
+                  className={`flex-1 py-4 rounded-md text-[10px] font-bold uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
                     formData.label === l.label 
-                      ? 'bg-orange-600 text-white border-orange-600 shadow-2xl shadow-orange-600/30 scale-105' 
-                      : 'bg-stone-50/50 dark:bg-white/5 text-stone-400 border-transparent hover:border-orange-500/20'
+                      ? 'bg-primary text-primary-foreground border-primary' 
+                      : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/30'
                   }`}
                 >
                   {l.icon}
@@ -271,155 +269,159 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 relative">
-            <div className="flex items-center justify-between px-6">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 flex items-center gap-2">
-                <Search size={12} className="text-orange-600" /> Search for area, street name...
+          {/* Search Area */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Search Location
               </label>
               <button 
                 type="button"
                 onClick={handleUseCurrentLocation}
-                className="flex items-center gap-2 text-[9px] font-black text-orange-600 uppercase tracking-widest hover:text-orange-500 transition-colors bg-orange-600/5 px-4 py-2 rounded-full border border-orange-600/10"
+                className="flex items-center gap-1.5 text-[9px] font-bold text-primary uppercase tracking-widest hover:opacity-80 transition-opacity"
               >
-                <Compass size={12} className="animate-pulse" /> Use Current Location
+                <Compass size={12} /> Use My Current Location
               </button>
             </div>
-            <div className="relative group">
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Search size={18} />
+              </div>
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Start typing your delivery location..."
-                className="w-full bg-orange-50/30 dark:bg-orange-500/5 border-2 border-orange-100/50 dark:border-orange-500/10 p-7 rounded-[3rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-xl shadow-orange-600/5 placeholder:text-stone-400"
+                placeholder="Find your area or street..."
+                className="w-full bg-muted border border-border pl-12 pr-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
               />
               {formData.latitude && (
-                <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2 px-5 py-2.5 bg-green-500/10 rounded-full border border-green-500/20">
-                  <Compass size={16} className="text-green-500 animate-spin-slow" />
-                  <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Pin Dropped</span>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary">
+                  <Sparkles size={16} />
                 </div>
               )}
             </div>
           </div>
-        </section>
 
-        <div className="h-px bg-gradient-to-r from-stone-100 dark:from-white/5 via-stone-200 dark:via-white/10 to-transparent mx-6" />
+          <div className="h-px bg-border" />
 
-        {/* Step 2: Specific Details */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="flex flex-col gap-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
-              <Building2 size={12} className="text-orange-600" /> House / Flat / Block / Floor
+          {/* Detailed Address */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Flat / Floor / Block
+              </label>
+              <input
+                type="text"
+                name="address_line1"
+                value={formData.address_line1}
+                onChange={handleChange}
+                required
+                placeholder="Apartment or Office Details"
+                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Landmark / Building
+              </label>
+              <input
+                type="text"
+                name="landmark"
+                value={formData.landmark}
+                onChange={handleChange}
+                placeholder="E.g. Near Main Gate"
+                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+              />
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Area / Street
+              </label>
+              <input
+                type="text"
+                name="address_line2"
+                value={formData.address_line2}
+                onChange={handleChange}
+                required
+                placeholder="Full Street Details"
+                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Receiver Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="full_name"
+                value={formData.full_name}
+                onChange={handleChange}
+                required
+                placeholder="Receiver's name"
+                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+                placeholder="+91"
+                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+              Instructions
             </label>
             <input
               type="text"
-              name="address_line1"
-              value={formData.address_line1}
+              name="delivery_instructions"
+              value={formData.delivery_instructions}
               onChange={handleChange}
-              required
-              placeholder="E.g. Flat 402, 4th Floor, Block A"
-              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
-            />
-          </div>
-          
-          <div className="flex flex-col gap-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
-              <Landmark size={12} className="text-orange-600" /> Apartment / Building Name
-            </label>
-            <input
-              type="text"
-              name="landmark"
-              value={formData.landmark}
-              onChange={handleChange}
-              placeholder="E.g. Royale Residency"
-              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
+              placeholder="Any special notes for delivery?"
+              className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
             />
           </div>
 
-          <div className="flex flex-col gap-4 md:col-span-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
-              <MapPin size={12} className="text-orange-600" /> Street / Area / Locality
-            </label>
-            <input
-              type="text"
-              name="address_line2"
-              value={formData.address_line2}
-              onChange={handleChange}
-              required
-              placeholder="E.g. Heritage Square, Emerald Valley"
-              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
-            />
+          <div className="flex flex-col md:flex-row gap-4 pt-6">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-8 py-4 rounded-md font-bold text-[11px] text-muted-foreground hover:text-foreground transition-all uppercase tracking-widest"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-foreground text-background py-4 rounded-md font-bold text-[11px] hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50 uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Save size={18} />
+                  {initialData ? 'Update Address' : 'Save Address'}
+                </>
+              )}
+            </button>
           </div>
-        </section>
-
-        {/* Step 3: Receiver Info */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="flex flex-col gap-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
-              <User size={12} className="text-orange-600" /> Receiver's Name
-            </label>
-            <input
-              type="text"
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleChange}
-              required
-              placeholder="Who is receiving the feast?"
-              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
-            />
-          </div>
-          <div className="flex flex-col gap-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
-              <Phone size={12} className="text-orange-600" /> Contact Number
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              placeholder="+91 XXXXX XXXXX"
-              className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
-            />
-          </div>
-        </section>
-
-        <div className="flex flex-col gap-4">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400 ml-6 flex items-center gap-2">
-            <Info size={12} className="text-orange-600" /> Delivery Instructions (Optional)
-          </label>
-          <input
-            type="text"
-            name="delivery_instructions"
-            value={formData.delivery_instructions}
-            onChange={handleChange}
-            placeholder="E.g. Ring the bell twice, leave with guard, etc."
-            className="w-full bg-stone-50/50 dark:bg-white/5 border-2 border-stone-100 dark:border-white/5 p-6 rounded-[2rem] text-sm font-bold text-stone-900 dark:text-white outline-none focus:border-orange-500 transition-all shadow-inner"
-          />
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-6 pt-10">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 py-7 rounded-[3rem] font-black text-[11px] text-stone-400 hover:text-stone-600 transition-all uppercase tracking-[0.4em]"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-[2] bg-stone-900 dark:bg-white text-white dark:text-stone-900 py-7 rounded-[3rem] font-black text-[12px] shadow-2xl shadow-stone-900/30 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 uppercase tracking-[0.4em] flex items-center justify-center gap-4 group/save"
-          >
-            {loading ? (
-              <div className="w-6 h-6 border-3 border-current border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <Save size={20} className="group-hover/save:scale-125 group-hover/save:rotate-12 transition-all duration-500" />
-                {initialData ? 'Confirm Update' : 'Save & Secure'}
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </motion.div>
   );
 }
+

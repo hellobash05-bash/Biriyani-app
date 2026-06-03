@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X, Save } from 'lucide-react';
 
 interface SaveProjectModalProps {
   isOpen: boolean;
@@ -26,7 +27,6 @@ export default function SaveProjectModal({ isOpen, onClose, onSave }: SaveProjec
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Failed to save project');
     } finally {
       setLoading(false);
     }
@@ -35,58 +35,72 @@ export default function SaveProjectModal({ isOpen, onClose, onSave }: SaveProjec
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-background/80 backdrop-blur-md">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="w-full max-w-md bg-white dark:bg-stone-900 rounded-[2.5rem] p-10 shadow-2xl border border-stone-200 dark:border-white/5 relative overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="w-full max-w-md bg-card border border-border rounded-md shadow-2xl overflow-hidden"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-purple-400" />
-            
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-stone-900 dark:text-white uppercase tracking-[0.2em]">Save Project</h2>
-              <button onClick={onClose} className="w-10 h-10 rounded-full bg-stone-100 dark:bg-white/5 flex items-center justify-center text-stone-500 hover:text-stone-900 dark:hover:text-white transition-colors">
-                ✕
-              </button>
+            <div className="p-8">
+              <header className="flex justify-between items-start mb-8">
+                <div>
+                  <h2 className="text-2xl font-serif font-bold text-foreground mb-1">Save Project</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Archive your creation</p>
+                </div>
+                <button 
+                  onClick={onClose} 
+                  className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+                >
+                  <X size={20} />
+                </button>
+              </header>
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Project Name</label>
+                  <input
+                    autoFocus
+                    required
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="My Biriyani Feast"
+                    className="w-full bg-muted border border-border rounded-md px-4 py-3.5 text-sm font-medium focus:border-primary outline-none transition-all"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Description (Optional)</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Add some details..."
+                    rows={3}
+                    className="w-full bg-muted border border-border rounded-md px-4 py-3.5 text-sm font-medium focus:border-primary outline-none transition-all resize-none"
+                  />
+                </div>
+
+                <button
+                  disabled={loading || !name.trim()}
+                  type="submit"
+                  className="w-full py-4 bg-foreground text-background rounded-md font-bold uppercase tracking-widest text-[11px] hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50 mt-2 flex items-center justify-center gap-3"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Save to Vault
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-1">Project Name</label>
-                <input
-                  autoFocus
-                  required
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. My Biriyani Feast"
-                  className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:border-purple-500 transition-colors"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 ml-1">Description (Optional)</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What is this project about?"
-                  rows={3}
-                  className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:border-purple-500 transition-colors resize-none"
-                />
-              </div>
-
-              <button
-                disabled={loading || !name.trim()}
-                type="submit"
-                className="w-full py-5 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl hover:bg-purple-600 hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-stone-900 mt-2"
-              >
-                {loading ? 'SAVING TO VAULT...' : 'COMMIT TO DATABASE'}
-              </button>
-            </form>
           </motion.div>
         </div>
       )}
     </AnimatePresence>
   );
 }
+
