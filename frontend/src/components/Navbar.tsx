@@ -14,7 +14,6 @@ import {
   Menu, 
   X, 
   ChevronRight,
-  User,
   ShieldCheck
 } from 'lucide-react';
 
@@ -74,12 +73,20 @@ export default function Navbar() {
         {/* Logo Section */}
         <Link href="/" onClick={handleLogoClick}>
           <motion.div 
-            whileHover={{ opacity: 0.8 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className="flex items-center gap-2 cursor-pointer group"
           >
             <div className="flex flex-col leading-tight">
               <span className="text-2xl font-serif font-bold tracking-tight text-foreground">Biriyani</span> 
-              <span className="text-primary font-sans font-medium text-[0.65em] uppercase tracking-[0.2em] -mt-1">Royale</span>
+              <motion.span 
+                initial={{ x: -5, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-primary font-sans font-medium text-[0.65em] uppercase tracking-[0.2em] -mt-1"
+              >
+                Royale
+              </motion.span>
             </div>
           </motion.div>
         </Link>
@@ -87,51 +94,83 @@ export default function Navbar() {
         {/* Action Buttons */}
         <div className="flex items-center gap-3 sm:gap-6">
           <div className="hidden md:flex items-center gap-8 mr-4">
-            <Link href="/menu" className="text-sm font-medium hover:text-primary transition-colors">The Menu</Link>
-            <Link href="/profile" className="text-sm font-medium hover:text-primary transition-colors">Orders</Link>
+            <Link href="/menu" className="text-sm font-medium hover:text-primary transition-colors relative group">
+              The Menu
+              <motion.span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
+            </Link>
+            <Link href="/profile" className="text-sm font-medium hover:text-primary transition-colors relative group">
+              Orders
+              <motion.span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 border-l border-border pl-4 sm:pl-6">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
               onClick={handleSoundToggle}
               className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
               title={soundsEnabled ? "Mute" : "Unmute"}
             >
               {soundsEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-            </button>
+            </motion.button>
             
             <ThemeToggle />
             {user && <NotificationBell />}
 
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={handleCartClick}
               className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground relative"
             >
               <ShoppingBag size={20} />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-            </button>
+              <AnimatePresence>
+                {itemCount > 0 && (
+                  <motion.span 
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center"
+                  >
+                    {itemCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
 
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
               onClick={handleMenuToggle}
               className="p-2 rounded-md hover:bg-muted transition-colors text-primary md:hidden"
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+              <AnimatePresence mode="wait">
+                {isOpen ? (
+                  <motion.div key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
+                    <X size={24} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
+                    <Menu size={24} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
 
             {user && (
-              <Link href="/profile" className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-                {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
-              </Link>
+              <motion.div whileHover={{ scale: 1.05 }} className="hidden md:block">
+                <Link href="/profile" className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm shadow-sm hover:shadow-md transition-all">
+                  {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                </Link>
+              </motion.div>
             )}
             
             {!user && (
-              <Link href="/login" className="hidden md:block text-sm font-bold bg-primary text-primary-foreground px-5 py-2.5 rounded-md hover:brightness-110 transition-all">
-                Login
-              </Link>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="hidden md:block">
+                <Link href="/login" className="text-sm font-bold bg-primary text-primary-foreground px-5 py-2.5 rounded-md hover:brightness-110 transition-all shadow-sm">
+                  Login
+                </Link>
+              </motion.div>
             )}
           </div>
         </div>
@@ -144,30 +183,51 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
             className="md:hidden overflow-hidden"
           >
             <div className="pt-8 pb-4 flex flex-col gap-1 border-t border-border mt-4">
-              <Link href="/menu" onClick={() => setIsOpen(false)} className="flex justify-between items-center p-4 rounded-md hover:bg-muted transition-colors">
-                <span className="font-serif text-lg">The Menu</span>
-                <ChevronRight size={18} className="text-muted-foreground" />
-              </Link>
-              <Link href="/profile" onClick={() => setIsOpen(false)} className="flex justify-between items-center p-4 rounded-md hover:bg-muted transition-colors">
-                <span className="font-serif text-lg">Your Orders</span>
-                <ChevronRight size={18} className="text-muted-foreground" />
-              </Link>
+              {[
+                { href: '/menu', label: 'The Menu' },
+                { href: '/profile', label: 'Your Orders' },
+              ].map((link, i) => (
+                <motion.div
+                  key={link.href}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <Link href={link.href} onClick={() => setIsOpen(false)} className="flex justify-between items-center p-4 rounded-md hover:bg-muted transition-colors">
+                    <span className="font-serif text-lg">{link.label}</span>
+                    <ChevronRight size={18} className="text-muted-foreground" />
+                  </Link>
+                </motion.div>
+              ))}
+              
               {isAdmin && (
-                <Link href="/admin" onClick={() => setIsOpen(false)} className="flex justify-between items-center p-4 rounded-md bg-primary/5 text-primary">
-                  <span className="font-serif text-lg flex items-center gap-2">
-                    <ShieldCheck size={20} />
-                    Admin Dashboard
-                  </span>
-                  <ChevronRight size={18} />
-                </Link>
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Link href="/admin" onClick={() => setIsOpen(false)} className="flex justify-between items-center p-4 rounded-md bg-primary/5 text-primary">
+                    <span className="font-serif text-lg flex items-center gap-2">
+                      <ShieldCheck size={20} />
+                      Admin Dashboard
+                    </span>
+                    <ChevronRight size={18} />
+                  </Link>
+                </motion.div>
               )}
               
-              <div className="mt-4 pt-4 border-t border-border px-4">
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-4 pt-4 border-t border-border px-4"
+              >
                 {user ? (
-                  <Link href="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-3 rounded-md bg-muted">
+                  <Link href="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-3 rounded-md bg-muted border border-border/50 hover:border-primary/30 transition-all">
                     <div className="w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">
                       {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
                     </div>
@@ -177,11 +237,11 @@ export default function Navbar() {
                     </div>
                   </Link>
                 ) : (
-                  <Link href="/login" onClick={() => setIsOpen(false)} className="block w-full bg-primary text-primary-foreground py-4 rounded-md font-bold text-center">
+                  <Link href="/login" onClick={() => setIsOpen(false)} className="block w-full bg-primary text-primary-foreground py-4 rounded-md font-bold text-center shadow-md">
                     Login to Account
                   </Link>
                 )}
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
@@ -189,4 +249,5 @@ export default function Navbar() {
     </motion.nav>
   );
 }
+
 
