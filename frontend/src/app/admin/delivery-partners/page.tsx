@@ -234,6 +234,104 @@ export default function AdminDeliveryPartners() {
           </motion.div>
         ))}
       </div>
+
+      {/* Registration Modal */}
+      <AnimatePresence>
+        {(isAdding || editingPartner) && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-stone-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-6 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-xl bg-background rounded-[3rem] p-10 shadow-2xl my-auto border border-glass-border"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-foreground">{editingPartner ? 'Update Hero' : 'Register New Hero'}</h2>
+                <button 
+                  onClick={() => { setIsAdding(false); setEditingItem(null); }}
+                  className="w-10 h-10 flex items-center justify-center bg-foreground/5 rounded-full hover:bg-orange-600 hover:text-white transition-all border border-glass-border"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Hero Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g., Salman Khan" 
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    required 
+                    className="w-full bg-foreground/[0.03] text-foreground p-5 rounded-2xl text-sm font-bold outline-none border border-glass-border focus:border-orange-500 transition-all" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Contact Number</label>
+                    <input 
+                      type="tel" 
+                      placeholder="+91 00000 00000" 
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                      required 
+                      className="w-full bg-foreground/[0.03] text-foreground p-5 rounded-2xl text-sm font-bold outline-none border border-glass-border focus:border-orange-500 transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Vehicle ID</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g., KL-01-AB-1234" 
+                      value={formData.vehicleNumber}
+                      onChange={e => setFormData({...formData, vehicleNumber: e.target.value})}
+                      required 
+                      className="w-full bg-foreground/[0.03] text-foreground p-5 rounded-2xl text-sm font-bold outline-none border border-glass-border focus:border-orange-500 transition-all" 
+                    />
+                  </div>
+                </div>
+
+                {editingPartner && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Mission Status</label>
+                    <select 
+                      value={formData.status}
+                      onChange={e => setFormData({...formData, status: e.target.value})}
+                      className="w-full bg-foreground/[0.03] text-foreground p-5 rounded-2xl text-sm font-bold outline-none border border-glass-border focus:border-orange-500 transition-all appearance-none"
+                    >
+                      <option value="Available">✅ Available for Duty</option>
+                      <option value="Busy">🛵 On Active Mission</option>
+                      <option value="Offline">🌙 Resting / Offline</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex gap-4 mt-4">
+                  <button 
+                    type="button"
+                    onClick={() => { setIsAdding(false); setEditingItem(null); }}
+                    className="flex-1 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-glass-border hover:bg-foreground/5 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-2 px-8 py-4 bg-orange-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    {editingPartner ? 'Confirm Updates' : 'Deploy Hero'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
