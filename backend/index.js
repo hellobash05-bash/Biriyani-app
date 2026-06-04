@@ -70,10 +70,10 @@ const apiRouter = express.Router();
 
 apiRouter.get('/version', (req, res) => {
   res.status(200).send({ 
-    version: '11.7.0-FINAL-RESTORATION', 
+    version: '11.8.0-FORCE-DEPLOY', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'FULL BACKEND RESTORED. NO PLACEHOLDERS.'
+    msg: 'FORCING RENDER TO IGNORE CACHE AND USE NEW ROUTER.'
   });
 });
 
@@ -342,4 +342,4 @@ httpServer.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
 
-// Trigger redeploy at 1780238600
+// Trigger redeploy at 1780238700
