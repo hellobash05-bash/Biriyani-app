@@ -55,7 +55,7 @@ const broadcastNewOrder = (order) => {
   io.emit('new-order', order);
 };
 
-// --- GLOBAL MIDDLEWARE (TOP PRIORITY) ---
+// --- GLOBAL MIDDLEWARE ---
 app.use(cors());
 app.use(express.json());
 
@@ -71,19 +71,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enable case-insensitive routing
 app.set('case sensitive routing', false);
 
 // --- API ROUTER ---
 const apiRouter = express.Router();
 
-// 1. Health Checks
 apiRouter.get('/version', (req, res) => {
   res.status(200).send({ 
-    version: '11.5.0-ROUTER-REFACTOR', 
+    version: '11.6.0-PRODUCTION-READY', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'USING DEDICATED API ROUTER.'
+    msg: 'STABLE API ROUTER ONLINE.'
   });
 });
 
@@ -91,12 +89,10 @@ apiRouter.get('/db-status', (req, res) => {
   res.json({ status: 'connected', type: 'supabase' });
 });
 
-// 2. Universal Identity Bridge
+// --- IDENTITY BRIDGE ---
 const resolveAllUserIds = async (sb, email, uid = null) => {
   if (!email && !uid) return [];
   const normalizedEmail = email ? email.toLowerCase().trim() : null;
-  console.log(`>>> [BRIDGE] Resolving Cluster: Email=${normalizedEmail}, UID=${uid}`);
-
   try {
     const filters = [];
     if (uid) filters.push(`uid.eq.${uid}`);
@@ -105,7 +101,6 @@ const resolveAllUserIds = async (sb, email, uid = null) => {
     const { data: users } = await sb.from('users').select('id, uid, email').or(filters.join(','));
     
     if (!users || users.length === 0) {
-      console.log(`>>> [BRIDGE] Cluster not found. Creating anchor user.`);
       const { data: anchor, error: anchorError } = await sb.from('users').upsert({
         uid: uid || `anchor-${Date.now()}`,
         email: normalizedEmail,
@@ -189,7 +184,7 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   }));
 };
 
-// 3. Address Endpoints
+// --- ROUTES ---
 apiRouter.delete('/address/:id', async (req, res) => {
   const { id } = req.params;
   const { email, uid } = req.query;
@@ -206,17 +201,14 @@ apiRouter.delete('/address/:id', async (req, res) => {
 
 apiRouter.put(['/users/address/:id', '/user/address/:id', '/address/:id'], async (req, res) => {
   const { id } = req.params;
-  const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault, district, latitude, longitude, delivery_instructions } = req.body;
+  const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
   const identities = await resolveAllUserIds(req.supabase, email, uid);
   if (identities.length === 0) return res.status(404).json({ message: 'User not found' });
   const primaryId = identities[0].id;
   try {
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
     const rawPayload = { label, name, full_name: name, phone, house, address_line1: house, street, address_line2: street, city, pincode, landmark, detail: detail || `${house}, ${street}, ${city} - ${pincode}`, is_default: !!isDefault, user_id: primaryId };
-    const whitelist = ['user_id', 'firebase_uid', 'email', 'user_email', 'label', 'name', 'full_name', 'phone', 'house', 'address_line1', 'street', 'address_line2', 'city', 'pincode', 'landmark', 'detail', 'is_default'];
-    const payload = {};
-    whitelist.forEach(k => { if (rawPayload[k] !== undefined) payload[k] = rawPayload[k]; });
-    const { data, error } = await runAddressMutation((p, c) => req.supabase.from('addresses').update(p).eq('id', id).select(c).maybeSingle(), payload, payload, payload, payload);
+    const { data, error } = await runAddressMutation((p, c) => req.supabase.from('addresses').update(p).eq('id', id).select(c).maybeSingle(), rawPayload, rawPayload, rawPayload, rawPayload);
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -246,7 +238,6 @@ apiRouter.post(['/users/address', '/user/address', '/address'], async (req, res)
   }
 });
 
-// 4. Menu & Restaurant Endpoints
 apiRouter.get('/restaurants', async (req, res) => {
   const { data, error } = await req.supabase.from('restaurants').select('*');
   if (error) return res.status(500).json({ message: error.message });
@@ -269,7 +260,6 @@ apiRouter.get('/menu', async (req, res) => {
   })));
 });
 
-// 5. Admin Menu Management
 apiRouter.post('/admin/menu', async (req, res) => {
   const { name, description, price, offerPrice, discountPercentage, category, image, isAvailable } = req.body;
   try {
@@ -312,9 +302,8 @@ apiRouter.patch('/admin/menu/:id', async (req, res) => {
 });
 
 apiRouter.delete('/admin/menu/:id', async (req, res) => {
-  const { id } = req.params;
   try {
-    const { error } = await req.supabase.from('menu_items').delete().eq('id', id);
+    const { error } = await req.supabase.from('menu_items').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
@@ -336,7 +325,6 @@ apiRouter.post('/admin/upload', upload.single('image'), async (req, res) => {
   }
 });
 
-// 6. Order Endpoints
 const formatOrderForClient = (order) => ({
   _id: order.id,
   id: order.id,
@@ -408,7 +396,6 @@ apiRouter.get('/user/orders', async (req, res) => {
   }
 });
 
-// 7. Profile Endpoints
 apiRouter.get('/profile', async (req, res) => {
   const { email, uid } = req.query;
   try {
@@ -462,10 +449,8 @@ apiRouter.post('/users/profile/upload', upload.single('image'), async (req, res)
   }
 });
 
-// --- MOUNT API ROUTER ---
 app.use('/api', apiRouter);
 
-// --- GLOBAL 404 & HEALTH ---
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use((req, res) => {
@@ -482,4 +467,4 @@ httpServer.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
 
-// Trigger redeploy at 1780238400
+// Trigger redeploy at 1780238500
