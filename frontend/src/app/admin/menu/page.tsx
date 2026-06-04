@@ -103,8 +103,9 @@ export default function AdminMenu() {
       loadMenu();
     } catch (err: any) {
       console.error('Menu save error:', err);
-      // Construct URL for debug info - importing getCleanUrl if needed, but it's used inside the API functions
-      alert(`Action failed: ${err.message || 'Unknown error'}\nMethod: ${method}\nPath: ${targetPath}`);
+      // We'll show a more detailed alert including the potential URL
+      const debugUrl = `https://biriyani-backend.onrender.com/api${targetPath}`;
+      alert(`Action failed: ${err.message || 'Unknown error'}\nMethod: ${method}\nTarget URL: ${debugUrl}\n(Check if this URL is reachable)`);
     }
   };
 
