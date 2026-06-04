@@ -83,11 +83,15 @@ app.use((req, res, next) => {
 // ABSOLUTE TOP PRIORITY HEALTH CHECK (V11.0)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '11.2.0-LIVE-ORDER-TRACKING', 
+    version: '11.3.0-LIVE-ADMIN-FIX', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'LIVE ORDER TRACKING BUILD ONLINE.'
+    msg: 'LIVE ADMIN AND UPLOAD BUILD ONLINE.'
   });
+});
+
+app.get('/api/db-status', (req, res) => {
+  res.json({ status: 'connected', type: 'supabase' });
 });
 
 // Enable case-insensitive routing
@@ -476,6 +480,28 @@ app.delete('/api/admin/menu/:id', async (req, res) => {
   }
 });
 
+app.post('/api/admin/upload', upload.single('image'), async (req, res) => {
+  const file = req.file;
+  if (!file) return res.status(400).json({ message: 'No file uploaded' });
+
+  const fileName = `menu-${Date.now()}${path.extname(file.originalname)}`;
+  try {
+    const { data: uploadData, error: uploadError } = await req.supabase.storage
+      .from('menu-images')
+      .upload(fileName, file.buffer, { contentType: file.mimetype });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = req.supabase.storage
+      .from('menu-images')
+      .getPublicUrl(fileName);
+
+    res.json({ url: publicUrl });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 const formatOrderForClient = (order) => ({
   _id: order.id,
   id: order.id,
@@ -756,4 +782,4 @@ httpServer.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
 
-// Trigger redeploy at 1780238100
+// Trigger redeploy at 1780238200

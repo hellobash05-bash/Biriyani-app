@@ -92,7 +92,7 @@ export const SOCKET_URL = isProd
   : (process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000');
 
 export async function fetchRestaurants() {
-  const response = await fetch(`${API_BASE_URL}/restaurants`);
+  const response = await fetch(getCleanUrl('/restaurants'));
   if (!response.ok) {
     throw new Error('Failed to fetch restaurants');
   }
@@ -100,7 +100,7 @@ export async function fetchRestaurants() {
 }
 
 export async function seedData() {
-  const response = await fetch(`${API_BASE_URL}/seed`, {
+  const response = await fetch(getCleanUrl('/seed'), {
     method: 'POST',
   });
   if (!response.ok) {
@@ -110,7 +110,7 @@ export async function seedData() {
 }
 
 export async function fetchProfile() {
-  const response = await fetch(`${API_BASE_URL}/profile`);
+  const response = await fetch(getCleanUrl('/profile'));
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to fetch profile');
@@ -120,7 +120,7 @@ export async function fetchProfile() {
 
 export async function syncUser(userData: { uid: string; name: string | null; email: string | null; photoURL?: string | null; phone?: string | null }) {
   console.log('--- SYNCING USER TO DATABASE ---', userData.email);
-  const response = await fetch(`${API_BASE_URL}/users/sync`, {
+  const response = await fetch(getCleanUrl('/users/sync'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -141,8 +141,8 @@ export async function syncUser(userData: { uid: string; name: string | null; ema
 }
 
 export async function fetchUserOrders(email?: string) {
-  const url = email ? `${API_BASE_URL}/user/orders?email=${encodeURIComponent(email)}` : `${API_BASE_URL}/user/orders`;
-  const response = await fetch(url);
+  const path = email ? `/user/orders?email=${encodeURIComponent(email)}` : '/user/orders';
+  const response = await fetch(getCleanUrl(path));
   if (!response.ok) {
     throw new Error('Failed to fetch user orders');
   }
@@ -150,7 +150,7 @@ export async function fetchUserOrders(email?: string) {
 }
 
 export async function fetchMenu() {
-  const response = await fetch(`${API_BASE_URL}/menu`);
+  const response = await fetch(getCleanUrl('/menu'));
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to fetch menu');
@@ -159,7 +159,7 @@ export async function fetchMenu() {
 }
 
 export async function fetchProfileByEmail(email: string) {
-  const response = await fetch(`${API_BASE_URL}/profile?email=${email}`);
+  const response = await fetch(getCleanUrl(`/profile?email=${email}`));
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to fetch profile');
@@ -168,7 +168,7 @@ export async function fetchProfileByEmail(email: string) {
 }
 
 export async function placeOrder(orderData: any) {
-  const response = await fetch(`${API_BASE_URL}/orders`, {
+  const response = await fetch(getCleanUrl('/orders'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(orderData),
@@ -181,7 +181,7 @@ export async function placeOrder(orderData: any) {
 }
 
 export async function fetchOrderById(id: string, email?: string | null) {
-  const response = await fetch(`${API_BASE_URL}/orders/${id}`);
+  const response = await fetch(getCleanUrl(`/orders/${id}`));
   if (response.ok) {
     return await response.json();
   }
@@ -204,7 +204,7 @@ export async function fetchOrderById(id: string, email?: string | null) {
 
 export async function fetchAdminOrders() {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/orders`);
+    const response = await fetch(getCleanUrl('/admin/orders'));
     if (response.ok) {
       return await response.json();
     }
@@ -233,7 +233,7 @@ export async function fetchAdminOrders() {
 }
 
 export async function addMenuItem(itemData: any) {
-  const response = await fetch(`${API_BASE_URL}/admin/menu`, {
+  const response = await fetch(getCleanUrl('/admin/menu'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(itemData),
@@ -246,7 +246,7 @@ export async function addMenuItem(itemData: any) {
 }
 
 export async function updateMenuItem(itemId: string, itemData: any) {
-  const response = await fetch(`${API_BASE_URL}/admin/menu/${itemId}`, {
+  const response = await fetch(getCleanUrl(`/admin/menu/${itemId}`), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(itemData),
@@ -259,7 +259,7 @@ export async function updateMenuItem(itemId: string, itemData: any) {
 }
 
 export async function deleteMenuItem(itemId: string) {
-  const response = await fetch(`${API_BASE_URL}/admin/menu/${itemId}`, {
+  const response = await fetch(getCleanUrl(`/admin/menu/${itemId}`), {
     method: 'DELETE',
   });
   if (!response.ok) {
@@ -273,7 +273,7 @@ export async function uploadImage(file: File) {
   const formData = new FormData();
   formData.append('image', file);
 
-  const response = await fetch(`${API_BASE_URL}/admin/upload`, {
+  const response = await fetch(getCleanUrl('/admin/upload'), {
     method: 'POST',
     body: formData,
   });
@@ -286,7 +286,7 @@ export async function uploadImage(file: File) {
 }
 
 export async function fetchCustomers() {
-  const response = await fetch(`${API_BASE_URL}/admin/customers`);
+  const response = await fetch(getCleanUrl('/admin/customers'));
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to fetch customers');
@@ -295,13 +295,13 @@ export async function fetchCustomers() {
 }
 
 export async function fetchAdminReviews() {
-  const response = await fetch(`${API_BASE_URL}/admin/reviews`);
+  const response = await fetch(getCleanUrl('/admin/reviews'));
   if (!response.ok) throw new Error('Failed to fetch reviews');
   return response.json();
 }
 
 export async function fetchDeliveryPartners() {
-  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners`);
+  const response = await fetch(getCleanUrl('/admin/delivery-partners'));
   if (!response.ok) {
     console.warn('Delivery partners endpoint unavailable. Continuing without partners.');
     return [];
@@ -310,7 +310,7 @@ export async function fetchDeliveryPartners() {
 }
 
 export async function addDeliveryPartner(partnerData: any) {
-  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners`, {
+  const response = await fetch(getCleanUrl('/admin/delivery-partners'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(partnerData),
@@ -323,7 +323,7 @@ export async function addDeliveryPartner(partnerData: any) {
 }
 
 export async function updateDeliveryPartner(id: string, partnerData: any) {
-  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners/${id}`, {
+  const response = await fetch(getCleanUrl(`/admin/delivery-partners/${id}`), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(partnerData),
@@ -336,7 +336,7 @@ export async function updateDeliveryPartner(id: string, partnerData: any) {
 }
 
 export async function deleteDeliveryPartner(id: string) {
-  const response = await fetch(`${API_BASE_URL}/admin/delivery-partners/${id}`, {
+  const response = await fetch(getCleanUrl(`/admin/delivery-partners/${id}`), {
     method: 'DELETE',
   });
   if (!response.ok) throw new Error('Failed to delete delivery partner');
@@ -344,7 +344,7 @@ export async function deleteDeliveryPartner(id: string) {
 }
 
 export async function fetchAnalytics() {
-  const response = await fetch(`${API_BASE_URL}/admin/analytics`);
+  const response = await fetch(getCleanUrl('/admin/analytics'));
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to fetch analytics');
@@ -597,13 +597,13 @@ export async function toggleFavorite(email: string, foodId: string) {
 }
 
 export async function fetchNotifications(userId: string) {
-  const response = await fetch(`${API_BASE_URL}/notifications/${userId}`);
+  const response = await fetch(getCleanUrl(`/notifications/${userId}`));
   if (!response.ok) throw new Error('Failed to fetch notifications');
   return response.json();
 }
 
 export async function markNotificationAsRead(id: string) {
-  const response = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+  const response = await fetch(getCleanUrl(`/notifications/${id}/read`), {
     method: 'PATCH',
   });
   if (!response.ok) throw new Error('Failed to mark notification as read');
@@ -612,7 +612,7 @@ export async function markNotificationAsRead(id: string) {
 
 // --- ACTIVITIES & PROJECTS ---
 export async function saveActivity(firebaseUid: string, activity: string) {
-  const response = await fetch(`${API_BASE_URL}/activities`, {
+  const response = await fetch(getCleanUrl('/activities'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ firebaseUid, activity }),
@@ -622,13 +622,13 @@ export async function saveActivity(firebaseUid: string, activity: string) {
 }
 
 export async function fetchActivities(firebaseUid: string) {
-  const response = await fetch(`${API_BASE_URL}/activities/${firebaseUid}`);
+  const response = await fetch(getCleanUrl(`/activities/${firebaseUid}`));
   if (!response.ok) throw new Error('Failed to fetch activities');
   return response.json();
 }
 
 export async function saveProject(firebaseUid: string, projectData: { name: string, description?: string, data: any }) {
-  const response = await fetch(`${API_BASE_URL}/projects`, {
+  const response = await fetch(getCleanUrl('/projects'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ firebaseUid, ...projectData }),
@@ -638,7 +638,7 @@ export async function saveProject(firebaseUid: string, projectData: { name: stri
 }
 
 export async function fetchProjects(firebaseUid: string) {
-  const response = await fetch(`${API_BASE_URL}/projects/${firebaseUid}`);
+  const response = await fetch(getCleanUrl(`/projects/${firebaseUid}`));
   if (!response.ok) throw new Error('Failed to fetch projects');
   return response.json();
 }
