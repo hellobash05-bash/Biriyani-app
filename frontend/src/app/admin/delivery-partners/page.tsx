@@ -10,7 +10,7 @@ export default function AdminDeliveryPartners() {
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
-  const [editingPartner, setEditingItem] = useState<any>(null);
+  const [editingPartner, setEditingPartner] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -21,7 +21,7 @@ export default function AdminDeliveryPartners() {
   async function loadPartners() {
     try {
       const data = await fetchDeliveryPartners();
-      setPartners(data);
+      setPartners(data || []);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load delivery partners');
@@ -50,7 +50,12 @@ export default function AdminDeliveryPartners() {
           
           if (payload.eventType === 'INSERT') {
             const newPartner = payload.new as any;
-            setPartners(prev => [{ ...newPartner, _id: newPartner.id, vehicleNumber: newPartner.vehicle_number }, ...prev]);
+            setPartners(prev => [{ 
+              ...newPartner, 
+              _id: newPartner.id, 
+              vehicleNumber: newPartner.vehicle_number || 'N/A',
+              activeOrders: newPartner.active_orders || 0
+            }, ...prev]);
             toast.success(`New Partner Registered: ${newPartner.name}`);
           }
           
@@ -59,8 +64,8 @@ export default function AdminDeliveryPartners() {
             setPartners(prev => prev.map(p => p._id === updated.id ? { 
               ...updated, 
               _id: updated.id, 
-              vehicleNumber: updated.vehicle_number,
-              activeOrders: updated.active_orders 
+              vehicleNumber: updated.vehicle_number || p.vehicleNumber,
+              activeOrders: updated.active_orders ?? p.activeOrders ?? 0
             } : p));
           }
           
@@ -88,7 +93,7 @@ export default function AdminDeliveryPartners() {
         toast.success('Partner added successfully');
       }
       setIsAdding(false);
-      setEditingItem(null);
+      setEditingPartner(null);
       loadPartners();
     } catch (err: any) {
       toast.error(err.message || 'Failed to save partner');
@@ -119,7 +124,7 @@ export default function AdminDeliveryPartners() {
         <button 
           onClick={() => { 
             setIsAdding(true); 
-            setEditingItem(null); 
+            setEditingPartner(null); 
             setFormData({ name: '', phone: '', vehicleNumber: '', status: 'Available' });
           }}
           className="group relative inline-flex items-center gap-3 px-8 py-4 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-orange-600/20 hover:scale-105 active:scale-95 transition-all overflow-hidden"
@@ -174,7 +179,7 @@ export default function AdminDeliveryPartners() {
                  </div>
                  <div className="flex gap-2">
                    <button 
-                     onClick={() => { setEditingItem(partner); setFormData({ name: partner.name, phone: partner.phone, vehicleNumber: partner.vehicleNumber, status: partner.status }); }} 
+                     onClick={() => { setEditingPartner(partner); setFormData({ name: partner.name, phone: partner.phone, vehicleNumber: partner.vehicleNumber, status: partner.status }); }} 
                      className="w-10 h-10 flex items-center justify-center bg-foreground/5 rounded-xl hover:bg-orange-600 hover:text-white transition-all text-xs border border-glass-border cursor-pointer"
                    >
                      ✏️
@@ -219,7 +224,7 @@ export default function AdminDeliveryPartners() {
                    </div>
                    {partner.activeOrders > 0 && (
                      <div className="flex gap-1">
-                        {[...Array(Math.min(3, partner.activeOrders))].map((_, i) => (
+                        {[...Array(Math.max(0, Math.min(3, partner.activeOrders || 0)))].map((_, i) => (
                           <div key={i} className="w-1 h-3 bg-orange-600 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}></div>
                         ))}
                      </div>
@@ -252,7 +257,7 @@ export default function AdminDeliveryPartners() {
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-black uppercase tracking-tighter text-foreground">{editingPartner ? 'Update Hero' : 'Register New Hero'}</h2>
                 <button 
-                  onClick={() => { setIsAdding(false); setEditingItem(null); }}
+                  onClick={() => { setIsAdding(false); setEditingPartner(null); }}
                   className="w-10 h-10 flex items-center justify-center bg-foreground/5 rounded-full hover:bg-orange-600 hover:text-white transition-all border border-glass-border"
                 >
                   ✕
@@ -315,7 +320,7 @@ export default function AdminDeliveryPartners() {
                 <div className="flex gap-4 mt-4">
                   <button 
                     type="button"
-                    onClick={() => { setIsAdding(false); setEditingItem(null); }}
+                    onClick={() => { setIsAdding(false); setEditingPartner(null); }}
                     className="flex-1 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-glass-border hover:bg-foreground/5 transition-all"
                   >
                     Cancel
