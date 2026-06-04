@@ -70,10 +70,10 @@ const apiRouter = express.Router();
 
 apiRouter.get('/version', (req, res) => {
   res.status(200).send({ 
-    version: '11.8.0-FORCE-DEPLOY', 
+    version: '11.9.0-FLEET-READY', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'FORCING RENDER TO IGNORE CACHE AND USE NEW ROUTER.'
+    msg: 'STABLE API ROUTER WITH DELIVERY FLEET SUPPORT.'
   });
 });
 
@@ -226,6 +226,47 @@ apiRouter.post('/admin/upload', upload.single('image'), async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
+apiRouter.get('/admin/delivery-partners', async (req, res) => {
+  try {
+    const { data, error } = await req.supabase.from('delivery_partners').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data.map(p => ({ ...p, _id: p.id, vehicleNumber: p.vehicle_number, activeOrders: p.active_orders })));
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+apiRouter.post('/admin/delivery-partners', async (req, res) => {
+  const { name, phone, vehicleNumber } = req.body;
+  try {
+    const { data, error } = await req.supabase.from('delivery_partners').insert([{
+      name, phone, vehicle_number: vehicleNumber, status: 'Available', active_orders: 0
+    }]).select().single();
+    if (error) throw error;
+    res.json({ ...data, _id: data.id, vehicleNumber: data.vehicle_number, activeOrders: data.active_orders });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+apiRouter.patch('/admin/delivery-partners/:id', async (req, res) => {
+  const { name, phone, vehicleNumber, status } = req.body;
+  try {
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (vehicleNumber) updateData.vehicle_number = vehicleNumber;
+    if (status) updateData.status = status;
+    const { data, error } = await req.supabase.from('delivery_partners').update(updateData).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ ...data, _id: data.id, vehicleNumber: data.vehicle_number, activeOrders: data.active_orders });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+apiRouter.delete('/admin/delivery-partners/:id', async (req, res) => {
+  try {
+    const { error } = await req.supabase.from('delivery_partners').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Deleted' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 const formatOrderForClient = (order) => ({
   _id: order.id, id: order.id, user_email: order.user_email, createdAt: order.created_at,
   status: order.status, totalAmount: order.total_amount, paymentMethod: order.payment_method,
@@ -342,4 +383,4 @@ httpServer.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
 
-// Trigger redeploy at 1780238700
+// Trigger redeploy at 1780238800
