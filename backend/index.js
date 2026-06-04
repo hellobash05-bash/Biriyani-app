@@ -72,21 +72,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// 2. Logging
-app.use((req, res, next) => {
-  if (req.url.toLowerCase().includes('/api')) {
-    console.log(`>>> [REQUEST] ${req.method} ${req.url}`);
-  }
-  next();
-});
-
 // ABSOLUTE TOP PRIORITY HEALTH CHECK (V11.0)
 app.get('/api/version', (req, res) => {
   res.status(200).send({ 
-    version: '11.3.0-LIVE-ADMIN-FIX', 
+    version: '11.4.0-DEBUG-404', 
     timestamp: new Date().toISOString(),
     unique_sync_id: 'SYNC-AT-' + Date.now(),
-    msg: 'LIVE ADMIN AND UPLOAD BUILD ONLINE.'
+    msg: 'DEBUGGING ROUTE MATCHING.'
   });
 });
 
@@ -96,6 +88,12 @@ app.get('/api/db-status', (req, res) => {
 
 // Enable case-insensitive routing
 app.set('case sensitive routing', false);
+
+// 2. Logging (More Verbose)
+app.use((req, res, next) => {
+  console.log(`>>> [INCOMING] ${req.method} ${req.url}`);
+  next();
+});
 
 // --- UNIVERSAL IDENTITY BRIDGE ---
 const resolveAllUserIds = async (sb, email, uid = null) => {
@@ -776,10 +774,18 @@ app.post('/api/users/profile/upload', upload.single('image'), async (req, res) =
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.use((req, res) => res.status(404).json({ message: 'Not Found' }));
+app.use((req, res) => {
+  console.log(`❌ [404] Not Found: ${req.method} ${req.url}`);
+  res.status(404).json({ 
+    message: 'Not Found', 
+    method: req.method, 
+    url: req.url,
+    hint: 'Check if the route is registered in backend/index.js'
+  });
+});
 
 httpServer.listen(process.env.PORT || 5000, () => {
   console.log(`Server running on port ${process.env.PORT || 5000}`);
 });
 
-// Trigger redeploy at 1780238200
+// Trigger redeploy at 1780238300
