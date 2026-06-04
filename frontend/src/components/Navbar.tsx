@@ -102,6 +102,12 @@ export default function Navbar() {
               Orders
               <motion.span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
             </Link>
+            {isAdmin && (
+              <Link href="/admin" className="text-sm font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5 px-3 py-1 bg-primary/5 rounded-md border border-primary/20">
+                <ShieldCheck size={14} />
+                Admin
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 border-l border-border pl-4 sm:pl-6">

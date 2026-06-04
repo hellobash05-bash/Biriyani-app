@@ -194,6 +194,18 @@ export default function ProfilePage() {
               >
                 <Edit3 size={14} /> Update Credentials
               </motion.button>
+              
+              {profile?.role === 'admin' && (
+                <motion.button 
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push('/admin')}
+                  className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
+                >
+                  <ShieldCheck size={14} /> Admin Portal
+                </motion.button>
+              )}
+
               <div className="flex items-center gap-2 px-4 py-2.5 bg-muted rounded-md border border-border">
                 <Phone size={14} className="text-primary" />
                 <span className="text-[10px] font-bold text-foreground uppercase tracking-widest">
