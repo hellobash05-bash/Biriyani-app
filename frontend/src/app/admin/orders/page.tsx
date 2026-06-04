@@ -123,11 +123,19 @@ export default function AdminOrders() {
 
     socket.on('new-order', (newOrder) => {
       console.log('📢 [SOCKET] New Order Received:', newOrder);
+      const orderId = newOrder?._id || newOrder?.id;
+      if (!orderId) {
+        console.warn('Received order without ID via socket');
+        scheduleOrdersRefresh();
+        return;
+      }
+
       setOrders(prev => {
-        if (prev.some(order => (order._id || order.id) === (newOrder._id || newOrder.id))) return prev;
+        if (prev.some(order => (order._id || order.id) === orderId)) return prev;
         return [newOrder, ...prev];
       });
-      toast.success(`NEW ORDER: #${(newOrder._id || newOrder.id).slice(-6)}`, { icon: '🥡', duration: 8000 });
+      
+      toast.success(`NEW ORDER: #${orderId.toString().slice(-6)}`, { icon: '🥡', duration: 8000 });
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
       audio.play().catch(() => {});
       scheduleOrdersRefresh();
@@ -135,8 +143,11 @@ export default function AdminOrders() {
 
     socket.on('order-update', (updated) => {
       console.log('📢 [SOCKET] Order Update Received:', updated);
+      const updatedId = updated?._id || updated?.id;
+      if (!updatedId) return;
+
       setOrders(prev => prev.map(order => (
-        (order._id || order.id) === (updated._id || updated.id) ? updated : order
+        (order._id || order.id) === updatedId ? updated : order
       )));
       scheduleOrdersRefresh();
     });
@@ -165,7 +176,9 @@ export default function AdminOrders() {
             if (prev.some(order => order._id === formattedOrder._id)) return prev;
             return [formattedOrder, ...prev];
           });
-          toast.success(`NEW ORDER RECEIVED: #${formattedOrder._id.slice(-6)}`, {
+          
+          const displayId = (formattedOrder?._id || 'Order').toString().slice(-6);
+          toast.success(`NEW ORDER RECEIVED: #${displayId}`, {
             duration: 8000,
             icon: '🥡',
           });
@@ -190,7 +203,8 @@ export default function AdminOrders() {
           )));
           
           if (existingOrder?.status !== updated.status) {
-            toast(`Order #${updated.id.slice(-6)} updated to ${updated.status}`, { icon: '🔄' });
+            const displayId = (updated.id || 'Order').toString().slice(-6);
+            toast(`Order #${displayId} updated to ${updated.status}`, { icon: '🔄' });
           }
           scheduleOrdersRefresh();
         }
@@ -202,7 +216,8 @@ export default function AdminOrders() {
           console.log('📢 Order Deletion Received via Realtime:', payload.old);
           const deletedId = payload.old.id;
           setOrders(prev => prev.filter(order => order._id !== deletedId));
-          toast.error(`Order #${deletedId.slice(-6)} removed from system`, { icon: '🗑️' });
+          const displayId = (deletedId || 'Order').toString().slice(-6);
+          toast.error(`Order #${displayId} removed from system`, { icon: '🗑️' });
         }
       )
       .on(
@@ -387,7 +402,7 @@ export default function AdminOrders() {
             className="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 sm:p-6"
           >
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-background border border-glass-border rounded-2xl p-6 sm:p-8 shadow-2xl">
-              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-6">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder._id.slice(-6)}</span></h2>
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-6">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder?._id?.toString().slice(-6) || 'Order'}</span></h2>
               <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Select Partner</label>
@@ -398,7 +413,7 @@ export default function AdminOrders() {
                     className="w-full bg-input-bg text-input-text p-4 rounded-2xl text-sm font-bold shadow-sm outline-none border border-input-border focus:border-orange-500 transition-all appearance-none cursor-pointer"
                   >
                     <option value="">Choose a delivery boy...</option>
-                    {partners.filter(p => p.status === 'Available').map(p => (
+                    {(partners || []).filter(p => p.status === 'Available').map(p => (
                       <option key={p._id} value={p._id}>{p.name} ({p.vehicleNumber})</option>
                     ))}
                   </select>
@@ -439,8 +454,8 @@ export default function AdminOrders() {
                        <div className="min-w-0">
                          <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-2">Order</span>
                          <div className="flex flex-col gap-1 min-w-0">
-                           <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order._id.slice(-6)}</span>
-                           <span className="font-mono text-[9px] text-stone-400 select-all truncate max-w-full" title="Click to copy full ID">ID: {order._id}</span>
+                           <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order?._id?.toString().slice(-6) || 'N/A'}</span>
+                           <span className="font-mono text-[9px] text-stone-400 select-all truncate max-w-full" title="Click to copy full ID">ID: {order?._id || 'Unknown'}</span>
                          </div>
                        </div>
                        <div className="sm:text-right">
