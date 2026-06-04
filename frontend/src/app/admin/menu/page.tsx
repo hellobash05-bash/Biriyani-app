@@ -80,6 +80,10 @@ export default function AdminMenu() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isEditing = !!editingItem;
+    const targetPath = isEditing ? `/admin/menu/${editingItem._id}` : '/admin/menu';
+    const method = isEditing ? 'PATCH' : 'POST';
+    
     try {
       const payload = {
         ...formData,
@@ -88,7 +92,7 @@ export default function AdminMenu() {
         discountPercentage: formData.discountPercentage ? parseFloat(formData.discountPercentage) : null,
       };
 
-      if (editingItem) {
+      if (isEditing) {
         await updateMenuItem(editingItem._id, payload);
       } else {
         await addMenuItem(payload);
@@ -99,7 +103,8 @@ export default function AdminMenu() {
       loadMenu();
     } catch (err: any) {
       console.error('Menu save error:', err);
-      alert(`Action failed: ${err.message || 'Unknown error'}`);
+      // Construct URL for debug info - importing getCleanUrl if needed, but it's used inside the API functions
+      alert(`Action failed: ${err.message || 'Unknown error'}\nMethod: ${method}\nPath: ${targetPath}`);
     }
   };
 
