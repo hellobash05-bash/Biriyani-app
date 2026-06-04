@@ -97,8 +97,9 @@ export default function AdminMenu() {
       setEditingItem(null);
       setFormData({ name: '', description: '', price: '', offerPrice: '', discountPercentage: '', category: 'Chicken', image: '', isAvailable: true });
       loadMenu();
-    } catch (err) {
-      alert('Action failed');
+    } catch (err: any) {
+      console.error('Menu save error:', err);
+      alert(`Action failed: ${err.message || 'Unknown error'}`);
     }
   };
 
