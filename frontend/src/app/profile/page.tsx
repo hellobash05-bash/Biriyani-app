@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import AddressCard from '@/components/AddressCard';
 import AddressModal from '@/components/AddressModal';
-import { Camera, Edit3, X, Save, User, Phone, MapPin, LogOut, RefreshCw, ChevronRight, Package, ShieldCheck, Plus } from 'lucide-react';
+import { Camera, PenLine, X, Save, User, Phone, MapPin, LogOut, RefreshCw, ChevronRight, Package, ShieldCheck, Plus } from 'lucide-react';
 import { playSound } from '@/lib/sounds';
 
 const containerVariants = {
@@ -192,7 +192,7 @@ export default function ProfilePage() {
                 onClick={() => setIsProfileModalOpen(true)}
                 className="bg-foreground text-background px-6 py-2.5 rounded-md text-[10px] font-bold uppercase tracking-widest hover:bg-primary transition-all flex items-center gap-2"
               >
-                <Edit3 size={14} /> Update Credentials
+                <PenLine size={14} /> Update Credentials
               </motion.button>
               
               {profile?.role === 'admin' && (

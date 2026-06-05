@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners, SOCKET_URL } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
-import { Bike, CheckCircle2, Clock, MapPin, PackageCheck, Phone, RefreshCw, Radio, User, XCircle } from 'lucide-react';
+import { Bike, CircleCheckBig, Clock, MapPin, PackageCheck, Phone, RefreshCw, Radio, User, CircleX } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 const STATUS_OPTIONS = ['Pending', 'Preparing', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
@@ -20,8 +20,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const getStatusIcon = (status: string) => {
-  if (status === 'Delivered') return CheckCircle2;
-  if (status === 'Cancelled') return XCircle;
+  if (status === 'Delivered') return CircleCheckBig;
+  if (status === 'Cancelled') return CircleX;
   if (status === 'Out for Delivery') return Bike;
   if (status === 'Pending') return Clock;
   return PackageCheck;
@@ -303,14 +303,15 @@ export default function AdminOrders() {
     }
   };
 
-  const liveOrders = orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status));
-  const historyOrders = orders.filter(o => ['Delivered', 'Cancelled'].includes(o.status));
+  const allOrders = Array.isArray(orders) ? orders : [];
+  const liveOrders = allOrders.filter(o => !['Delivered', 'Cancelled'].includes(o?.status));
+  const historyOrders = allOrders.filter(o => ['Delivered', 'Cancelled'].includes(o?.status));
   const displayOrders = activeTab === 'live' ? liveOrders : historyOrders;
-  const pendingOrders = orders.filter(o => o.status === 'Pending').length;
-  const activeDeliveryOrders = orders.filter(o => o.status === 'Out for Delivery').length;
-  const completedToday = orders.filter(o => {
-    const createdAt = o.createdAt || o.created_at;
-    return ['Delivered', 'Cancelled'].includes(o.status) && createdAt && new Date(createdAt).toDateString() === new Date().toDateString();
+  const pendingOrders = allOrders.filter(o => o?.status === 'Pending').length;
+  const activeDeliveryOrders = allOrders.filter(o => o?.status === 'Out for Delivery').length;
+  const completedToday = allOrders.filter(o => {
+    const createdAt = o?.createdAt || o?.created_at;
+    return ['Delivered', 'Cancelled'].includes(o?.status) && createdAt && new Date(createdAt).toDateString() === new Date().toDateString();
   }).length;
 
   if (loading) return (
@@ -364,7 +365,7 @@ export default function AdminOrders() {
           { label: 'Live Queue', value: liveOrders.length, tone: 'text-orange-600', icon: Clock },
           { label: 'Pending', value: pendingOrders, tone: 'text-amber-600', icon: PackageCheck },
           { label: 'On Road', value: activeDeliveryOrders, tone: 'text-blue-600', icon: Bike },
-          { label: 'Closed Today', value: completedToday, tone: 'text-green-600', icon: CheckCircle2 }
+          { label: 'Closed Today', value: completedToday, tone: 'text-green-600', icon: CircleCheckBig }
         ].map(({ label, value, tone, icon: Icon }) => (
           <div key={label} className="rounded-2xl border border-glass-border bg-foreground/[0.025] p-4 sm:p-5 flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -535,13 +536,13 @@ export default function AdminOrders() {
                                    onClick={() => handleStatusChange(order._id, 'Preparing')}
                                    className="bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-green-600/20 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2"
                                  >
-                                   <CheckCircle2 size={15} /> Approve
+                                   <CircleCheckBig size={15} /> Approve
                                  </button>
                                  <button 
                                    onClick={() => handleStatusChange(order._id, 'Cancelled')}
                                    className="bg-red-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-red-600/20 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2"
                                  >
-                                   <XCircle size={15} /> Cancel
+                                   <CircleX size={15} /> Cancel
                                  </button>
                                </div>
                              </div>
@@ -578,7 +579,7 @@ export default function AdminOrders() {
                          </>
                        ) : (
                          <div className="pt-4 border-t border-glass-border flex items-center gap-2">
-                            <CheckCircle2 size={16} className="text-stone-400" />
+                            <CircleCheckBig size={16} className="text-stone-400" />
                             <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Archived order</p>
                          </div>
                        )}

@@ -10,7 +10,7 @@ import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';
 import toast from 'react-hot-toast';
 import CheckoutAddressSelector from '@/components/CheckoutAddressSelector';
-import { MapPin, ShoppingBag, CreditCard, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
+import { MapPin, ShoppingBag, CreditCard, ChevronRight, CircleCheckBig, Clock } from 'lucide-react';
 import { playSound } from '@/lib/sounds';
 
 export default function CheckoutPage() {
@@ -83,7 +83,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-6">
            <div className="w-20 h-20 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-2xl">
-             <CheckCircle2 size={40} />
+             <CircleCheckBig size={40} />
            </div>
            <h1 className="text-4xl font-serif font-bold text-foreground">Order Placed!</h1>
            <p className="text-muted-foreground text-sm italic">Your feast is being prepared. Redirecting to tracker...</p>
@@ -147,7 +147,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 <div className="text-primary">
-                  <CheckCircle2 size={20} />
+                  <CircleCheckBig size={20} />
                 </div>
               </div>
             </section>

@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Phone, Edit3, Trash2, CheckCircle2, Home, Briefcase, Navigation, Info, Sparkles, User } from 'lucide-react';
+import { MapPin, Phone, PenLine, Trash2, CircleCheckBig, Home, Briefcase, Navigation, Info, Sparkles, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface AddressCardProps {
@@ -84,7 +84,7 @@ export default function AddressCard({
 
           {isSelected && (
             <div className="text-primary">
-              <CheckCircle2 size={24} />
+              <CircleCheckBig size={24} />
             </div>
           )}
         </div>
@@ -134,7 +134,7 @@ export default function AddressCard({
               className="p-2.5 rounded-md border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary transition-colors"
               title="Edit"
             >
-              <Edit3 size={16} />
+              <PenLine size={16} />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(addressId); }}
