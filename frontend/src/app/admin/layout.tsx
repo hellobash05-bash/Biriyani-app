@@ -15,7 +15,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const isLoginPage = pathname === '/admin/login' || pathname === '/admin/login/';
+  const isLoginPage = (pathname || '').startsWith('/admin/login');
 
   useEffect(() => {
     if (!loading && !isLoginPage) {

@@ -527,15 +527,18 @@ export default function AdminOrders() {
                       <div className="rounded-2xl bg-foreground/[0.025] border border-glass-border p-4">
                        <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-3">Items</span>
                        <div className="flex flex-col gap-3">
-                       {order.items?.length ? order.items.map((item: any, idx: number) => (
-                         <div key={idx} className="flex justify-between items-center text-sm gap-3">
-                           <span className="text-foreground font-bold leading-tight pr-4">
-                             <span className="font-black text-orange-600 mr-2">{item.quantity}x</span>
-                             {item.name}
-                           </span>
-                           <span className="font-black text-stone-500 shrink-0">₹{item.price * item.quantity}</span>
-                         </div>
-                       )) : (
+                       {order.items?.length ? order.items.map((item: any, idx: number) => {
+                         if (!item) return null;
+                         return (
+                           <div key={idx} className="flex justify-between items-center text-sm gap-3">
+                             <span className="text-foreground font-bold leading-tight pr-4">
+                               <span className="font-black text-orange-600 mr-2">{item.quantity || 1}x</span>
+                               {item.name || 'Unknown Item'}
+                             </span>
+                             <span className="font-black text-stone-500 shrink-0">₹{(item.price || 0) * (item.quantity || 1)}</span>
+                           </div>
+                         );
+                       }) : (
                          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Syncing items...</p>
                        )}
                        </div>
