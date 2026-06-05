@@ -55,7 +55,7 @@ export default function AdminCustomers() {
                 <td className="p-6">
                    <div className="flex items-center gap-4">
                      <div className="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white font-black text-xs uppercase shadow-lg shadow-orange-600/20">
-                        {customer.name.slice(0, 1)}
+                        {(customer.name || 'Anonymous').slice(0, 1)}
                      </div>
                      <span className="font-bold text-foreground">{customer.name}</span>
                    </div>
@@ -92,7 +92,7 @@ export default function AdminCustomers() {
           >
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-orange-600/20">
-                {customer.name.slice(0, 1)}
+                {(customer.name || 'Anonymous').slice(0, 1)}
               </div>
               <div>
                 <h3 className="font-black text-foreground uppercase tracking-tight">{customer.name}</h3>
