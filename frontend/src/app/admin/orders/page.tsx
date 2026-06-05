@@ -459,7 +459,7 @@ export default function AdminOrders() {
             className="fixed inset-0 bg-stone-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 sm:p-6"
           >
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-md bg-background border border-glass-border rounded-2xl p-6 sm:p-8 shadow-2xl">
-              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-6">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{assigningOrder?._id?.toString().slice(-6) || 'Order'}</span></h2>
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-6">Assign Partner <br/><span className="text-orange-600 font-mono text-lg">#{(assigningOrder?._id || assigningOrder?.id || 'Order').toString().slice(-6)}</span></h2>
               <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Select Partner</label>
@@ -495,15 +495,17 @@ export default function AdminOrders() {
 
       <div className="flex flex-col gap-4">
         <AnimatePresence mode='popLayout'>
-          {displayOrders.map((order) => (
-            <motion.div
-              key={order._id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="premium-card rounded-2xl overflow-hidden group hover:border-orange-500/30 transition-all duration-300"
-            >
+          {displayOrders.map((order) => {
+            if (!order) return null;
+            return (
+              <motion.div
+                key={order._id || order.id || Math.random()}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="premium-card rounded-2xl overflow-hidden group hover:border-orange-500/30 transition-all duration-300"
+              >
               <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px]">
                  {/* Order Info */}
                  <div className="p-5 sm:p-6 border-b xl:border-b-0 xl:border-r border-glass-border">
@@ -511,7 +513,7 @@ export default function AdminOrders() {
                        <div className="min-w-0">
                          <span className="text-[10px] font-black uppercase tracking-widest text-stone-500 block mb-2">Order</span>
                          <div className="flex flex-col gap-1 min-w-0">
-                           <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{order?._id?.toString().slice(-6) || 'N/A'}</span>
+                           <span className="font-mono text-sm font-black text-orange-600 tracking-tighter">#{(order?._id || order?.id || 'N/A').toString().slice(-6)}</span>
                            <span className="font-mono text-[9px] text-stone-400 select-all truncate max-w-full" title="Click to copy full ID">ID: {order?._id || 'Unknown'}</span>
                          </div>
                        </div>
@@ -643,7 +645,8 @@ export default function AdminOrders() {
                  </div>
               </div>
             </motion.div>
-          ))}
+          );
+        })}
         </AnimatePresence>
         {displayOrders.length === 0 && (
           <div className="rounded-2xl border border-dashed border-glass-border bg-foreground/[0.025] p-10 sm:p-16 text-center">

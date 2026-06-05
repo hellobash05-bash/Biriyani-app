@@ -285,7 +285,7 @@ export default function OrderTrackingPage() {
               </motion.div>
             )}
           </div>
-          <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-1">Order #{order._id.slice(-6)}</h1>
+          <h1 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-1">Order #{(order._id || order.id || 'N/A').toString().slice(-6)}</h1>
           {order.status === 'Cancelled' ? (
             <p className="text-red-500 text-sm font-bold uppercase tracking-widest">Order Cancelled</p>
           ) : (
