@@ -69,7 +69,7 @@ export default function AdminDashboard() {
   }
 
   const cards = [
-    { title: 'Total Revenue', value: `₹${stats?.totalRevenue.toLocaleString() || 0}`, icon: '💰', color: 'bg-emerald-500/10 text-emerald-500', trend: '+12%' },
+    { title: 'Total Revenue', value: `₹${(stats?.totalRevenue || 0).toLocaleString()}`, icon: '💰', color: 'bg-emerald-500/10 text-emerald-500', trend: '+12%' },
     { title: 'Total Orders', value: stats?.totalOrders || 0, icon: '📦', color: 'bg-blue-500/10 text-blue-500', trend: '+5%' },
     { title: 'Delivered', value: stats?.deliveredOrders || 0, icon: '✅', color: 'bg-orange-500/10 text-orange-500', trend: '95%' },
     { title: 'Customers', value: stats?.totalCustomers || 0, icon: '👥', color: 'bg-purple-500/10 text-purple-500', trend: '+8%' },
