@@ -27,41 +27,45 @@ const getStatusIcon = (status: string) => {
   return PackageCheck;
 };
 
-const formatRealtimeAdminOrder = (order: any, existingOrder?: any) => ({
-  ...existingOrder,
-  ...order,
-  _id: order.id,
-  createdAt: order.created_at,
-  totalAmount: order.total_amount,
-  estimatedDeliveryTime: order.estimated_delivery_time,
-  customer: {
-    name: order.customer_name,
-    phone: order.customer_phone,
-    address: {
-      house: order.address_house,
-      street: order.address_street,
-      city: order.address_city,
-      pincode: order.address_pincode,
-      landmark: order.address_landmark,
-      fullAddress: [
-        order.address_house,
-        order.address_street,
-        order.address_city && order.address_pincode
-          ? `${order.address_city} - ${order.address_pincode}`
-          : order.address_city || order.address_pincode,
-        order.address_landmark ? `Landmark: ${order.address_landmark}` : null
-      ].filter(Boolean).join(', ')
-    }
-  },
-  deliveryPartner: order.delivery_partner_name ? {
-    name: order.delivery_partner_name,
-    phone: order.delivery_partner_phone,
-    vehicleNumber: order.delivery_partner_vehicle
-  } : existingOrder?.deliveryPartner || null,
-  items: existingOrder?.items || []
-});
+const formatRealtimeAdminOrder = (order: any, existingOrder?: any) => {
+  if (!order) return existingOrder || null;
+  return {
+    ...existingOrder,
+    ...order,
+    _id: order.id || existingOrder?._id,
+    createdAt: order.created_at || existingOrder?.createdAt,
+    totalAmount: order.total_amount || existingOrder?.totalAmount,
+    estimatedDeliveryTime: order.estimated_delivery_time || existingOrder?.estimatedDeliveryTime,
+    customer: {
+      name: order.customer_name || existingOrder?.customer?.name,
+      phone: order.customer_phone || existingOrder?.customer?.phone,
+      address: {
+        house: order.address_house || existingOrder?.customer?.address?.house,
+        street: order.address_street || existingOrder?.customer?.address?.street,
+        city: order.address_city || existingOrder?.customer?.address?.city,
+        pincode: order.address_pincode || existingOrder?.customer?.address?.pincode,
+        landmark: order.address_landmark || existingOrder?.customer?.address?.landmark,
+        fullAddress: [
+          order.address_house || existingOrder?.customer?.address?.house,
+          order.address_street || existingOrder?.customer?.address?.street,
+          (order.address_city || existingOrder?.customer?.address?.city) && (order.address_pincode || existingOrder?.customer?.address?.pincode)
+            ? `${order.address_city || existingOrder?.customer?.address?.city} - ${order.address_pincode || existingOrder?.customer?.address?.pincode}`
+            : (order.address_city || existingOrder?.customer?.address?.city) || (order.address_pincode || existingOrder?.customer?.address?.pincode),
+          (order.address_landmark || existingOrder?.customer?.address?.landmark) ? `Landmark: ${order.address_landmark || existingOrder?.customer?.address?.landmark}` : null
+        ].filter(Boolean).join(', ')
+      }
+    },
+    deliveryPartner: order.delivery_partner_name ? {
+      name: order.delivery_partner_name,
+      phone: order.delivery_partner_phone,
+      vehicleNumber: order.delivery_partner_vehicle
+    } : existingOrder?.deliveryPartner || null,
+    items: existingOrder?.items || []
+  };
+};
 
 export default function AdminOrders() {
+  const [mounted, setMounted] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +81,7 @@ export default function AdminOrders() {
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
 
   useEffect(() => {
+    setMounted(true);
     ordersRef.current = orders;
   }, [orders]);
 
@@ -350,7 +355,7 @@ export default function AdminOrders() {
     return ['Delivered', 'Cancelled'].includes(o?.status) && createdAt && new Date(createdAt).toDateString() === new Date().toDateString();
   }).length;
 
-  if (loading) return (
+  if (!mounted || loading) return (
     <div className="flex flex-col gap-5 animate-pulse">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[1, 2, 3, 4].map(i => (
@@ -499,7 +504,7 @@ export default function AdminOrders() {
             if (!order) return null;
             return (
               <motion.div
-                key={order._id || order.id || Math.random()}
+                key={order._id || order.id || `idx-${displayOrders.indexOf(order)}`}
                 layout
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}

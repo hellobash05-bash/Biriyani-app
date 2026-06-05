@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
-  Utensils, 
+  UtensilsCrossed, 
   Truck, 
   Users, 
   Star, 
@@ -21,7 +21,7 @@ import {
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
   { label: 'Orders', path: '/admin/orders', icon: ShoppingBag },
-  { label: 'Menu', path: '/admin/menu', icon: Utensils },
+  { label: 'Menu', path: '/admin/menu', icon: UtensilsCrossed },
   { label: 'Delivery Fleet', path: '/admin/delivery-partners', icon: Truck },
   { label: 'Customers', path: '/admin/customers', icon: Users },
   { label: 'Reviews', path: '/admin/reviews', icon: Star },
