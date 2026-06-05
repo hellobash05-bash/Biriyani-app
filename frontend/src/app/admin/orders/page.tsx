@@ -65,6 +65,7 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'history'>('live');
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
@@ -80,8 +81,12 @@ export default function AdminOrders() {
   }, [orders]);
 
   const refreshOrders = async () => {
-    const ordersData = await fetchAdminOrders();
-    setOrders(ordersData);
+    try {
+      const ordersData = await fetchAdminOrders();
+      setOrders(ordersData);
+    } catch (err) {
+      console.error('Refresh error:', err);
+    }
   };
 
   const scheduleOrdersRefresh = () => {
@@ -95,14 +100,17 @@ export default function AdminOrders() {
 
   async function loadData() {
     try {
+      setLoading(true);
       const [ordersData, partnersData] = await Promise.all([
         fetchAdminOrders(),
         fetchDeliveryPartners()
       ]);
       setOrders(ordersData);
       setPartners(partnersData);
+      setError(null);
     } catch (err) {
-      console.error(err);
+      console.error('Admin load data error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load order data');
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
@@ -112,135 +120,163 @@ export default function AdminOrders() {
   useEffect(() => {
     loadData();
 
-    // --- SOCKET.IO SETUP (Primary) ---
-    console.log('--- SETTING UP ADMIN SOCKET.IO ---', SOCKET_URL);
-    const socket = io(SOCKET_URL);
-    
-    socket.on('connect', () => {
-      console.log('✅ [SOCKET] Connected to Royale Backend');
-      setIsSocketConnected(true);
-    });
+    let socket: any;
 
-    socket.on('new-order', (newOrder) => {
-      console.log('📢 [SOCKET] New Order Received:', newOrder);
-      const orderId = newOrder?._id || newOrder?.id;
-      if (!orderId) {
-        console.warn('Received order without ID via socket');
-        scheduleOrdersRefresh();
-        return;
-      }
-
-      setOrders(prev => {
-        if (prev.some(order => (order._id || order.id) === orderId)) return prev;
-        return [newOrder, ...prev];
-      });
+    try {
+      // --- SOCKET.IO SETUP (Primary) ---
+      console.log('--- SETTING UP ADMIN SOCKET.IO ---', SOCKET_URL);
+      socket = io(SOCKET_URL);
       
-      toast.success(`NEW ORDER: #${orderId.toString().slice(-6)}`, { icon: '🥡', duration: 8000 });
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.play().catch(() => {});
-      scheduleOrdersRefresh();
-    });
+      socket.on('connect', () => {
+        console.log('✅ [SOCKET] Connected to Royale Backend');
+        setIsSocketConnected(true);
+      });
 
-    socket.on('order-update', (updated) => {
-      console.log('📢 [SOCKET] Order Update Received:', updated);
-      const updatedId = updated?._id || updated?.id;
-      if (!updatedId) return;
-
-      setOrders(prev => prev.map(order => (
-        (order._id || order.id) === updatedId ? updated : order
-      )));
-      scheduleOrdersRefresh();
-    });
-
-    socket.on('disconnect', () => {
-      console.log('❌ [SOCKET] Disconnected');
-      setIsSocketConnected(false);
-    });
-
-    // --- SUPABASE REALTIME SETUP (Backup) ---
-    if (!supabase) {
-      console.warn('Supabase client not initialized. Realtime backup disabled.');
-    } else {
-      console.log('--- SETTING UP ADMIN REALTIME BACKUP ---');
-      const channel = supabase
-        .channel('admin-orders-channel')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
-        (payload: any) => {
-          console.log('📢 New Order Received via Realtime:', payload.new);
-          const newOrder = payload.new as any;
-          const formattedOrder = formatRealtimeAdminOrder(newOrder);
-
-          setOrders(prev => {
-            if (prev.some(order => order._id === formattedOrder._id)) return prev;
-            return [formattedOrder, ...prev];
-          });
-          
-          const displayId = (formattedOrder?._id || 'Order').toString().slice(-6);
-          toast.success(`NEW ORDER RECEIVED: #${displayId}`, {
-            duration: 8000,
-            icon: '🥡',
-          });
+      socket.on('new-order', (newOrder: any) => {
+        console.log('📢 [SOCKET] New Order Received:', newOrder);
+        const orderId = newOrder?._id || newOrder?.id;
+        if (!orderId) {
+          console.warn('Received order without ID via socket');
           scheduleOrdersRefresh();
-          
+          return;
+        }
+
+        setOrders(prev => {
+          if (!Array.isArray(prev)) return [newOrder];
+          if (prev.some(order => (order._id || order.id) === orderId)) return prev;
+          return [newOrder, ...prev];
+        });
+        
+        toast.success(`NEW ORDER: #${orderId.toString().slice(-6)}`, { icon: '🥡', duration: 8000 });
+        
+        if (typeof window !== 'undefined') {
           const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
           audio.play().catch(() => {});
         }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders' },
-        (payload: any) => {
-          console.log('📢 Order Update Received via Realtime:', payload.new);
-          const updated = payload.new as any;
-          const existingOrder = ordersRef.current.find(order => order._id === updated.id);
-          
-          setOrders(prev => prev.map(order => (
-            order._id === updated.id
-              ? formatRealtimeAdminOrder(updated, order)
-              : order
-          )));
-          
-          if (existingOrder?.status !== updated.status) {
-            const displayId = (updated.id || 'Order').toString().slice(-6);
-            toast(`Order #${displayId} updated to ${updated.status}`, { icon: '🔄' });
-          }
-          scheduleOrdersRefresh();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'orders' },
-        (payload: any) => {
-          console.log('📢 Order Deletion Received via Realtime:', payload.old);
-          const deletedId = payload.old.id;
-          setOrders(prev => prev.filter(order => order._id !== deletedId));
-          const displayId = (deletedId || 'Order').toString().slice(-6);
-          toast.error(`Order #${displayId} removed from system`, { icon: '🗑️' });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        (payload: any) => {
-          console.log('📢 Order Items Change Received via Realtime:', payload.eventType);
-          // When order items change, we need to refresh the orders to get updated totals and items
-          scheduleOrdersRefresh();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'delivery_partners' },
-        (payload: any) => {
-          console.log('📢 Delivery Partners Change Received via Realtime:', payload.eventType);
-          fetchDeliveryPartners().then(data => setPartners(data)).catch(() => {});
-        }
-      )
-      .subscribe((status) => {
-        console.log('--- ADMIN REALTIME STATUS:', status, '---');
-        setIsRealtimeConnected(status === 'SUBSCRIBED');
+        scheduleOrdersRefresh();
       });
+
+      socket.on('order-update', (updated: any) => {
+        console.log('📢 [SOCKET] Order Update Received:', updated);
+        const updatedId = updated?._id || updated?.id;
+        if (!updatedId) return;
+
+        setOrders(prev => {
+          if (!Array.isArray(prev)) return [];
+          return prev.map(order => (
+            (order._id || order.id) === updatedId ? updated : order
+          ));
+        });
+        scheduleOrdersRefresh();
+      });
+
+      socket.on('disconnect', () => {
+        console.log('❌ [SOCKET] Disconnected');
+        setIsSocketConnected(false);
+      });
+    } catch (err) {
+      console.error('Socket.io initialization failed:', err);
+    }
+
+    // --- SUPABASE REALTIME SETUP (Backup) ---
+    let channel: any;
+    try {
+      if (!supabase) {
+        console.warn('Supabase client not initialized. Realtime backup disabled.');
+      } else {
+        console.log('--- SETTING UP ADMIN REALTIME BACKUP ---');
+        channel = supabase
+          .channel('admin-orders-channel')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'orders' },
+          (payload: any) => {
+            console.log('📢 New Order Received via Realtime:', payload.new);
+            const newOrder = payload.new as any;
+            const formattedOrder = formatRealtimeAdminOrder(newOrder);
+
+            setOrders(prev => {
+              if (!Array.isArray(prev)) return [formattedOrder];
+              if (prev.some(order => (order._id || order.id) === (formattedOrder._id || formattedOrder.id))) return prev;
+              return [formattedOrder, ...prev];
+            });
+            
+            const displayId = (formattedOrder?._id || formattedOrder?.id || 'Order').toString().slice(-6);
+            toast.success(`NEW ORDER RECEIVED: #${displayId}`, {
+              duration: 8000,
+              icon: '🥡',
+            });
+            scheduleOrdersRefresh();
+            
+            if (typeof window !== 'undefined') {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+              audio.play().catch(() => {});
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'orders' },
+          (payload: any) => {
+            console.log('📢 Order Update Received via Realtime:', payload.new);
+            const updated = payload.new as any;
+            const existingOrder = Array.isArray(ordersRef.current) 
+              ? ordersRef.current.find(order => (order._id || order.id) === updated.id)
+              : null;
+            
+            setOrders(prev => {
+              if (!Array.isArray(prev)) return [];
+              return prev.map(order => (
+                (order._id || order.id) === updated.id
+                  ? formatRealtimeAdminOrder(updated, order)
+                  : order
+              ));
+            });
+            
+            if (existingOrder?.status !== updated.status) {
+              const displayId = (updated.id || 'Order').toString().slice(-6);
+              toast(`Order #${displayId} updated to ${updated.status}`, { icon: '🔄' });
+            }
+            scheduleOrdersRefresh();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'orders' },
+          (payload: any) => {
+            console.log('📢 Order Deletion Received via Realtime:', payload.old);
+            const deletedId = payload.old.id;
+            setOrders(prev => {
+              if (!Array.isArray(prev)) return [];
+              return prev.filter(order => (order._id || order.id) !== deletedId);
+            });
+            const displayId = (deletedId || 'Order').toString().slice(-6);
+            toast.error(`Order #${displayId} removed from system`, { icon: '🗑️' });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'order_items' },
+          (payload: any) => {
+            console.log('📢 Order Items Change Received via Realtime:', payload.eventType);
+            scheduleOrdersRefresh();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'delivery_partners' },
+          (payload: any) => {
+            console.log('📢 Delivery Partners Change Received via Realtime:', payload.eventType);
+            fetchDeliveryPartners().then(data => setPartners(data)).catch(() => {});
+          }
+        )
+        .subscribe((status) => {
+          console.log('--- ADMIN REALTIME STATUS:', status, '---');
+          setIsRealtimeConnected(status === 'SUBSCRIBED');
+        });
+      }
+    } catch (err) {
+      console.error('Supabase Realtime initialization failed:', err);
     }
 
     // --- POLLING FALLBACK (Safety Net) ---
@@ -252,7 +288,7 @@ export default function AdminOrders() {
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
       clearInterval(pollInterval);
-      socket.disconnect();
+      if (socket) socket.disconnect();
       if (supabase) {
         supabase.removeAllChannels();
       }
@@ -324,6 +360,26 @@ export default function AdminOrders() {
       {[1, 2, 3].map(i => (
         <div key={i} className="h-56 bg-foreground/5 rounded-2xl" />
       ))}
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-6">
+       <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+          <CircleX size={40} />
+       </div>
+       <div className="max-w-md">
+         <h2 className="text-2xl font-black uppercase tracking-tighter text-foreground mb-2">Sync Interrupted</h2>
+         <p className="text-stone-500 text-sm font-bold uppercase tracking-widest leading-relaxed">
+            {error}
+         </p>
+       </div>
+       <button 
+         onClick={loadData}
+         className="px-8 py-4 bg-foreground text-background rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-orange-600 hover:text-white transition-all shadow-xl"
+       >
+         Retry Connection
+       </button>
     </div>
   );
 
