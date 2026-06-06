@@ -267,12 +267,33 @@ apiRouter.delete('/admin/delivery-partners/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-const formatOrderForClient = (order) => ({
-  _id: order.id, id: order.id, user_email: order.user_email, createdAt: order.created_at,
-  status: order.status, totalAmount: order.total_amount, paymentMethod: order.payment_method,
-  customer: { name: order.customer_name, phone: order.customer_phone, address: { house: order.address_house, street: order.address_street, city: order.address_city, pincode: order.address_pincode, landmark: order.address_landmark } },
-  items: order.order_items || []
-});
+const formatOrderForClient = (order) => {
+  const address = { 
+    house: order.address_house, 
+    street: order.address_street, 
+    city: order.address_city, 
+    pincode: order.address_pincode, 
+    landmark: order.address_landmark 
+  };
+  
+  const fullAddress = [
+    order.address_house,
+    order.address_street,
+    order.address_city && order.address_pincode ? `${order.address_city} - ${order.address_pincode}` : (order.address_city || order.address_pincode),
+    order.address_landmark ? `Landmark: ${order.address_landmark}` : null
+  ].filter(Boolean).join(', ');
+
+  return {
+    _id: order.id, id: order.id, user_email: order.user_email, createdAt: order.created_at,
+    status: order.status, totalAmount: order.total_amount, paymentMethod: order.payment_method,
+    customer: { 
+      name: order.customer_name, 
+      phone: order.customer_phone, 
+      address: { ...address, fullAddress } 
+    },
+    items: order.order_items || []
+  };
+};
 
 apiRouter.post('/orders', async (req, res) => {
   const { customer, items, totalAmount, paymentMethod, userEmail } = req.body;

@@ -549,7 +549,13 @@ export default function AdminOrders() {
                              <span className="flex items-center gap-2 text-orange-600"><Phone size={14} />{order.customer.phone}</span>
                              <p className="flex items-start gap-2 leading-relaxed">
                                <MapPin size={14} className="mt-0.5 shrink-0 text-stone-400" />
-                               <span>{order.customer.address?.fullAddress || order.customer.address || 'No address provided'}</span>
+                               <span>
+                                 {typeof order.customer.address === 'object' 
+                                   ? (order.customer.address?.fullAddress || 
+                                      [order.customer.address?.house, order.customer.address?.street, order.customer.address?.city].filter(Boolean).join(', ') || 
+                                      'Address details missing')
+                                   : (order.customer.address || 'No address provided')}
+                               </span>
                              </p>
                            </div>
                          </div>
