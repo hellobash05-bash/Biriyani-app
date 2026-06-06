@@ -529,21 +529,8 @@ export async function updateOrderStatus(orderId: string, status: string) {
     });
     if (response.ok) return response.json();
   } catch (err) {
-    console.warn('Backend admin status route failed. Falling back to local route.', err);
+    console.warn('Backend admin status route failed. Falling back to Supabase update.', err);
   }
-
-  if (typeof window !== 'undefined') {
-    const localResponse = await fetch(`/api/admin/orders/${orderId}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-
-    if (localResponse.ok) return localResponse.json();
-    console.warn('Local admin status route failed. Falling back to Supabase update.');
-  }
-
-  console.warn('Admin status endpoint unavailable. Falling back to Supabase update.');
 
   if (supabase) {
     try {
@@ -599,17 +586,7 @@ export async function assignDeliveryPartner(orderId: string, partner: { name: st
     });
     if (response.ok) return response.json();
   } catch (err) {
-    console.warn('Backend assign partner failed. Trying local route.', err);
-  }
-
-  if (typeof window !== 'undefined') {
-    const localResponse = await fetch(`/api/admin/orders/${orderId}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (localResponse.ok) return localResponse.json();
+    console.warn('Backend assign partner failed. Trying Supabase fallback.', err);
   }
 
   if (supabase) {
