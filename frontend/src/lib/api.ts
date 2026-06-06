@@ -585,6 +585,76 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return formatOrderFromDatabase(rows[0]);
 }
 
+export async function assignDeliveryPartner(orderId: string, partner: { name: string, phone: string, vehicleNumber: string }) {
+  const payload = { 
+    status: 'Out for Delivery', 
+    deliveryPartner: partner 
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) return response.json();
+  } catch (err) {
+    console.warn('Backend assign partner failed. Trying local route.', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    const localResponse = await fetch(`/api/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (localResponse.ok) return localResponse.json();
+  }
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'Out for Delivery',
+          delivery_partner_name: partner.name,
+          delivery_partner_phone: partner.phone,
+          delivery_partner_vehicle: partner.vehicleNumber
+        })
+        .eq('id', orderId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      return formatOrderFromDatabase(data);
+    } catch (err) {
+      console.warn('Supabase assign partner failed. Trying REST fallback.', err);
+    }
+  }
+
+  const restResponse = await fetch(`${SUPABASE_REST_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=*`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_REST_KEY,
+      Authorization: `Bearer ${SUPABASE_REST_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify({ 
+      status: 'Out for Delivery',
+      delivery_partner_name: partner.name,
+      delivery_partner_phone: partner.phone,
+      delivery_partner_vehicle: partner.vehicleNumber
+    })
+  });
+
+  if (!restResponse.ok) throw new Error('Failed to assign partner via REST');
+
+  const rows = await restResponse.json();
+  return formatOrderFromDatabase(rows[0]);
+}
+
 export async function cancelOrder(orderId: string) {
   const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
     method: 'PATCH',

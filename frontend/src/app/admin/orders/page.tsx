@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { fetchAdminOrders, updateOrderStatus, fetchDeliveryPartners, SOCKET_URL } from '@/lib/api';
+import { fetchAdminOrders, updateOrderStatus, assignDeliveryPartner, fetchDeliveryPartners, SOCKET_URL } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { Bike, CircleCheckBig, Clock, MapPin, PackageCheck, Phone, RefreshCw, Radio, User, CircleX } from 'lucide-react';
 import { io } from 'socket.io-client';
@@ -320,25 +320,16 @@ export default function AdminOrders() {
     if (!partner) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/admin/orders/${assigningOrder._id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: 'Out for Delivery', 
-          deliveryPartner: {
-            name: partner.name,
-            phone: partner.phone,
-            vehicleNumber: partner.vehicleNumber
-          }
-        }),
+      await assignDeliveryPartner(assigningOrder._id, {
+        name: partner.name,
+        phone: partner.phone,
+        vehicleNumber: partner.vehicleNumber
       });
       
-      if (response.ok) {
-        setAssigningOrder(null);
-        setSelectedPartnerId('');
-        toast.success(`Assigned to ${partner.name}`);
-        loadData();
-      }
+      setAssigningOrder(null);
+      setSelectedPartnerId('');
+      toast.success(`Assigned to ${partner.name}`);
+      loadData();
     } catch (err) {
       toast.error('Failed to assign partner');
     }
