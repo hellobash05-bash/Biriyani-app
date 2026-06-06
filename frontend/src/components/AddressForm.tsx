@@ -217,33 +217,33 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
     <motion.div 
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-md shadow-2xl overflow-hidden relative"
+      className="bg-card border border-border rounded-lg md:rounded-md shadow-2xl overflow-hidden relative max-h-[90vh] flex flex-col"
     >
-      <div className="p-8 md:p-10">
-        <header className="flex justify-between items-start mb-10">
+      <div className="p-5 md:p-10 overflow-y-auto custom-scrollbar">
+        <header className="flex justify-between items-start mb-6 md:mb-10">
           <div>
-            <h3 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-1">
+            <h3 className="text-xl md:text-3xl font-serif font-bold text-foreground mb-1">
               {initialData ? 'Edit Destination' : 'New Destination'}
             </h3>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+            <p className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-widest">
               Set your delivery coordinates
             </p>
           </div>
           <button 
             onClick={onCancel}
-            className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+            className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
           >
             <X size={20} />
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
           {/* Label Selection */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+          <div className="space-y-2.5">
+            <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
               Save as
             </label>
-            <div className="flex gap-3">
+            <div className="flex gap-2 md:gap-3">
               {[
                 { label: 'Home', icon: <Home size={16} /> },
                 { label: 'Office', icon: <Briefcase size={16} /> },
@@ -256,13 +256,13 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                     playSound('pop');
                     setFormData(prev => ({ ...prev, label: l.label }));
                   }}
-                  className={`flex-1 py-4 rounded-md text-[10px] font-bold uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 md:py-4 rounded-lg md:rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5 md:gap-2 ${
                     formData.label === l.label 
-                      ? 'bg-primary text-primary-foreground border-primary' 
+                      ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20' 
                       : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/30'
                   }`}
                 >
-                  {l.icon}
+                  <span className="shrink-0">{l.icon}</span>
                   {l.label}
                 </button>
               ))}
@@ -270,15 +270,15 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
           </div>
 
           {/* Search Area */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+          <div className="space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
                 Search Location
               </label>
               <button 
                 type="button"
                 onClick={handleUseCurrentLocation}
-                className="flex items-center gap-1.5 text-[9px] font-bold text-primary uppercase tracking-widest hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1.5 text-[8px] md:text-[9px] font-black text-primary uppercase tracking-widest hover:opacity-80 transition-opacity self-start sm:self-auto"
               >
                 <Compass size={12} /> Use My Current Location
               </button>
@@ -291,22 +291,22 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                 ref={searchInputRef}
                 type="text"
                 placeholder="Find your area or street..."
-                className="w-full bg-muted border border-border pl-12 pr-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+                className="w-full bg-muted border border-border pl-12 pr-10 py-3.5 md:py-4 rounded-lg md:rounded-md text-sm font-medium focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50"
               />
               {formData.latitude && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary">
-                  <Sparkles size={16} />
+                  <Sparkles size={16} className="animate-pulse" />
                 </div>
               )}
             </div>
           </div>
 
-          <div className="h-px bg-border" />
+          <div className="h-px bg-border/50" />
 
           {/* Detailed Address */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className="space-y-1.5">
+              <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
                 Flat / Floor / Block
               </label>
               <input
@@ -316,12 +316,12 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                 onChange={handleChange}
                 required
                 placeholder="Apartment or Office Details"
-                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+                className="w-full bg-muted border border-border px-4 py-3.5 md:py-4 rounded-lg md:rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
               />
             </div>
             
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+            <div className="space-y-1.5">
+              <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
                 Landmark / Building
               </label>
               <input
@@ -330,12 +330,12 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                 value={formData.landmark}
                 onChange={handleChange}
                 placeholder="E.g. Near Main Gate"
-                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+                className="w-full bg-muted border border-border px-4 py-3.5 md:py-4 rounded-lg md:rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
               />
             </div>
 
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
                 Area / Street
               </label>
               <input
@@ -345,15 +345,15 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                 onChange={handleChange}
                 required
                 placeholder="Full Street Details"
-                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+                className="w-full bg-muted border border-border px-4 py-3.5 md:py-4 rounded-lg md:rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
               />
             </div>
           </div>
 
           {/* Receiver Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className="space-y-1.5">
+              <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
                 Full Name
               </label>
               <input
@@ -363,11 +363,11 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                 onChange={handleChange}
                 required
                 placeholder="Receiver's name"
-                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+                className="w-full bg-muted border border-border px-4 py-3.5 md:py-4 rounded-lg md:rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+            <div className="space-y-1.5">
+              <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
                 Phone Number
               </label>
               <input
@@ -377,13 +377,13 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
                 onChange={handleChange}
                 required
                 placeholder="+91"
-                className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+                className="w-full bg-muted border border-border px-4 py-3.5 md:py-4 rounded-lg md:rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+          <div className="space-y-1.5">
+            <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
               Instructions
             </label>
             <input
@@ -392,29 +392,29 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
               value={formData.delivery_instructions}
               onChange={handleChange}
               placeholder="Any special notes for delivery?"
-              className="w-full bg-muted border border-border px-4 py-4 rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
+              className="w-full bg-muted border border-border px-4 py-3.5 md:py-4 rounded-lg md:rounded-md text-sm font-medium focus:border-primary outline-none transition-all"
             />
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 pt-6">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 md:pt-6">
             <button
               type="button"
               onClick={onCancel}
-              className="px-8 py-4 rounded-md font-bold text-[11px] text-muted-foreground hover:text-foreground transition-all uppercase tracking-widest"
+              className="h-12 md:h-14 px-8 rounded-lg md:rounded-md font-bold text-[10px] md:text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all uppercase tracking-widest"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-foreground text-background py-4 rounded-md font-bold text-[11px] hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50 uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+              className="flex-1 bg-foreground text-background h-12 md:h-14 rounded-lg md:rounded-md font-black text-[10px] md:text-[11px] hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50 uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl shadow-foreground/10"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   <Save size={18} />
-                  {initialData ? 'Update Address' : 'Save Address'}
+                  {initialData ? 'Update Destination' : 'Secure Destination'}
                 </>
               )}
             </button>
