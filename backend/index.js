@@ -129,23 +129,47 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   const userIds = identities.map(u => u.id);
   const firebaseUids = identities.map(u => u.uid).filter(Boolean);
   const emails = Array.from(new Set([email, ...identities.map(u => u.email)].filter(Boolean)));
+  
   const uniqueMap = new Map();
-  try {
-    const { data: d1 } = await sb.from('addresses').select(ADDRESS_SELECT).in('user_id', userIds);
-    (d1 || []).forEach(a => uniqueMap.set(a.id, a));
-    const { data: d2 } = await sb.from('addresses').select(ADDRESS_SELECT).in('firebase_uid', firebaseUids);
-    (d2 || []).forEach(a => uniqueMap.set(a.id, a));
-    const { data: d3 } = await sb.from('addresses').select(ADDRESS_SELECT).in('email', emails);
-    (d3 || []).forEach(a => uniqueMap.set(a.id, a));
-  } catch (e) {}
+  const safeFetch = async (query) => {
+    try {
+      const { data, error } = await query;
+      if (error) {
+        if (error.code === '42703') return []; // Column doesn't exist
+        throw error;
+      }
+      return data || [];
+    } catch (e) {
+      console.error('>>> [ADDRESS FETCH ERROR]:', e.message);
+      return [];
+    }
+  };
+
+  if (userIds.length > 0) {
+    const d1 = await safeFetch(sb.from('addresses').select('*').in('user_id', userIds));
+    d1.forEach(a => uniqueMap.set(a.id, a));
+  }
+  
+  if (firebaseUids.length > 0) {
+    const d2 = await safeFetch(sb.from('addresses').select('*').in('firebase_uid', firebaseUids));
+    d2.forEach(a => uniqueMap.set(a.id, a));
+  }
+  
+  if (emails.length > 0) {
+    // Check if email column exists before querying
+    const d3 = await safeFetch(sb.from('addresses').select('*').in('email', emails));
+    d3.forEach(a => uniqueMap.set(a.id, a));
+  }
+
   return Array.from(uniqueMap.values()).map(addr => ({
     ...addr,
     id: addr.id,
     _id: addr.id,
     isDefault: !!addr.is_default,
-    house: addr.house || '',
-    street: addr.street || '',
-    detail: addr.detail || `${addr.house}, ${addr.street}, ${addr.city} - ${addr.pincode}`
+    house: addr.house || addr.address_line1 || '',
+    street: addr.street || addr.address_line2 || '',
+    name: addr.name || addr.full_name || '',
+    detail: addr.detail || `${addr.house || addr.address_line1}, ${addr.street || addr.address_line2}, ${addr.city} - ${addr.pincode}`
   }));
 };
 
