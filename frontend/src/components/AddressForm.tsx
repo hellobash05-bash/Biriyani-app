@@ -396,24 +396,24 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
             />
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 md:pt-10">
+          <div className="flex flex-col-reverse sm:flex-row gap-4 pt-8 md:pt-12">
             <button
               type="button"
               onClick={onCancel}
-              className="h-12 md:h-14 px-8 rounded-xl font-bold text-[10px] md:text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all uppercase tracking-[0.2em] flex items-center justify-center"
+              className="h-14 md:h-16 px-10 rounded-2xl font-bold text-[11px] md:text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-all uppercase tracking-[0.2em] flex items-center justify-center"
             >
               Discard
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white h-12 md:h-14 rounded-xl font-black text-[10px] md:text-[11px] hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-50 uppercase tracking-[0.3em] flex items-center justify-center gap-2.5 shadow-lg shadow-orange-600/30 border border-white/10"
+              className="flex-[2] bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white h-14 md:h-16 rounded-2xl font-black text-[11px] md:text-sm hover:brightness-110 active:scale-[0.96] transition-all disabled:opacity-50 uppercase tracking-[0.3em] flex items-center justify-center gap-3 shadow-2xl shadow-orange-600/40 border border-white/20"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Sparkles size={16} className="text-orange-200" />
+                  <Sparkles size={20} className="text-orange-200" />
                   <span>{initialData ? 'Update Destination' : 'Confirm Destination'}</span>
                 </>
               )}
