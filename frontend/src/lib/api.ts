@@ -399,11 +399,12 @@ export async function fetchAnalytics() {
   return await response.json();
 }
 
-export async function fetchAddresses(email: string | null | undefined, uid?: string) {
+export async function fetchAddresses(email: string | null | undefined, uid?: string, profileId?: string) {
   let url = `${API_BASE_URL.replace(/\/$/, '')}/address?`;
   const params = new URLSearchParams();
   if (email) params.append('email', email);
   if (uid) params.append('uid', uid);
+  if (profileId) params.append('profileId', profileId);
   params.append('t', Date.now().toString());
   
   url += params.toString();
@@ -417,7 +418,45 @@ export async function fetchAddresses(email: string | null | undefined, uid?: str
       throw new Error(errorData.message || `Server error: ${response.status}`);
     }
     const data = await response.json();
-    console.log(`>>> [API] RECEIVED ${Array.isArray(data) ? data.length : 0} ADDRESSES`);
+    console.log(`>>> [API] RECEIVED ${Array.isArray(data) ? data.length : 0} ADDRESSES FROM BACKEND`);
+    
+    if (Array.isArray(data) && data.length > 0) return data;
+
+    // FALLBACK: Direct Supabase Fetch (Authenticated)
+    if (supabase) {
+      console.log('>>> [API] FALLBACK: Trying direct Supabase fetch for addresses...');
+      try {
+        // Build an OR filter for uid, email and profileId
+        const filters = [];
+        if (uid) filters.push(`firebase_uid.eq.${uid}`);
+        if (email) filters.push(`email.ilike.${email}`);
+        if (profileId) filters.push(`user_id.eq.${profileId}`);
+        
+        if (filters.length === 0) return [];
+
+        const { data: sbData, error } = await supabase
+          .from('addresses')
+          .select('*')
+          .or(filters.join(','));
+
+        if (!error && sbData && sbData.length > 0) {
+          console.log(`>>> [API] FALLBACK SUCCESS: Found ${sbData.length} addresses via Supabase`);
+          return sbData.map(addr => ({
+            ...addr,
+            id: addr.id,
+            _id: addr.id,
+            isDefault: !!addr.is_default,
+            house: addr.house || addr.address_line1 || '',
+            street: addr.street || addr.address_line2 || '',
+            name: addr.name || addr.full_name || '',
+            detail: addr.detail || `${addr.house || addr.address_line1}, ${addr.street || addr.address_line2}, ${addr.city} - ${addr.pincode}`
+          }));
+        }
+      } catch (err) {
+        console.warn('>>> [API] Direct Supabase fetch failed:', err);
+      }
+    }
+
     return Array.isArray(data) ? data : [];
   } catch (err: any) {
     console.error('>>> [API] FETCH FAILED:', err.message);

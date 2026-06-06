@@ -61,7 +61,12 @@ export default function ProfilePage() {
     if (!user?.email && !user?.uid) return;
     if (!isSilent) setLoadingAddresses(true);
     try {
-      const data = await apiFetchAddresses(user?.email || '', user?.uid);
+      // Pass email, uid AND the internal database ID for maximum reliability
+      const data = await apiFetchAddresses(
+        user?.email || '', 
+        user?.uid, 
+        profile?.id || profile?._id
+      );
       setAddresses(Array.isArray(data) ? data : []);
     } catch (err) {
       if (!isSilent) toast.error('Failed to sync vault');
@@ -78,7 +83,7 @@ export default function ProfilePage() {
         setLoadingOrders(false);
       });
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, profile?.id, profile?._id]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
