@@ -89,23 +89,35 @@ const resolveAllUserIds = async (sb, email, uid = null) => {
     if (uid) filters.push(`uid.eq.${uid}`);
     if (normalizedEmail) filters.push(`email.ilike.${normalizedEmail}`);
     const { data: users } = await sb.from('users').select('id, uid, email').or(filters.join(','));
+    
     if (!users || users.length === 0) {
-      const { data: anchor, error: anchorError } = await sb.from('users').upsert({
-        uid: uid || `anchor-${Date.now()}`,
-        email: normalizedEmail,
-        name: 'Royale Member',
-        last_login: new Date().toISOString()
-      }, { onConflict: 'email' }).select('id, uid, email').single();
-      if (anchorError) throw anchorError;
-      return [{ id: anchor.id, uid: anchor.uid, email: anchor.email }];
+      if (normalizedEmail) {
+        const { data: anchor, error: anchorError } = await sb.from('users').upsert({
+          uid: uid || `anchor-${Date.now()}`,
+          email: normalizedEmail,
+          name: 'Royale Member',
+          last_login: new Date().toISOString()
+        }, { onConflict: 'email' }).select('id, uid, email').single();
+        if (anchorError) throw anchorError;
+        return [{ id: anchor.id, uid: anchor.uid, email: anchor.email }];
+      }
+      return [];
     }
+
     const allUserIdentities = users.map(u => ({ id: u.id, uid: u.uid, email: u.email }));
+    
+    // If we have a UID and an email, ensure they are linked in the database
     if (uid && normalizedEmail) {
-       await sb.from('users').update({ uid }).ilike('email', normalizedEmail);
+       const emailUser = users.find(u => u.email && u.email.toLowerCase() === normalizedEmail.toLowerCase());
+       if (emailUser && (!emailUser.uid || emailUser.uid.startsWith('anchor-'))) {
+          await sb.from('users').update({ uid }).eq('id', emailUser.id);
+          emailUser.uid = uid;
+       }
     }
+    
     return allUserIdentities;
   } catch (err) {
-    console.error('❌ [BRIDGE] Crash:', err.message);
+    console.error('❌ [BRIDGE] Identity resolution failed:', err.message);
     return [];
   }
 };
