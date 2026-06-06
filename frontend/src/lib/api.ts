@@ -208,6 +208,7 @@ export async function fetchAdminOrders() {
     if (response.ok) {
       return await response.json();
     }
+    console.warn(`Admin orders endpoint returned ${response.status}.`);
   } catch (err) {
     console.warn('Admin orders endpoint fetch failed.', err);
   }
@@ -228,8 +229,28 @@ export async function fetchAdminOrders() {
     }
   }
 
-  console.warn('Admin orders endpoint unavailable. Falling back to user orders feed.');
-  return await fetchUserOrders();
+  console.warn('Supabase client unavailable. Falling back to Supabase REST for admin orders.');
+
+  try {
+    const restResponse = await fetch(`${SUPABASE_REST_URL}/rest/v1/orders?select=*,order_items(*)&order=created_at.desc`, {
+      headers: {
+        apikey: SUPABASE_REST_KEY,
+        Authorization: `Bearer ${SUPABASE_REST_KEY}`,
+      },
+    });
+
+    if (!restResponse.ok) {
+      const errorData = await restResponse.json().catch(() => ({}));
+      throw new Error(errorData.message || `Supabase REST returned ${restResponse.status}`);
+    }
+
+    const data = await restResponse.json();
+    return Array.isArray(data) ? data.map(formatOrderFromDatabase) : [];
+  } catch (err) {
+    console.warn('Supabase REST fallback for admin orders failed:', err);
+  }
+
+  throw new Error('Unable to load admin orders. Check the backend or Supabase connection.');
 }
 
 export async function addMenuItem(itemData: any) {
@@ -301,12 +322,38 @@ export async function fetchAdminReviews() {
 }
 
 export async function fetchDeliveryPartners() {
-  const response = await fetch(getCleanUrl('/admin/delivery-partners'));
-  if (!response.ok) {
-    console.warn('Delivery partners endpoint unavailable. Continuing without partners.');
-    return [];
+  try {
+    const response = await fetch(getCleanUrl('/admin/delivery-partners'));
+    if (response.ok) {
+      return response.json();
+    }
+    console.warn(`Delivery partners endpoint returned ${response.status}. Trying Supabase fallback.`);
+  } catch (err) {
+    console.warn('Delivery partners endpoint fetch failed. Trying Supabase fallback.', err);
   }
-  return response.json();
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('delivery_partners')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(partner => ({
+        ...partner,
+        _id: partner.id,
+        vehicleNumber: partner.vehicle_number,
+        activeOrders: partner.active_orders,
+      }));
+    } catch (err) {
+      console.warn('Supabase fallback for delivery partners failed:', err);
+    }
+  }
+
+  console.warn('Continuing without delivery partners.');
+  return [];
 }
 
 export async function addDeliveryPartner(partnerData: any) {
