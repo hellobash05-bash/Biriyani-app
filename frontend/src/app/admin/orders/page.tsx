@@ -301,8 +301,16 @@ export default function AdminOrders() {
   }, []);
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
+    if (newStatus === 'Out for Delivery') {
+      const order = orders.find(o => (o._id || o.id) === orderId);
+      if (order) {
+        setAssigningOrder(order);
+        return;
+      }
+    }
+
     try {
-      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+      setOrders(prev => prev.map(o => (o._id === orderId || o.id === orderId) ? { ...o, status: newStatus } : o));
       await updateOrderStatus(orderId, newStatus);
       toast.success(`Status changed to ${newStatus}`);
     } catch (err) {
@@ -316,11 +324,16 @@ export default function AdminOrders() {
     e.preventDefault();
     if (!assigningOrder || !selectedPartnerId) return;
     
-    const partner = partners.find(p => p._id === selectedPartnerId);
-    if (!partner) return;
+    const partner = partners.find(p => (p._id === selectedPartnerId || p.id === selectedPartnerId));
+    if (!partner) {
+      toast.error('Partner not found');
+      return;
+    }
+
+    const orderId = assigningOrder._id || assigningOrder.id;
 
     try {
-      await assignDeliveryPartner(assigningOrder._id, {
+      await assignDeliveryPartner(orderId, {
         name: partner.name,
         phone: partner.phone,
         vehicleNumber: partner.vehicleNumber
@@ -328,9 +341,10 @@ export default function AdminOrders() {
       
       setAssigningOrder(null);
       setSelectedPartnerId('');
-      toast.success(`Assigned to ${partner.name}`);
+      toast.success(`Order assigned to ${partner.name} and is Out for Delivery!`);
       loadData();
     } catch (err) {
+      console.error('Assignment error:', err);
       toast.error('Failed to assign partner');
     }
   };
@@ -564,13 +578,13 @@ export default function AdminOrders() {
                            {order.status === 'Pending' ? (
                              <div className="grid grid-cols-2 gap-2">
                                <button 
-                                 onClick={() => handleStatusChange(order._id, 'Preparing')}
+                                 onClick={() => handleStatusChange(order._id || order.id, 'Preparing')}
                                  className="bg-green-600 text-white h-11 md:h-14 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] shadow-lg shadow-green-600/10 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
                                >
                                  <CircleCheckBig size={14} /> Accept
                                </button>
                                <button 
-                                 onClick={() => handleStatusChange(order._id, 'Cancelled')}
+                                 onClick={() => handleStatusChange(order._id || order.id, 'Cancelled')}
                                  className="bg-red-600 text-white h-11 md:h-14 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] shadow-lg shadow-red-600/10 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
                                >
                                  <CircleX size={14} /> Deny
@@ -581,7 +595,7 @@ export default function AdminOrders() {
                                {STATUS_OPTIONS.filter(s => s !== order.status).slice(0, 4).map(status => (
                                  <button
                                    key={status}
-                                   onClick={() => handleStatusChange(order._id, status)}
+                                   onClick={() => handleStatusChange(order._id || order.id, status)}
                                    className="h-9 md:h-11 px-2 rounded-lg md:rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer bg-background text-foreground/50 border border-glass-border hover:bg-orange-600 hover:text-white"
                                  >
                                    {status}
@@ -625,6 +639,89 @@ export default function AdminOrders() {
           </div>
         )}
       </div>
+
+      {/* Assignment Modal */}
+      <AnimatePresence>
+        {assigningOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-lg bg-background border border-glass-border rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 md:p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter text-foreground">Assign Runner</h2>
+                    <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">Order #{(assigningOrder._id || assigningOrder.id).toString().slice(-6)}</p>
+                  </div>
+                  <button 
+                    onClick={() => setAssigningOrder(null)}
+                    className="w-10 h-10 rounded-full bg-foreground/5 flex items-center justify-center text-stone-500 hover:bg-red-500 hover:text-white transition-all"
+                  >
+                    <CircleX size={20} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleAssignPartner} className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-stone-500 px-1">Select Delivery Partner</label>
+                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {partners.length > 0 ? (
+                        partners.map((partner) => (
+                          <div 
+                            key={partner._id || partner.id}
+                            onClick={() => setSelectedPartnerId(partner._id || partner.id)}
+                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between group ${
+                              selectedPartnerId === (partner._id || partner.id)
+                                ? 'border-orange-600 bg-orange-600/5'
+                                : 'border-glass-border bg-foreground/[0.02] hover:border-orange-500/30'
+                            }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
+                                selectedPartnerId === (partner._id || partner.id) ? 'bg-orange-600 text-white' : 'bg-background text-stone-400 group-hover:text-orange-600'
+                              }`}>
+                                <Bike size={24} />
+                              </div>
+                              <div>
+                                <p className="font-black text-foreground uppercase tracking-tight">{partner.name}</p>
+                                <p className="text-[10px] font-bold text-stone-500">{partner.vehicleNumber} • {partner.phone}</p>
+                              </div>
+                            </div>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              selectedPartnerId === (partner._id || partner.id) ? 'border-orange-600 bg-orange-600' : 'border-glass-border'
+                            }`}>
+                              {selectedPartnerId === (partner._id || partner.id) && <CircleCheckBig size={14} className="text-white" />}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-10 text-center border-2 border-dashed border-glass-border rounded-2xl">
+                          <p className="text-xs font-bold text-stone-500 uppercase tracking-widest">No active partners found</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!selectedPartnerId}
+                    className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all flex items-center justify-center gap-2 ${
+                      selectedPartnerId 
+                        ? 'bg-orange-600 text-white hover:scale-[1.02] active:scale-95' 
+                        : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                    }`}
+                  >
+                    Confirm Assignment
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
