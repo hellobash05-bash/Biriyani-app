@@ -28,8 +28,8 @@ export default function CheckoutPage() {
     }
   }, [user, authLoading, router, setIsCartOpen]);
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePlaceOrder = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
     if (!selectedAddress) {
       toast.error('Select a delivery vault');
       return;
@@ -106,7 +106,7 @@ export default function CheckoutPage() {
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest italic">Secure your royale selection</p>
         </motion.header>
 
-        <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Main Content */}
           <div className="lg:col-span-8 flex flex-col gap-10">
             <section className="space-y-6">
@@ -199,7 +199,8 @@ export default function CheckoutPage() {
                 <motion.button 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  type="submit"
+                  type="button"
+                  onClick={handlePlaceOrder}
                   disabled={loading || cart.length === 0}
                   className="w-full bg-foreground text-background py-4 rounded-md font-bold uppercase tracking-widest text-[11px] shadow-lg hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-50 flex items-center justify-center gap-2 group"
                 >
@@ -209,7 +210,7 @@ export default function CheckoutPage() {
               </div>
             </div>
           </aside>
-        </form>
+        </div>
       </main>
 
       <BottomNav />

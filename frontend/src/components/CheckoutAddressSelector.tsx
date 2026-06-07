@@ -114,6 +114,8 @@ export default function CheckoutAddressSelector({
           return cachedAddresses;
         }
 
+        // If truly no addresses, show the form automatically to help the user
+        setShowForm(true);
         return [];
       });
     } catch (error: any) {
