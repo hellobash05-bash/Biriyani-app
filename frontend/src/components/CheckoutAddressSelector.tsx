@@ -163,13 +163,15 @@ export default function CheckoutAddressSelector({
     playSound('success');
     setShowForm(false);
     setEditingAddress(null);
+    setActiveLabel(null); // Ensure the new address is visible by showing all
     
     if (newAddress) {
       console.log('>>> [CHECKOUT] ADDRESS SAVED, SELECTING:', newAddress.id || newAddress._id);
       
+      const addrId = newAddress.id || newAddress._id;
+      
       // 1. Optimistic UI update - Put the new/updated address at the top
       setAddresses(prev => {
-        const addrId = newAddress.id || newAddress._id;
         const filtered = prev.filter(a => (a.id || a._id) !== addrId);
         const next = [newAddress, ...filtered];
         writeCachedAddresses(next);
@@ -179,12 +181,23 @@ export default function CheckoutAddressSelector({
       // 2. Explicitly select this address for the checkout
       onAddressSelect(newAddress);
       
-      // 3. Silent refresh in background, but with a delay to let state settle
+      // 3. Silent refresh in background
       setTimeout(() => loadAddresses(true), 1500);
     } else {
       loadAddresses(true);
     }
   };
+
+  // Sync selected address data if the underlying list changes (e.g. after refresh)
+  useEffect(() => {
+    if (selectedAddressId && addresses.length > 0) {
+      const currentSelected = addresses.find(a => (a.id || a._id) === selectedAddressId);
+      if (currentSelected) {
+        // console.log('>>> [CHECKOUT] SYNCING SELECTED ADDRESS DATA');
+        onAddressSelect(currentSelected);
+      }
+    }
+  }, [addresses, selectedAddressId, onAddressSelect]);
 
   const handleFormCancel = () => {
     playSound('click');
