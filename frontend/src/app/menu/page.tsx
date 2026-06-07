@@ -43,6 +43,15 @@ export default function MenuPage() {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [ratings, setRatings] = useState<Record<string, { average: number; total: number }>>({});
   const { addToCart, itemCount, total, setIsCartOpen, isCartOpen, cart } = useCart();
+  
+  // Local state for favorites to provide instant feedback
+  const [localFavorites, setLocalFavorites] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (profile?.favorites) {
+      setLocalFavorites(profile.favorites.map((f: any) => f._id || f));
+    }
+  }, [profile?.favorites]);
 
   const handleSaveProject = async (projectInfo: { name: string; description: string }) => {
     if (!user) return;
@@ -73,15 +82,38 @@ export default function MenuPage() {
     e.preventDefault();
     e.stopPropagation();
     playSound('pop');
+    
     if (!user?.email) {
-      toast.error('Please login');
+      toast.error('Please login to save favorites');
       return;
     }
+
+    // Optimistic Update
+    const isCurrentlyFav = localFavorites.includes(foodId);
+    if (isCurrentlyFav) {
+      setLocalFavorites(prev => prev.filter(id => id !== foodId));
+    } else {
+      setLocalFavorites(prev => [...prev, foodId]);
+    }
+
     try {
-      await toggleFavorite(user.email, foodId);
+      const res = await toggleFavorite(user.email, foodId);
+      // Wait for backend then sync profile to be safe
       await refreshProfile();
+      
+      if (res.action === 'added') {
+        toast.success('Added to Wishlist!', { icon: '🤍' });
+      } else {
+        toast('Removed from Wishlist', { icon: '💔' });
+      }
     } catch (err) {
-      toast.error('Update failed');
+      // Revert on error
+      if (isCurrentlyFav) {
+        setLocalFavorites(prev => [...prev, foodId]);
+      } else {
+        setLocalFavorites(prev => prev.filter(id => id !== foodId));
+      }
+      toast.error('Update failed. Please try again.');
     }
   };
 
@@ -96,7 +128,7 @@ export default function MenuPage() {
   };
 
   const isFavorite = (foodId: string) => {
-    return profile?.favorites?.some((fav: any) => (fav._id || fav) === foodId);
+    return localFavorites.includes(foodId);
   };
 
   useEffect(() => {

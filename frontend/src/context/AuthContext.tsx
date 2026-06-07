@@ -52,23 +52,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     } catch (error: any) {
       console.error('--- AUTH: SYNC ERROR ---', error);
-      try {
-        // Fallback: Fetch profile by UID if sync fails
-        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/profile`);
-        url.searchParams.append('uid', firebaseUser.uid);
-        if (firebaseUser.email) url.searchParams.append('email', firebaseUser.email);
-        
-        const response = await fetch(url.toString());
-        if (response.ok) {
-          const profileData = await response.json();
-          setProfile(profileData);
-        } else {
-          setProfile(null);
-        }
-      } catch (fetchError) {
-        console.error('--- AUTH: FALLBACK FETCH FAILED ---', fetchError);
+      await fetchOnlyProfile(firebaseUser);
+    }
+  };
+
+  const fetchOnlyProfile = async (firebaseUser: FirebaseUser) => {
+    try {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/profile`);
+      url.searchParams.append('uid', firebaseUser.uid);
+      if (firebaseUser.email) url.searchParams.append('email', firebaseUser.email);
+      
+      const response = await fetch(url.toString());
+      if (response.ok) {
+        const profileData = await response.json();
+        setProfile(profileData);
+      } else {
         setProfile(null);
       }
+    } catch (fetchError) {
+      console.error('--- AUTH: FETCH PROFILE FAILED ---', fetchError);
+      setProfile(null);
     }
   };
 
@@ -125,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchUserProfile(user);
+      await fetchOnlyProfile(user);
     }
   };
 
