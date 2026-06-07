@@ -63,21 +63,24 @@ const formatOrderFromDatabase = (data: any) => ({
 
 // Helper to ensure path is robust
 const getCleanUrl = (path: string) => {
-  const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  let base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
   
-  // CRITICAL: DO NOT lowercase the path anymore, as IDs are case-sensitive
+  // Ensure base includes /api if it's pointing to our backend
+  // This is a safety measure in case NEXT_PUBLIC_API_URL is set without the /api suffix
+  if (!base.toLowerCase().endsWith('/api') && !path.startsWith('/health')) {
+    base = `${base}/api`;
+  }
+
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   
-  // Prevent /api/api duplication if base already includes it and path starts with it
+  // Prevent /api/api duplication
   let finalUrl = `${base}${cleanPath}`;
-  
-  // If base is https://.../api and path is /api/users... -> https://.../api/users...
   if (base.toLowerCase().endsWith('/api') && cleanPath.toLowerCase().startsWith('/api/')) {
     finalUrl = `${base.slice(0, -4)}${cleanPath}`;
   }
 
   if (typeof window !== 'undefined') {
-    console.log('>>> [API URL] Final:', finalUrl);
+    // console.log('>>> [API URL] Final:', finalUrl);
   }
   return finalUrl;
 };

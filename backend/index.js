@@ -514,7 +514,13 @@ apiRouter.get('/admin/reviews', async (req, res) => {
 app.use('/api', apiRouter);
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use((req, res) => {
-  res.status(404).json({ message: 'Not Found', method: req.method, url: req.url });
+  console.warn(`⚠️ [404] ${req.method} ${req.url} - Not Found`);
+  res.status(404).json({ 
+    message: 'Not Found', 
+    method: req.method, 
+    url: req.url,
+    suggestion: 'Ensure your API calls are prefixed with /api'
+  });
 });
 
 httpServer.listen(process.env.PORT || 5000, () => {
