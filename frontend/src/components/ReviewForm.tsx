@@ -28,15 +28,21 @@ export default function ReviewForm({ orderId, foodItem, onSuccess }: ReviewFormP
       toast.error('Please select a rating');
       return;
     }
-    if (!user || !profile) return;
+    
+    if (!user || !profile) {
+      toast.error('Identity not verified. Please refresh the page.');
+      return;
+    }
 
     setLoading(true);
     try {
+      const foodId = foodItem.foodId || (foodItem as any).food_id;
+      
       await submitReview({
         userId: profile._id,
         userName: profile.name || user.displayName || 'Royale Member',
-        foodId: foodItem.foodId,
-        foodName: foodItem.name, // Fallback for name-based lookup in backend
+        foodId: foodId,
+        foodName: foodItem.name, 
         orderId,
         rating,
         comment

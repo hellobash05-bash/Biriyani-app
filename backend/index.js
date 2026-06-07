@@ -430,6 +430,87 @@ apiRouter.post('/users/profile/upload', upload.single('image'), async (req, res)
   } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
+// --- REVIEWS ---
+apiRouter.post('/reviews', async (req, res) => {
+  const { userId, userName, foodId, foodName, orderId, rating, comment } = req.body;
+  try {
+    let finalFoodId = foodId;
+    
+    // Fallback: If foodId is missing but foodName is provided, try to find the menu item
+    if (!finalFoodId && foodName) {
+      const { data: food } = await req.supabase
+        .from('menu_items')
+        .select('id')
+        .ilike('name', foodName)
+        .maybeSingle();
+      if (food) finalFoodId = food.id;
+    }
+
+    if (!finalFoodId) {
+      return res.status(400).json({ message: 'Missing food identification' });
+    }
+
+    const { data, error } = await req.supabase.from('reviews').insert([{
+      user_id: userId,
+      user_name: userName,
+      food_id: finalFoodId,
+      order_id: orderId,
+      rating,
+      comment
+    }]).select('*, menu_items(name)').single();
+    
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        return res.status(400).json({ message: 'You have already reviewed this item for this order.' });
+      }
+      throw error;
+    }
+
+    const formattedReview = {
+      ...data,
+      _id: data.id,
+      createdAt: data.created_at,
+      foodId: data.menu_items ? { name: data.menu_items.name } : { name: foodName || 'Royale Dish' }
+    };
+    
+    // Broadcast to admin dashboard
+    io.emit('newReview', formattedReview);
+    
+    res.status(201).json(formattedReview);
+  } catch (err) { 
+    console.error('>>> [REVIEWS ERROR]:', err.message);
+    res.status(500).json({ message: err.message }); 
+  }
+});
+
+apiRouter.get('/reviews/:foodId', async (req, res) => {
+  try {
+    const { data, error } = await req.supabase
+      .from('reviews')
+      .select('*')
+      .eq('food_id', req.params.foodId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data.map(r => ({ ...r, _id: r.id, createdAt: r.created_at })));
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+apiRouter.get('/admin/reviews', async (req, res) => {
+  try {
+    const { data, error } = await req.supabase
+      .from('reviews')
+      .select('*, menu_items(name)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data.map(r => ({
+      ...r,
+      _id: r.id,
+      createdAt: r.created_at,
+      foodId: r.menu_items ? { name: r.menu_items.name } : null
+    })));
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 app.use('/api', apiRouter);
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use((req, res) => {

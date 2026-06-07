@@ -400,14 +400,13 @@ export async function fetchAnalytics() {
 }
 
 export async function fetchAddresses(email: string | null | undefined, uid?: string, profileId?: string) {
-  let url = `${API_BASE_URL.replace(/\/$/, '')}/address?`;
   const params = new URLSearchParams();
   if (email) params.append('email', email);
   if (uid) params.append('uid', uid);
   if (profileId) params.append('profileId', profileId);
   params.append('t', Date.now().toString());
   
-  url += params.toString();
+  const url = getCleanUrl(`/address?${params.toString()}`);
   
   console.log('>>> [API] FETCHING ADDRESSES:', url);
   
@@ -465,7 +464,7 @@ export async function fetchAddresses(email: string | null | undefined, uid?: str
 }
 
 export async function addAddress(email: string | null | undefined, addressData: any, uid?: string) {
-  const url = `${API_BASE_URL.replace(/\/$/, '')}/address`;
+  const url = getCleanUrl('/address');
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -479,7 +478,7 @@ export async function addAddress(email: string | null | undefined, addressData: 
 }
 
 export async function updateAddress(id: string, email: string | null | undefined, addressData: any, uid?: string) {
-  const url = `${API_BASE_URL.replace(/\/$/, '')}/address/${id}`;
+  const url = getCleanUrl(`/address/${id}`);
   const response = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -493,7 +492,7 @@ export async function updateAddress(id: string, email: string | null | undefined
 }
 
 export async function updateProfile(uid: string, profileData: any) {
-  const url = `${API_BASE_URL.replace(/\/$/, '')}/users/profile`;
+  const url = getCleanUrl('/users/profile');
   const response = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -507,7 +506,7 @@ export async function updateProfile(uid: string, profileData: any) {
 }
 
 export async function uploadProfileImage(uid: string, file: File) {
-  const url = `${API_BASE_URL.replace(/\/$/, '')}/users/profile/upload`;
+  const url = getCleanUrl('/users/profile/upload');
   const formData = new FormData();
   formData.append('uid', uid);
   formData.append('image', file);
@@ -526,13 +525,11 @@ export async function deleteAddress(id: string, email: string | null | undefined
   // Ensure we have a clean ID
   if (!id) throw new Error('Cannot delete: Missing address ID');
 
-  // Use a simple, absolute path construction
-  const cleanId = id.trim();
-  let url = `${API_BASE_URL.replace(/\/$/, '')}/address/${cleanId}?`;
   const params = new URLSearchParams();
   if (email) params.append('email', email);
   if (uid) params.append('uid', uid);
-  url += params.toString();
+  
+  const url = getCleanUrl(`/address/${id.trim()}?${params.toString()}`);
 
   console.log('>>> [API DELETE] Target URL:', url);
 
@@ -561,7 +558,7 @@ export async function deleteAddress(id: string, email: string | null | undefined
 
 export async function updateOrderStatus(orderId: string, status: string) {
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
+    const response = await fetch(getCleanUrl(`/admin/orders/${orderId}/status`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
@@ -618,7 +615,7 @@ export async function assignDeliveryPartner(orderId: string, partner: { name: st
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
+    const response = await fetch(getCleanUrl(`/admin/orders/${orderId}/status`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -672,7 +669,7 @@ export async function assignDeliveryPartner(orderId: string, partner: { name: st
 }
 
 export async function cancelOrder(orderId: string) {
-  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+  const response = await fetch(getCleanUrl(`/orders/${orderId}/cancel`), {
     method: 'PATCH',
   });
   if (!response.ok) {
@@ -691,7 +688,7 @@ export async function submitReview(reviewData: {
   rating: number;
   comment: string;
 }) {
-  const response = await fetch(`${API_BASE_URL}/reviews`, {
+  const response = await fetch(getCleanUrl('/reviews'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reviewData),
@@ -714,13 +711,13 @@ export async function submitReview(reviewData: {
 }
 
 export async function fetchReviews(foodId: string) {
-  const response = await fetch(`${API_BASE_URL}/reviews/${foodId}`);
+  const response = await fetch(getCleanUrl(`/reviews/${foodId}`));
   if (!response.ok) throw new Error('Failed to fetch reviews');
   return response.json();
 }
 
 export async function toggleFavorite(email: string, foodId: string) {
-  const response = await fetch(`${API_BASE_URL}/users/favorites/toggle`, {
+  const response = await fetch(getCleanUrl('/users/favorites/toggle'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, foodId }),
