@@ -495,6 +495,46 @@ apiRouter.get('/reviews/:foodId', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+apiRouter.post('/users/favorites/toggle', async (req, res) => {
+  const { email, foodId } = req.body;
+  if (!email || !foodId) return res.status(400).json({ message: 'Missing email or foodId' });
+
+  try {
+    const identities = await resolveAllUserIds(req.supabase, email);
+    if (identities.length === 0) return res.status(404).json({ message: 'User not found' });
+    const userId = identities[0].id;
+
+    // Check if already favorite
+    const { data: existing } = await req.supabase
+      .from('user_favorites')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('menu_item_id', foodId)
+      .maybeSingle();
+
+    if (existing) {
+      // Remove from favorites
+      const { error: deleteError } = await req.supabase
+        .from('user_favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('menu_item_id', foodId);
+      if (deleteError) throw deleteError;
+      res.json({ success: true, action: 'removed' });
+    } else {
+      // Add to favorites
+      const { error: insertError } = await req.supabase
+        .from('user_favorites')
+        .insert([{ user_id: userId, menu_item_id: foodId }]);
+      if (insertError) throw insertError;
+      res.json({ success: true, action: 'added' });
+    }
+  } catch (err) {
+    console.error('>>> [FAVORITES TOGGLE ERROR]:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 apiRouter.get('/admin/reviews', async (req, res) => {
   try {
     const { data, error } = await req.supabase
