@@ -232,13 +232,46 @@ apiRouter.post('/admin/menu', async (req, res) => {
 
 apiRouter.patch('/admin/menu/:id', async (req, res) => {
   try {
-    const { data, error } = await req.supabase.from('menu_items').update({
+    // 1. Fetch current item to compare price
+    const { data: oldItem } = await req.supabase.from('menu_items').select('price, name').eq('id', req.params.id).single();
+    
+    // 2. Perform update
+    const { data: item, error } = await req.supabase.from('menu_items').update({
       name: req.body.name, description: req.body.description, price: req.body.price,
       offer_price: req.body.offerPrice, discount_percentage: req.body.discountPercentage,
       category: req.body.category, image: req.body.image, is_available: req.body.isAvailable
     }).eq('id', req.params.id).select().single();
+    
     if (error) throw error;
-    res.json({ ...data, _id: data.id });
+
+    // 3. If price dropped, notify users who favorited it
+    const newPrice = Number(req.body.price);
+    const oldPrice = oldItem ? Number(oldItem.price) : 0;
+
+    if (oldItem && newPrice < oldPrice) {
+      console.log(`🔔 [PRICE DROP] ${oldItem.name}: ${oldPrice} -> ${newPrice}. Notifying fans...`);
+      
+      // Find all user IDs who have this as favorite
+      const { data: favorites } = await req.supabase
+        .from('user_favorites')
+        .select('user_id')
+        .eq('menu_item_id', req.params.id);
+
+      if (favorites && favorites.length > 0) {
+        const userIds = favorites.map(f => f.user_id);
+        const notifications = userIds.map(uid => ({
+          user_id: uid,
+          title: '🔥 Price Drop Alert!',
+          message: `Good news! Your favorite "${oldItem.name}" is now cheaper at ₹${newPrice}! Grab it while it's hot!`,
+          type: 'promotion',
+          related_id: req.params.id
+        }));
+
+        await req.supabase.from('notifications').insert(notifications);
+      }
+    }
+
+    res.json({ ...item, _id: item.id });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
@@ -406,7 +439,17 @@ apiRouter.post('/users/sync', async (req, res) => {
     const normalizedEmail = email ? email.toLowerCase().trim() : null;
     const { data: user, error } = await req.supabase.from('users').upsert({ uid, name, email: normalizedEmail, photo_url: photoURL, phone, last_login: new Date().toISOString() }, { onConflict: 'uid' }).select().single();
     if (error) throw error;
-    res.json({ ...user, _id: user.id });
+    
+    // Fetch full profile including favorites and addresses after sync
+    const { data: fullUser } = await req.supabase.from('users').select('*, user_favorites(menu_item_id)').eq('id', user.id).single();
+    const addresses = await getFormattedAddresses(req.supabase, fullUser.email, fullUser.uid);
+    
+    res.json({ 
+      ...fullUser, 
+      _id: fullUser.id, 
+      addresses: addresses || [], 
+      favorites: fullUser.user_favorites?.map(f => f.menu_item_id) || [] 
+    });
   } catch (error) { res.status(500).json({ message: error.message }); }
 });
 

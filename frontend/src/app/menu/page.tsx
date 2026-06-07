@@ -288,7 +288,7 @@ export default function MenuPage() {
                           onClick={(e) => handleToggleFavorite(e, item._id)}
                           className="absolute left-4 top-4 w-9 h-9 flex items-center justify-center rounded-md border border-white/20 bg-black/40 text-white backdrop-blur-md hover:bg-primary transition-all"
                         >
-                          <Heart size={16} fill={isFavorite(item._id) ? '#ef4444' : 'none'} className={isFavorite(item._id) ? 'text-red-500' : 'text-white'} />
+                          <Heart size={16} fill={isFavorite(item._id) ? 'white' : 'none'} className="text-white" />
                         </motion.button>
 
                         {item.offerPrice && (
