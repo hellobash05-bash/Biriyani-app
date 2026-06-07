@@ -594,6 +594,39 @@ apiRouter.get('/admin/reviews', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// --- NOTIFICATIONS ---
+apiRouter.get('/notifications/:userId', async (req, res) => {
+  try {
+    const { data, error } = await req.supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', req.params.userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('>>> [NOTIFICATIONS GET ERROR]:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+apiRouter.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    const { error } = await req.supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', req.params.id);
+    
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    console.error('>>> [NOTIFICATIONS READ ERROR]:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 app.use('/api', apiRouter);
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use((req, res) => {
