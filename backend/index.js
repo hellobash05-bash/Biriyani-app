@@ -194,6 +194,21 @@ apiRouter.post('/address', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+apiRouter.put('/address/:id', async (req, res) => {
+  const { email, uid, label, name, phone, house, street, city, pincode, detail, isDefault } = req.body;
+  const identities = await resolveAllUserIds(req.supabase, email, uid);
+  if (identities.length === 0) return res.status(404).json({ message: 'User not found' });
+  const primaryId = identities[0].id;
+  try {
+    if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
+    const { data, error } = await req.supabase.from('addresses').update({
+      label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault
+    }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 apiRouter.delete('/address/:id', async (req, res) => {
   try {
     const { error } = await req.supabase.from('addresses').delete().eq('id', req.params.id);
