@@ -165,24 +165,25 @@ export default function CheckoutAddressSelector({
     setEditingAddress(null);
     
     if (newAddress) {
-      // Optimistic add/update
-      if (editingAddress) {
-        setAddresses(prev => {
-          const next = prev.map(a => (a.id === newAddress.id || a._id === newAddress._id) ? newAddress : a);
-          writeCachedAddresses(next);
-          return next;
-        });
-      } else {
-        setAddresses(prev => {
-          const next = [newAddress, ...prev];
-          writeCachedAddresses(next);
-          return next;
-        });
-      }
+      console.log('>>> [CHECKOUT] ADDRESS SAVED, SELECTING:', newAddress.id || newAddress._id);
+      
+      // 1. Optimistic UI update - Put the new/updated address at the top
+      setAddresses(prev => {
+        const addrId = newAddress.id || newAddress._id;
+        const filtered = prev.filter(a => (a.id || a._id) !== addrId);
+        const next = [newAddress, ...filtered];
+        writeCachedAddresses(next);
+        return next;
+      });
+
+      // 2. Explicitly select this address for the checkout
       onAddressSelect(newAddress);
+      
+      // 3. Silent refresh in background, but with a delay to let state settle
+      setTimeout(() => loadAddresses(true), 1500);
+    } else {
+      loadAddresses(true);
     }
-    
-    loadAddresses(true); // Silent refresh
   };
 
   const handleFormCancel = () => {
