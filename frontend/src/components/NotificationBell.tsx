@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications } from '@/context/NotificationContext';
 import { playSound } from '@/lib/sounds';
 
-export function NotificationBell() {
+export const NotificationBell = React.memo(function NotificationBell() {
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -102,4 +102,4 @@ export function NotificationBell() {
       </AnimatePresence>
     </div>
   );
-}
+});

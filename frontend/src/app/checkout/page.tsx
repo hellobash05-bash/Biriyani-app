@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -27,6 +27,11 @@ export default function CheckoutPage() {
       router.push('/login');
     }
   }, [user, authLoading, router, setIsCartOpen]);
+
+  const handleAddressSelect = useCallback((addr: any) => {
+    playSound('pop');
+    setSelectedAddress(addr);
+  }, []);
 
   const handlePlaceOrder = async (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault();
@@ -119,10 +124,7 @@ export default function CheckoutPage() {
 
               <div className="bg-card border border-border rounded-md p-6 md:p-8">
                 <CheckoutAddressSelector
-                  onAddressSelect={(addr) => {
-                    playSound('pop');
-                    setSelectedAddress(addr);
-                  }}
+                  onAddressSelect={handleAddressSelect}
                   selectedAddressId={selectedAddress?.id || selectedAddress?._id}
                 />
               </div>
@@ -217,4 +219,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-

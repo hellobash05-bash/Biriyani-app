@@ -47,7 +47,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
   };
 
-  const refreshNotifications = async () => {
+  const refreshNotifications = React.useCallback(async () => {
     if (profile?._id) {
       try {
         const data = await fetchNotifications(profile._id);
@@ -64,11 +64,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         console.error('Failed to fetch notifications:', err);
       }
     }
-  };
+  }, [profile?._id]);
 
   useEffect(() => {
     refreshNotifications();
-  }, [profile?._id]);
+  }, [refreshNotifications]);
 
   useEffect(() => {
     if (!profile?._id || !supabase) return;
@@ -130,7 +130,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
   }, [profile?._id]);
 
-  const markAsRead = async (id: string) => {
+  const markAsRead = React.useCallback(async (id: string) => {
     try {
       await markNotificationAsRead(id);
       setNotifications(prev => 
@@ -139,12 +139,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (err) {
       console.error('Failed to mark as read:', err);
     }
-  };
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const value = React.useMemo(() => ({ 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    refreshNotifications 
+  }), [notifications, unreadCount, markAsRead, refreshNotifications]);
+
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, refreshNotifications }}>
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );

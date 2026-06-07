@@ -141,17 +141,24 @@ export default function MenuPage() {
         }
         setMenuItems(data);
 
-        data.forEach(async (item: any) => {
+        // Batch rating updates
+        const ratingsPromises = data.map(async (item: any) => {
           try {
             const reviewData = await fetchReviews(item._id);
-            setRatings(prev => ({
-              ...prev,
-              [item._id]: { average: reviewData.averageRating, total: reviewData.totalReviews }
-            }));
+            return { id: item._id, average: reviewData.averageRating, total: reviewData.totalReviews };
           } catch (e) {
             console.error('Rating failed', item.name);
+            return null;
           }
         });
+
+        const results = await Promise.all(ratingsPromises);
+        const newRatings: Record<string, { average: number; total: number }> = {};
+        results.forEach(res => {
+          if (res) newRatings[res.id] = { average: res.average, total: res.total };
+        });
+        setRatings(newRatings);
+        
       } catch (err) {
         console.error('Menu load failed');
       } finally {

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { MapPin, Phone, PenLine, Trash2, CircleCheckBig, Home, Briefcase, Navigation, Info, Sparkles, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -12,7 +13,7 @@ interface AddressCardProps {
   showDeliverHere?: boolean;
 }
 
-export default function AddressCard({
+function AddressCard({
   address,
   onEdit,
   onDelete,
@@ -166,3 +167,4 @@ export default function AddressCard({
   );
 }
 
+export default memo(AddressCard);

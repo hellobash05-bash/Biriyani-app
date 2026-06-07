@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Star, ArrowRight } from 'lucide-react';
 import { playSound } from '@/lib/sounds';
@@ -12,7 +13,7 @@ interface RestaurantCardProps {
   cuisine: string[];
 }
 
-export default function RestaurantCard({ name, description, type, rating, cuisine }: RestaurantCardProps) {
+function RestaurantCard({ name, description, type, rating, cuisine }: RestaurantCardProps) {
   const handleOrderClick = () => {
     playSound('cart');
   };
@@ -114,4 +115,4 @@ function UtensilsIcon() {
   );
 }
 
-
+export default memo(RestaurantCard);

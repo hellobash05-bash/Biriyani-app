@@ -61,7 +61,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('biriyani_cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (item: any) => {
+  const addToCart = React.useCallback((item: any) => {
     playSound(CART_ADD_SOUND);
     setCart((prev) => {
       const existing = prev.find((i) => i._id === item._id);
@@ -81,14 +81,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         quantity: 1 
       }];
     });
-  };
+  }, []);
 
-  const removeFromCart = (itemId: string) => {
+  const removeFromCart = React.useCallback((itemId: string) => {
     playSound(CART_REMOVE_SOUND);
     setCart((prev) => prev.filter((i) => i._id !== itemId));
-  };
+  }, []);
 
-  const updateQuantity = (itemId: string, delta: number) => {
+  const updateQuantity = React.useCallback((itemId: string, delta: number) => {
     if (delta > 0) playSound(CART_ADD_SOUND);
     else playSound(CART_REMOVE_SOUND);
 
@@ -101,28 +101,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return i;
       }).filter((i) => i.quantity > 0)
     );
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = React.useCallback(() => {
     playSound(CART_CLEAR_SOUND);
     setCart([]);
-  };
+  }, []);
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const value = React.useMemo(() => ({ 
+    cart, 
+    addToCart, 
+    removeFromCart, 
+    updateQuantity, 
+    clearCart, 
+    total, 
+    itemCount,
+    isCartOpen,
+    setIsCartOpen
+  }), [cart, isCartOpen, total, itemCount]);
+
   return (
-    <CartContext.Provider value={{ 
-      cart, 
-      addToCart, 
-      removeFromCart, 
-      updateQuantity, 
-      clearCart, 
-      total, 
-      itemCount,
-      isCartOpen,
-      setIsCartOpen
-    }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

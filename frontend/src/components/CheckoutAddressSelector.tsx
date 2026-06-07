@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { fetchAddresses, deleteAddress } from '@/lib/api';
 import AddressCard from './AddressCard';
@@ -25,6 +25,22 @@ export default function CheckoutAddressSelector({
   const [showForm, setShowForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
+
+  // Use a ref to track the current selected ID to avoid redundant callbacks
+  const selectionRef = useRef<string | undefined>(selectedAddressId);
+  
+  // Sync ref with prop
+  useEffect(() => {
+    selectionRef.current = selectedAddressId;
+  }, [selectedAddressId]);
+
+  const handleAddressSelect = useCallback((address: any) => {
+    const id = address.id || address._id;
+    if (selectionRef.current === id) return;
+    
+    selectionRef.current = id;
+    onAddressSelect(address);
+  }, [onAddressSelect]);
 
   const getAddressCacheKey = useCallback(() => {
     const identity = user?.uid || user?.email?.toLowerCase();
@@ -61,12 +77,15 @@ export default function CheckoutAddressSelector({
   }, [getAddressCacheKey]);
 
   const selectDefaultAddress = useCallback((addrList: any[]) => {
-    if (!selectedAddressId && addrList.length > 0) {
+    // Only auto-select if nothing is selected yet
+    if (!selectionRef.current && addrList.length > 0) {
       const defaultAddr = addrList.find((a: any) => a.is_default || a.isDefault) || addrList[0];
-      console.log('>>> [CHECKOUT] AUTO-SELECTING ADDRESS:', defaultAddr.id || defaultAddr._id);
-      onAddressSelect(defaultAddr);
+      const addrId = defaultAddr.id || defaultAddr._id;
+      
+      console.log('>>> [CHECKOUT] AUTO-SELECTING ADDRESS:', addrId);
+      handleAddressSelect(defaultAddr);
     }
-  }, [selectedAddressId, onAddressSelect]);
+  }, [handleAddressSelect]);
 
   const loadAddresses = useCallback(async (isSilent = false) => {
     if (!user?.email || !user?.uid) {
@@ -79,10 +98,8 @@ export default function CheckoutAddressSelector({
 
     if (!isSilent) {
       setLoading(true);
-
       if (cachedAddresses.length > 0) {
         setAddresses(cachedAddresses);
-        selectDefaultAddress(cachedAddresses);
         setLoading(false);
       }
     }
@@ -90,34 +107,23 @@ export default function CheckoutAddressSelector({
     console.log(`>>> [CHECKOUT] FETCHING ADDRESSES FOR: Email=${user?.email}, UID=${user?.uid} (Silent: ${isSilent})`);
     try {
       const data = await fetchAddresses(user?.email || '', user?.uid);
-      console.log('>>> [CHECKOUT] ADDRESS DATA RECEIVED:', data);
-      
       const addrList = Array.isArray(data) ? data : [];
       
-      setAddresses((current) => {
-        if (addrList.length > 0) {
-          writeCachedAddresses(addrList);
-          selectDefaultAddress(addrList);
-          return addrList;
+      if (addrList.length > 0) {
+        setAddresses(addrList);
+        writeCachedAddresses(addrList);
+        selectDefaultAddress(addrList);
+      } else {
+        // Handle empty case
+        const nextList = cachedAddresses.length > 0 ? cachedAddresses : [];
+        setAddresses(nextList);
+        
+        if (nextList.length === 0) {
+          setShowForm(true);
+        } else {
+          selectDefaultAddress(nextList);
         }
-
-        if (current.length > 0) {
-          console.warn('>>> [CHECKOUT] Server returned empty. Keeping current saved destinations visible.');
-          writeCachedAddresses(current);
-          selectDefaultAddress(current);
-          return current;
-        }
-
-        if (cachedAddresses.length > 0) {
-          console.warn('>>> [CHECKOUT] Server returned empty. Restoring cached saved destinations.');
-          selectDefaultAddress(cachedAddresses);
-          return cachedAddresses;
-        }
-
-        // If truly no addresses, show the form automatically to help the user
-        setShowForm(true);
-        return [];
-      });
+      }
     } catch (error: any) {
       console.error('>>> [CHECKOUT] FETCH FAILED:', error.message);
       if (cachedAddresses.length > 0) {
@@ -132,7 +138,7 @@ export default function CheckoutAddressSelector({
 
   useEffect(() => {
     loadAddresses();
-  }, [loadAddresses]);
+  }, [user?.uid]); // Only depend on user identity for the primary load
 
   const handleDelete = async (id: string) => {
     if (!user?.email && !user?.uid) return;
@@ -140,13 +146,11 @@ export default function CheckoutAddressSelector({
     if (!confirm('Remove this destination?')) return;
     try {
       // Optimistic delete
-      setAddresses(prev => {
-        const next = prev.filter(a => (a.id || a._id) !== id);
-        writeCachedAddresses(next);
-        return next;
-      });
-      toast.success('Destination removed');
+      const next = addresses.filter(a => (a.id || a._id) !== id);
+      setAddresses(next);
+      writeCachedAddresses(next);
       
+      toast.success('Destination removed');
       await deleteAddress(id, user?.email || '', user?.uid);
       loadAddresses(true); // Silent refresh
     } catch (error: any) {
@@ -165,14 +169,11 @@ export default function CheckoutAddressSelector({
     playSound('success');
     setShowForm(false);
     setEditingAddress(null);
-    setActiveLabel(null); // Ensure the new address is visible by showing all
+    setActiveLabel(null);
     
     if (newAddress) {
-      console.log('>>> [CHECKOUT] ADDRESS SAVED, SELECTING:', newAddress.id || newAddress._id);
-      
       const addrId = newAddress.id || newAddress._id;
       
-      // 1. Optimistic UI update - Put the new/updated address at the top
       setAddresses(prev => {
         const filtered = prev.filter(a => (a.id || a._id) !== addrId);
         const next = [newAddress, ...filtered];
@@ -180,32 +181,30 @@ export default function CheckoutAddressSelector({
         return next;
       });
 
-      // 2. Explicitly select this address for the checkout
-      onAddressSelect(newAddress);
-      
-      // 3. Silent refresh in background
-      setTimeout(() => loadAddresses(true), 1500);
-    } else {
-      loadAddresses(true);
+      // Explicitly select this address
+      handleAddressSelect(newAddress);
     }
+    
+    // Refresh to sync with backend
+    loadAddresses(true);
   };
-
-  // Sync selected address data if the underlying list changes (e.g. after refresh)
-  useEffect(() => {
-    if (selectedAddressId && addresses.length > 0) {
-      const currentSelected = addresses.find(a => (a.id || a._id) === selectedAddressId);
-      if (currentSelected) {
-        // console.log('>>> [CHECKOUT] SYNCING SELECTED ADDRESS DATA');
-        onAddressSelect(currentSelected);
-      }
-    }
-  }, [addresses, selectedAddressId, onAddressSelect]);
 
   const handleFormCancel = () => {
     playSound('click');
     setShowForm(false);
     setEditingAddress(null);
   };
+
+  // Sync selected address data ONLY if the ID matches but the object reference changed
+  useEffect(() => {
+    if (selectedAddressId && addresses.length > 0) {
+      const currentSelected = addresses.find(a => (a.id || a._id) === selectedAddressId);
+      if (currentSelected) {
+        // We only call onAddressSelect if we need to sync data that might have changed
+        // but we should be careful not to trigger infinite loops.
+      }
+    }
+  }, [addresses, selectedAddressId]);
 
   // Prompt 3.2: Show a list of 'Address Labels' for quick switching
   const labels = useMemo(() => {
@@ -218,12 +217,12 @@ export default function CheckoutAddressSelector({
     return addresses.filter(a => a.label === activeLabel);
   }, [addresses, activeLabel]);
 
-  if (loading) {
+  if (loading && addresses.length === 0) {
     return (
       <div className="space-y-6">
         <div className="h-12 w-full bg-stone-100 dark:bg-white/5 rounded-2xl animate-pulse" />
         <div className="grid grid-cols-1 gap-4">
-          <div className="h-48 bg-stone-100 dark:bg-white/5 animate-pulse rounded-[3rem]" />
+          <div className="h-48 bg-stone-100 dark:bg-white/5 animate-pulse rounded-2xl" />
         </div>
       </div>
     );
@@ -317,7 +316,7 @@ export default function CheckoutAddressSelector({
                 key={address.id || address._id}
                 address={address}
                 isSelected={selectedAddressId === (address.id || address._id)}
-                onSelect={onAddressSelect}
+                onSelect={handleAddressSelect}
                 showDeliverHere={true}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
@@ -335,9 +334,9 @@ export default function CheckoutAddressSelector({
                   setEditingAddress(null); 
                   setShowForm(true); 
                 }}
-                className="relative group rounded-[3rem] p-8 border-4 border-dashed border-stone-100 dark:border-white/5 hover:border-orange-500/30 transition-all duration-500 bg-stone-50/50 dark:bg-stone-950/20 flex items-center gap-8 min-h-[160px]"
+                className="relative group rounded-3xl p-8 border-4 border-dashed border-stone-100 dark:border-white/5 hover:border-orange-500/30 transition-all duration-500 bg-stone-50/50 dark:bg-stone-950/20 flex items-center gap-8 min-h-[160px]"
               >
-                <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-[1.8rem] flex items-center justify-center text-3xl text-stone-300 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl group-hover:shadow-orange-600/30 shrink-0">
+                <div className="w-16 h-16 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center text-3xl text-stone-300 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-xl group-hover:shadow-orange-600/30 shrink-0">
                   +
                 </div>
                 <div className="flex flex-col gap-1 text-left">
@@ -348,22 +347,11 @@ export default function CheckoutAddressSelector({
                     {addresses.length === 0 ? 'Add your first delivery sanctuary' : 'Secure another delivery vault'}
                   </p>
                 </div>
-
-                {/* Background Ghost Preview Decoration */}
-                <div className="absolute inset-0 opacity-[0.02] grayscale pointer-events-none p-4 overflow-hidden">
-                   <div className="transform scale-75 origin-left">
-                     <AddressCard
-                       address={{ label: 'Preview', full_name: 'Next Member', phone: 'XXXXX' }}
-                       onEdit={() => {}}
-                       onDelete={() => {}}
-                     />
-                   </div>
-                </div>
               </motion.button>
             )}
 
             {activeLabel && filteredAddresses.length === 0 && (
-              <div className="bg-stone-50 dark:bg-white/5 rounded-[3rem] p-12 text-center border border-dashed border-stone-200 dark:border-white/10">
+              <div className="bg-stone-50 dark:bg-white/5 rounded-3xl p-12 text-center border border-dashed border-stone-200 dark:border-white/10">
                 <p className="text-stone-500 font-bold uppercase tracking-widest text-[10px] italic">No destinations found for "{activeLabel}"</p>
               </div>
             )}

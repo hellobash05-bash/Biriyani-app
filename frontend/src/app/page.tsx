@@ -63,23 +63,21 @@ export default function Home() {
       {/* Animated Gradient Orbs */}
       <motion.div 
         animate={{ 
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
-          x: [-20, 20, -20],
-          y: [-20, 20, -20]
+          opacity: [0.2, 0.4, 0.2],
+          x: [-10, 10, -10],
+          y: [-10, 10, -10]
         }}
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        className="fixed -top-40 -left-40 w-96 h-96 bg-primary/20 blur-[120px] rounded-full -z-20"
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="fixed -top-40 -left-40 w-96 h-96 bg-primary/10 blur-[80px] rounded-full -z-20"
       />
       <motion.div 
         animate={{ 
-          scale: [1, 1.3, 1],
-          opacity: [0.2, 0.4, 0.2],
-          x: [20, -20, 20],
-          y: [20, -20, 20]
+          opacity: [0.1, 0.3, 0.1],
+          x: [10, -10, 10],
+          y: [10, -10, 10]
         }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        className="fixed -bottom-40 -right-40 w-[500px] h-[500px] bg-primary/10 blur-[150px] rounded-full -z-20"
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        className="fixed -bottom-40 -right-40 w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full -z-20"
       />
 
       <Navbar />

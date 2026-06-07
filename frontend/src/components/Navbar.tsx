@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -19,7 +19,7 @@ import {
 
 import { playSound, toggleSounds } from '@/lib/sounds';
 
-export default function Navbar() {
+const Navbar = memo(function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [soundsEnabled, setSoundsEnabled] = useState(true);
   const { user, isAdmin } = useAuth();
@@ -254,6 +254,8 @@ export default function Navbar() {
       </AnimatePresence>
     </motion.nav>
   );
-}
+});
+
+export default Navbar;
 
 

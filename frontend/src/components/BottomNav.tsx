@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Home, UtensilsCrossed, ClipboardList, User } from 'lucide-react';
@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { id: 'profile', label: 'Profile', icon: User, path: '/profile' }
 ];
 
-export default function BottomNav() {
+const BottomNav = memo(function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [active, setActive] = useState('home');
@@ -62,5 +62,7 @@ export default function BottomNav() {
       </div>
     </div>
   );
-}
+});
+
+export default BottomNav;
 

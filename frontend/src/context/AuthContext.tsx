@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAdmin();
   }, [profile, user]);
 
-  const logout = async () => {
+  const logout = React.useCallback(async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('admin_demo_mode');
     }
@@ -124,23 +124,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = React.useCallback(async () => {
     if (user) {
       await fetchOnlyProfile(user);
     }
-  };
+  }, [user]);
+
+  const value = React.useMemo(() => ({ 
+    user, 
+    profile, 
+    loading, 
+    isAdmin,
+    logout,
+    refreshProfile
+  }), [user, profile, loading, isAdmin, logout, refreshProfile]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      profile, 
-      loading, 
-      isAdmin,
-      logout,
-      refreshProfile
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
