@@ -83,17 +83,26 @@ apiRouter.get('/db-status', (req, res) => {
 
 const resolveAllUserIds = async (sb, email, uid = null) => {
   if (!email && !uid) return [];
-  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  const normalizedEmail = (email && email.trim().length > 0) ? email.toLowerCase().trim() : null;
+  const targetUid = (uid && uid.trim().length > 0) ? uid.trim() : null;
+  
+  if (!normalizedEmail && !targetUid) return [];
+
+  console.log(`>>> [IDENTITY] Resolving: Email=${normalizedEmail}, UID=${targetUid}`);
+  
   try {
     const filters = [];
-    if (uid) filters.push(`uid.eq.${uid}`);
+    if (targetUid) filters.push(`uid.eq.${targetUid}`);
     if (normalizedEmail) filters.push(`email.ilike.${normalizedEmail}`);
-    const { data: users } = await sb.from('users').select('id, uid, email').or(filters.join(','));
+    
+    const { data: users, error } = await sb.from('users').select('id, uid, email').or(filters.join(','));
+    if (error) throw error;
     
     if (!users || users.length === 0) {
       if (normalizedEmail) {
+        console.log(`>>> [IDENTITY] No user found. Creating anchor for: ${normalizedEmail}`);
         const { data: anchor, error: anchorError } = await sb.from('users').upsert({
-          uid: uid || `anchor-${Date.now()}`,
+          uid: targetUid || `anchor-${Date.now()}`,
           email: normalizedEmail,
           name: 'Royale Member',
           last_login: new Date().toISOString()
@@ -106,36 +115,46 @@ const resolveAllUserIds = async (sb, email, uid = null) => {
 
     const allUserIdentities = users.map(u => ({ id: u.id, uid: u.uid, email: u.email }));
     
-    // If we have a UID and an email, ensure they are linked in the database
-    if (uid && normalizedEmail) {
+    // Auto-sync UID to existing email record if missing
+    if (targetUid && normalizedEmail) {
        const emailUser = users.find(u => u.email && u.email.toLowerCase() === normalizedEmail.toLowerCase());
        if (emailUser && (!emailUser.uid || emailUser.uid.startsWith('anchor-'))) {
-          await sb.from('users').update({ uid }).eq('id', emailUser.id);
-          emailUser.uid = uid;
+          console.log(`>>> [IDENTITY] Syncing UID ${targetUid} to existing user ${emailUser.id}`);
+          await sb.from('users').update({ uid: targetUid }).eq('id', emailUser.id);
+          emailUser.uid = targetUid;
        }
     }
     
     return allUserIdentities;
   } catch (err) {
-    console.error('❌ [BRIDGE] Identity resolution failed:', err.message);
+    console.error('❌ [IDENTITY] Resolution failed:', err.message);
     return [];
   }
 };
 
-const ADDRESS_SELECT = 'id, user_id, firebase_uid, email, label, name, phone, house, street, city, pincode, detail, is_default, created_at';
+const formatAddressForClient = (addr) => ({
+  ...addr,
+  id: addr.id,
+  _id: addr.id,
+  isDefault: !!addr.is_default,
+  house: addr.house || addr.address_line1 || '',
+  street: addr.street || addr.address_line2 || '',
+  name: addr.name || addr.full_name || '',
+  detail: addr.detail || `${addr.house || addr.address_line1}, ${addr.street || addr.address_line2}, ${addr.city} - ${addr.pincode}`
+});
 
 const getFormattedAddresses = async (sb, email, uid = null) => {
   const identities = await resolveAllUserIds(sb, email, uid);
   const userIds = identities.map(u => u.id);
   const firebaseUids = identities.map(u => u.uid).filter(Boolean);
-  const emails = Array.from(new Set([email, ...identities.map(u => u.email)].filter(Boolean)));
+  const emails = Array.from(new Set([email, ...identities.map(u => u.email)].filter(Boolean).filter(e => e.trim().length > 0)));
   
   const uniqueMap = new Map();
   const safeFetch = async (query) => {
     try {
       const { data, error } = await query;
       if (error) {
-        if (error.code === '42703') return []; // Column doesn't exist
+        if (error.code === '42703') return [];
         throw error;
       }
       return data || [];
@@ -156,21 +175,11 @@ const getFormattedAddresses = async (sb, email, uid = null) => {
   }
   
   if (emails.length > 0) {
-    // Check if email column exists before querying
     const d3 = await safeFetch(sb.from('addresses').select('*').in('email', emails));
     d3.forEach(a => uniqueMap.set(a.id, a));
   }
 
-  return Array.from(uniqueMap.values()).map(addr => ({
-    ...addr,
-    id: addr.id,
-    _id: addr.id,
-    isDefault: !!addr.is_default,
-    house: addr.house || addr.address_line1 || '',
-    street: addr.street || addr.address_line2 || '',
-    name: addr.name || addr.full_name || '',
-    detail: addr.detail || `${addr.house || addr.address_line1}, ${addr.street || addr.address_line2}, ${addr.city} - ${addr.pincode}`
-  }));
+  return Array.from(uniqueMap.values()).map(formatAddressForClient);
 };
 
 apiRouter.get('/address', async (req, res) => {
@@ -180,32 +189,85 @@ apiRouter.get('/address', async (req, res) => {
 });
 
 apiRouter.post('/address', async (req, res) => {
-  const { email, uid, label, name, phone, house, street, city, pincode, detail, isDefault } = req.body;
-  const identities = await resolveAllUserIds(req.supabase, email, uid);
-  if (identities.length === 0) return res.status(404).json({ message: 'User not found' });
+  const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
+  
+  const normalizedEmail = (email && email.trim().length > 0) ? email.toLowerCase().trim() : null;
+  const targetUid = (uid && uid.trim().length > 0) ? uid.trim() : null;
+  
+  console.log(`>>> [ADDRESS POST] Incoming for: ${normalizedEmail || 'No Email'}, UID: ${targetUid || 'No UID'}`);
+  
+  const identities = await resolveAllUserIds(req.supabase, normalizedEmail, targetUid);
+  if (identities.length === 0) {
+    console.warn('>>> [ADDRESS POST] User identity not found for:', normalizedEmail, targetUid);
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
   const primaryId = identities[0].id;
   try {
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
-    const { data, error } = await req.supabase.from('addresses').insert([{
-      user_id: primaryId, firebase_uid: uid, email, label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault
-    }]).select().single();
-    if (error) throw error;
-    res.json(data);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+    
+    const insertObj = {
+      user_id: primaryId, 
+      firebase_uid: targetUid, 
+      email: normalizedEmail, 
+      label, 
+      name, 
+      phone, 
+      house, 
+      street, 
+      city, 
+      pincode, 
+      landmark,
+      detail, 
+      is_default: !!isDefault
+    };
+    
+    const { data, error } = await req.supabase.from('addresses').insert([insertObj]).select().single();
+    if (error) {
+      console.error('>>> [ADDRESS POST] DB Insert Error:', error.message);
+      throw error;
+    }
+    
+    const formatted = formatAddressForClient(data);
+    console.log('>>> [ADDRESS POST] Success:', formatted.id);
+    res.json(formatted);
+  } catch (err) { 
+    console.error('>>> [ADDRESS POST] Failed:', err.message);
+    res.status(500).json({ message: err.message }); 
+  }
 });
 
 apiRouter.put('/address/:id', async (req, res) => {
-  const { email, uid, label, name, phone, house, street, city, pincode, detail, isDefault } = req.body;
-  const identities = await resolveAllUserIds(req.supabase, email, uid);
+  const { email, uid, label, name, phone, house, street, city, pincode, landmark, detail, isDefault } = req.body;
+  
+  const normalizedEmail = (email && email.trim().length > 0) ? email.toLowerCase().trim() : null;
+  const targetUid = (uid && uid.trim().length > 0) ? uid.trim() : null;
+  
+  console.log(`>>> [ADDRESS PUT] Updating: ${req.params.id}`);
+  
+  const identities = await resolveAllUserIds(req.supabase, normalizedEmail, targetUid);
   if (identities.length === 0) return res.status(404).json({ message: 'User not found' });
   const primaryId = identities[0].id;
+  
   try {
     if (isDefault) await req.supabase.from('addresses').update({ is_default: false }).eq('user_id', primaryId);
-    const { data, error } = await req.supabase.from('addresses').update({
-      label, name, phone, house, street, city, pincode, detail, is_default: !!isDefault
-    }).eq('id', req.params.id).select().single();
+    
+    const updateObj = {
+      label, 
+      name, 
+      phone, 
+      house, 
+      street, 
+      city, 
+      pincode, 
+      landmark,
+      detail, 
+      is_default: !!isDefault
+    };
+    
+    const { data, error } = await req.supabase.from('addresses').update(updateObj).eq('id', req.params.id).select().single();
     if (error) throw error;
-    res.json(data);
+    res.json(formatAddressForClient(data));
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

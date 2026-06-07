@@ -61,29 +61,42 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
 
     setLoading(true);
     try {
+      // Clean up inputs and ensure landmark is handled correctly
+      const cleanEmail = user?.email?.trim() || '';
+      const cleanUid = user?.uid?.trim() || '';
+
       const addressData = {
-        label: formData.label,
-        name: formData.full_name,
-        phone: formData.phone,
-        house: formData.address_line1,
-        street: formData.address_line2,
-        city: formData.city,
-        pincode: formData.pincode,
-        landmark: formData.landmark,
-        detail: `${formData.address_line1}, ${formData.address_line2}, ${formData.city} - ${formData.pincode}`,
+        label: formData.label.trim(),
+        name: formData.full_name.trim(),
+        phone: formData.phone.trim(),
+        house: formData.address_line1.trim(),
+        street: formData.address_line2.trim(),
+        city: formData.city.trim(),
+        pincode: formData.pincode.trim(),
+        landmark: formData.landmark?.trim() || '',
+        detail: `${formData.address_line1.trim()}, ${formData.address_line2.trim()}, ${formData.city.trim()} - ${formData.pincode.trim()}`,
         isDefault: formData.is_default
       };
 
       let result;
       if (initialData?.id || initialData?._id) {
-        result = await updateAddress(initialData.id || initialData._id, user?.email || '', addressData, user?.uid);
+        result = await updateAddress(initialData.id || initialData._id, cleanEmail, addressData, cleanUid);
         toast.success('Address updated');
       } else {
-        result = await addAddress(user?.email || '', addressData, user?.uid);
+        result = await addAddress(cleanEmail, addressData, cleanUid);
         toast.success('Address added');
       }
-      onSuccess(result);
+      
+      // Ensure the result has both ID formats for frontend compatibility
+      const finalResult = {
+        ...result,
+        _id: result.id || result._id,
+        id: result.id || result._id
+      };
+      
+      onSuccess(finalResult);
     } catch (error: any) {
+      console.error('>>> [ADDRESS FORM] Submit Error:', error);
       toast.error(error.message || 'Failed to save');
     } finally {
       setLoading(false);
