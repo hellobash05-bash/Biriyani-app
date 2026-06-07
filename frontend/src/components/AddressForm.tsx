@@ -230,6 +230,7 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
             </p>
           </div>
           <button 
+            type="button"
             onClick={onCancel}
             className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
           >
@@ -237,7 +238,13 @@ export default function AddressForm({ initialData, onSuccess, onCancel }: Addres
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+        <form 
+          onSubmit={(e) => {
+            e.stopPropagation();
+            handleSubmit(e);
+          }} 
+          className="space-y-6 md:space-y-8"
+        >
           {/* Label Selection */}
           <div className="space-y-2.5">
             <label className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">

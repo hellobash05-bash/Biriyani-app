@@ -130,6 +130,7 @@ export default function AddressCard({
         <div className="flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onEdit(address); }}
               className="p-2.5 rounded-md border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary transition-colors"
               title="Edit"
@@ -137,6 +138,7 @@ export default function AddressCard({
               <PenLine size={16} />
             </button>
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onDelete(addressId); }}
               className="p-2.5 rounded-md border border-border bg-background text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
               title="Delete"
@@ -147,6 +149,7 @@ export default function AddressCard({
 
           {showDeliverHere && (
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onSelect?.(address); }}
               className={`px-6 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${
                 isSelected

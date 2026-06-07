@@ -222,6 +222,7 @@ export default function CheckoutAddressSelector({
           </h3>
           {!showForm && (
             <button
+              type="button"
               onClick={() => { 
                 playSound('click');
                 setEditingAddress(null); 
@@ -237,6 +238,7 @@ export default function CheckoutAddressSelector({
         {addresses.length > 0 && !showForm && (
           <div className="flex gap-3 overflow-x-auto no-scrollbar px-2 pb-2">
             <button
+              type="button"
               onClick={() => {
                 playSound('click');
                 setActiveLabel(null);
@@ -252,6 +254,7 @@ export default function CheckoutAddressSelector({
             {labels.map((label) => (
               <button
                 key={label}
+                type="button"
                 onClick={() => {
                   playSound('click');
                   setActiveLabel(label);
@@ -308,6 +311,7 @@ export default function CheckoutAddressSelector({
             {/* Add New Ghost Preview Card */}
             {!activeLabel && (
               <motion.button
+                type="button"
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => { 
