@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdmin = profile?.role === 'admin';
 
   const fetchUserProfile = async (firebaseUser: FirebaseUser) => {
     try {
@@ -109,13 +109,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    const checkAdmin = () => {
-      setIsAdmin(profile?.role === 'admin');
-    };
-    checkAdmin();
-  }, [profile, user]);
-
   const logout = React.useCallback(async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('admin_demo_mode');
@@ -123,7 +116,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
     setUser(null);
     setProfile(null);
-    setIsAdmin(false);
   }, []);
 
   const refreshProfile = React.useCallback(async () => {
